@@ -15,7 +15,7 @@ interface Calculation {
   nome_funcionario: string;
   inicio_contrato: string;
   fim_contrato: string;
-  tbl_clientes: Array<{ nome: string }> | null; // Corrigido: agora é um array de clientes ou null
+  tbl_clientes: Array<{ nome: string }> | null;
   created_at: string;
 }
 
@@ -32,7 +32,6 @@ const CalculationListPage = () => {
 
   const fetchCalculations = async () => {
     setLoading(true);
-    // Seleciona os cálculos e o nome do cliente relacionado
     const { data, error } = await supabase
       .from('tbl_calculos')
       .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, tbl_clientes(nome)')
@@ -42,22 +41,14 @@ const CalculationListPage = () => {
       showError('Erro ao carregar cálculos: ' + error.message);
       console.error('Error fetching calculations:', error);
     } else {
-      // Tipagem explícita para o dado retornado pelo Supabase antes do filtro
-      const rawCalculations = data as Array<{
-        id: string;
-        nome_funcionario: string;
-        inicio_contrato: string;
-        fim_contrato: string;
-        created_at: string;
-        tbl_clientes: Array<{ nome: string }> | null; // Corrigido aqui também
-      }>;
-
-      // Filtra os cálculos para garantir que apenas os do usuário logado sejam exibidos
-      // A condição `calc.tbl_clientes?.[0]?.nome` verifica se tbl_clientes não é null, não é vazio e se o primeiro elemento tem a propriedade nome
-      const userCalculations = rawCalculations.filter(calc =>
-        calc.tbl_clientes && calc.tbl_clientes.length > 0 && calc.tbl_clientes[0]?.nome
-      ) as Calculation[];
-      setCalculations(userCalculations);
+      console.log("Dados brutos de cálculos do Supabase:", data); // Log para depuração
+      // Confiamos que o RLS já filtrou os cálculos corretamente.
+      // Apenas garantimos que tbl_clientes seja um array ou null para a tipagem.
+      const processedCalculations = data?.map(calc => ({
+        ...calc,
+        tbl_clientes: calc.tbl_clientes ? (Array.isArray(calc.tbl_clientes) ? calc.tbl_clientes : [calc.tbl_clientes]) : null
+      })) || [];
+      setCalculations(processedCalculations as Calculation[]);
     }
     setLoading(false);
   };
