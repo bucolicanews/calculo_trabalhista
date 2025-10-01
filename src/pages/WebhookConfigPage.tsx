@@ -74,15 +74,57 @@ const availableTables = [
   { value: 'tbl_resposta_calculo', label: 'Respostas de Cálculo' },
 ];
 
-const tableFields: Record<string, string[]> = {
-  tbl_clientes: ['id', 'user_id', 'nome', 'cpf', 'cnpj', 'tipo_empregador', 'responsavel', 'cpf_responsavel', 'created_at'],
-  tbl_calculos: [
-    'id', 'cliente_id', 'sindicato_id', 'nome_funcionario', 'cpf_funcionario', 'funcao_funcionario',
-    'inicio_contrato', 'fim_contrato', 'tipo_aviso', 'salario_sindicato', 'obs_sindicato', 'historia',
-    'ctps_assinada', 'media_descontos', 'media_remuneracoes', 'carga_horaria', 'created_at'
+// Define all available fields, including related ones
+const allAvailableFields: Record<string, Array<{ key: string; label: string; supabasePath: string; isRelation: boolean; relationTable?: string; relationField?: string }>> = {
+  tbl_clientes: [
+    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
+    { key: 'user_id', label: 'ID do Usuário', supabasePath: 'user_id', isRelation: false },
+    { key: 'nome', label: 'Nome/Razão Social', supabasePath: 'nome', isRelation: false },
+    { key: 'cpf', label: 'CPF', supabasePath: 'cpf', isRelation: false },
+    { key: 'cnpj', label: 'CNPJ', supabasePath: 'cnpj', isRelation: false },
+    { key: 'tipo_empregador', label: 'Tipo de Empregador', supabasePath: 'tipo_empregador', isRelation: false },
+    { key: 'responsavel', label: 'Responsável', supabasePath: 'responsavel', isRelation: false },
+    { key: 'cpf_responsavel', label: 'CPF do Responsável', supabasePath: 'cpf_responsavel', isRelation: false },
+    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
   ],
-  tbl_sindicatos: ['id', 'nome', 'data_inicial', 'data_final', 'mes_convencao', 'created_at'],
-  tbl_resposta_calculo: ['id', 'calculo_id', 'resposta_ai', 'data_hora', 'created_at'],
+  tbl_calculos: [
+    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
+    { key: 'cliente_id', label: 'ID do Cliente', supabasePath: 'cliente_id', isRelation: false },
+    { key: 'cliente_nome', label: 'Cliente (Nome)', supabasePath: 'tbl_clientes(nome)', isRelation: true, relationTable: 'tbl_clientes', relationField: 'nome' },
+    { key: 'sindicato_id', label: 'ID do Sindicato', supabasePath: 'sindicato_id', isRelation: false },
+    { key: 'sindicato_nome', label: 'Sindicato (Nome)', supabasePath: 'tbl_sindicatos(nome)', isRelation: true, relationTable: 'tbl_sindicatos', relationField: 'nome' },
+    { key: 'nome_funcionario', label: 'Nome do Funcionário', supabasePath: 'nome_funcionario', isRelation: false },
+    { key: 'cpf_funcionario', label: 'CPF do Funcionário', supabasePath: 'cpf_funcionario', isRelation: false },
+    { key: 'funcao_funcionario', label: 'Função do Funcionário', supabasePath: 'funcao_funcionario', isRelation: false },
+    { key: 'inicio_contrato', label: 'Início do Contrato', supabasePath: 'inicio_contrato', isRelation: false },
+    { key: 'fim_contrato', label: 'Fim do Contrato', supabasePath: 'fim_contrato', isRelation: false },
+    { key: 'tipo_aviso', label: 'Tipo de Aviso', supabasePath: 'tipo_aviso', isRelation: false },
+    { key: 'salario_sindicato', label: 'Salário Sindicato', supabasePath: 'salario_sindicato', isRelation: false },
+    { key: 'obs_sindicato', label: 'Obs. Sindicato', supabasePath: 'obs_sindicato', isRelation: false },
+    { key: 'historia', label: 'História', supabasePath: 'historia', isRelation: false },
+    { key: 'ctps_assinada', label: 'CTPS Assinada', supabasePath: 'ctps_assinada', isRelation: false },
+    { key: 'media_descontos', label: 'Média Descontos', supabasePath: 'media_descontos', isRelation: false },
+    { key: 'media_remuneracoes', label: 'Média Remunerações', supabasePath: 'media_remuneracoes', isRelation: false },
+    { key: 'carga_horaria', label: 'Carga Horária', supabasePath: 'carga_horaria', isRelation: false },
+    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
+  ],
+  tbl_sindicatos: [
+    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
+    { key: 'nome', label: 'Nome do Sindicato', supabasePath: 'nome', isRelation: false },
+    { key: 'data_inicial', label: 'Data Inicial', supabasePath: 'data_inicial', isRelation: false },
+    { key: 'data_final', label: 'Data Final', supabasePath: 'data_final', isRelation: false },
+    { key: 'mes_convencao', label: 'Mês Convenção', supabasePath: 'mes_convencao', isRelation: false },
+    { key: 'url_documento_sindicato', label: 'URL Documento Sindicato', supabasePath: 'url_documento_sindicato', isRelation: false },
+    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
+  ],
+  tbl_resposta_calculo: [
+    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
+    { key: 'calculo_id', label: 'ID do Cálculo', supabasePath: 'calculo_id', isRelation: false },
+    { key: 'calculo_nome_funcionario', label: 'Cálculo (Nome Funcionário)', supabasePath: 'tbl_calculos(nome_funcionario)', isRelation: true, relationTable: 'tbl_calculos', relationField: 'nome_funcionario' },
+    { key: 'resposta_ai', label: 'Resposta AI', supabasePath: 'resposta_ai', isRelation: false },
+    { key: 'data_hora', label: 'Data/Hora', supabasePath: 'data_hora', isRelation: false },
+    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
+  ],
 };
 
 const WebhookConfigPage = () => {
@@ -150,17 +192,17 @@ const WebhookConfigPage = () => {
     }));
   };
 
-  const handleFieldToggle = (field: string) => {
+  const handleFieldToggle = (fieldKey: string) => {
     setCurrentWebhook((prev) => {
-      const newFields = prev.selected_fields.includes(field)
-        ? prev.selected_fields.filter((f) => f !== field)
-        : [...prev.selected_fields, field];
+      const newFields = prev.selected_fields.includes(fieldKey)
+        ? prev.selected_fields.filter((f) => f !== fieldKey)
+        : [...prev.selected_fields, fieldKey];
       return { ...prev, selected_fields: newFields };
     });
   };
 
   const currentTableAvailableFields = currentWebhook.table_name
-    ? tableFields[currentWebhook.table_name] || []
+    ? allAvailableFields[currentWebhook.table_name] || []
     : [];
 
   const areAllFieldsSelected = currentTableAvailableFields.length > 0 &&
@@ -170,7 +212,7 @@ const WebhookConfigPage = () => {
     if (areAllFieldsSelected) {
       setCurrentWebhook((prev) => ({ ...prev, selected_fields: [] }));
     } else {
-      setCurrentWebhook((prev) => ({ ...prev, selected_fields: currentTableAvailableFields }));
+      setCurrentWebhook((prev) => ({ ...prev, selected_fields: currentTableAvailableFields.map(f => f.key) }));
     }
   };
 
@@ -233,6 +275,11 @@ const WebhookConfigPage = () => {
     return availableTables.find(t => t.value === value)?.label || value;
   };
 
+  // Helper to get the field label for display in badges
+  const getFieldLabel = (table: string, fieldKey: string) => {
+    return allAvailableFields[table]?.find(f => f.key === fieldKey)?.label || fieldKey;
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
@@ -262,9 +309,9 @@ const WebhookConfigPage = () => {
                     <Label className="text-gray-300">Campos Selecionados:</Label>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {webhook.selected_fields.length > 0 ? (
-                        webhook.selected_fields.map((field) => (
-                          <Badge key={field} variant="secondary" className="bg-gray-700 text-gray-200">
-                            {field}
+                        webhook.selected_fields.map((fieldKey) => (
+                          <Badge key={fieldKey} variant="secondary" className="bg-gray-700 text-gray-200">
+                            {getFieldLabel(webhook.table_name, fieldKey)}
                           </Badge>
                         ))
                       ) : (
@@ -376,15 +423,15 @@ const WebhookConfigPage = () => {
                         )}
                         {currentTableAvailableFields.map((field) => (
                           <CommandItem
-                            key={field}
-                            onSelect={() => handleFieldToggle(field)}
+                            key={field.key}
+                            onSelect={() => handleFieldToggle(field.key)}
                             className="flex items-center justify-between cursor-pointer hover:bg-gray-700 text-white"
                           >
-                            {field}
+                            {field.label}
                             <Check
                               className={cn(
                                 "ml-auto h-4 w-4",
-                                currentWebhook.selected_fields.includes(field) ? "opacity-100 text-orange-500" : "opacity-0"
+                                currentWebhook.selected_fields.includes(field.key) ? "opacity-100 text-orange-500" : "opacity-0"
                               )}
                             />
                           </CommandItem>

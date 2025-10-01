@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Calculator, Send, RefreshCw } from 'lucide-react'; // Adicionado RefreshCw
+import { PlusCircle, Edit, Trash2, Calculator, Send, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -17,19 +17,7 @@ interface Calculation {
   fim_contrato: string;
   tbl_clientes: Array<{ nome: string }> | null;
   created_at: string;
-  // Adicionar todos os campos que podem ser enviados via webhook
-  cliente_id: string;
-  sindicato_id: string | null;
-  cpf_funcionario: string | null;
-  funcao_funcionario: string | null;
-  tipo_aviso: string;
-  salario_sindicato: number | null;
-  obs_sindicato: string | null;
-  historia: string | null;
-  ctps_assinada: boolean | null;
-  media_descontos: number | null;
-  media_remuneracoes: number | null;
-  carga_horaria: string | null;
+  [key: string]: any; // Allow arbitrary properties for webhook payload
 }
 
 interface WebhookConfig {
@@ -39,11 +27,65 @@ interface WebhookConfig {
   webhook_url: string;
 }
 
+// Define all available fields, including related ones, for webhook payload construction
+const allAvailableFieldsForWebhook: Record<string, Array<{ key: string; label: string; supabasePath: string; isRelation: boolean; relationTable?: string; relationField?: string }>> = {
+  tbl_clientes: [
+    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
+    { key: 'user_id', label: 'ID do Usuário', supabasePath: 'user_id', isRelation: false },
+    { key: 'nome', label: 'Nome/Razão Social', supabasePath: 'nome', isRelation: false },
+    { key: 'cpf', label: 'CPF', supabasePath: 'cpf', isRelation: false },
+    { key: 'cnpj', label: 'CNPJ', supabasePath: 'cnpj', isRelation: false },
+    { key: 'tipo_empregador', label: 'Tipo de Empregador', supabasePath: 'tipo_empregador', isRelation: false },
+    { key: 'responsavel', label: 'Responsável', supabasePath: 'responsavel', isRelation: false },
+    { key: 'cpf_responsavel', label: 'CPF do Responsável', supabasePath: 'cpf_responsavel', isRelation: false },
+    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
+  ],
+  tbl_calculos: [
+    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
+    { key: 'cliente_id', label: 'ID do Cliente', supabasePath: 'cliente_id', isRelation: false },
+    { key: 'cliente_nome', label: 'Cliente (Nome)', supabasePath: 'tbl_clientes(nome)', isRelation: true, relationTable: 'tbl_clientes', relationField: 'nome' },
+    { key: 'sindicato_id', label: 'ID do Sindicato', supabasePath: 'sindicato_id', isRelation: false },
+    { key: 'sindicato_nome', label: 'Sindicato (Nome)', supabasePath: 'tbl_sindicatos(nome)', isRelation: true, relationTable: 'tbl_sindicatos', relationField: 'nome' },
+    { key: 'nome_funcionario', label: 'Nome do Funcionário', supabasePath: 'nome_funcionario', isRelation: false },
+    { key: 'cpf_funcionario', label: 'CPF do Funcionário', supabasePath: 'cpf_funcionario', isRelation: false },
+    { key: 'funcao_funcionario', label: 'Função do Funcionário', supabasePath: 'funcao_funcionario', isRelation: false },
+    { key: 'inicio_contrato', label: 'Início do Contrato', supabasePath: 'inicio_contrato', isRelation: false },
+    { key: 'fim_contrato', label: 'Fim do Contrato', supabasePath: 'fim_contrato', isRelation: false },
+    { key: 'tipo_aviso', label: 'Tipo de Aviso', supabasePath: 'tipo_aviso', isRelation: false },
+    { key: 'salario_sindicato', label: 'Salário Sindicato', supabasePath: 'salario_sindicato', isRelation: false },
+    { key: 'obs_sindicato', label: 'Obs. Sindicato', supabasePath: 'obs_sindicato', isRelation: false },
+    { key: 'historia', label: 'História', supabasePath: 'historia', isRelation: false },
+    { key: 'ctps_assinada', label: 'CTPS Assinada', supabasePath: 'ctps_assinada', isRelation: false },
+    { key: 'media_descontos', label: 'Média Descontos', supabasePath: 'media_descontos', isRelation: false },
+    { key: 'media_remuneracoes', label: 'Média Remunerações', supabasePath: 'media_remuneracoes', isRelation: false },
+    { key: 'carga_horaria', label: 'Carga Horária', supabasePath: 'carga_horaria', isRelation: false },
+    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
+  ],
+  tbl_sindicatos: [
+    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
+    { key: 'nome', label: 'Nome do Sindicato', supabasePath: 'nome', isRelation: false },
+    { key: 'data_inicial', label: 'Data Inicial', supabasePath: 'data_inicial', isRelation: false },
+    { key: 'data_final', label: 'Data Final', supabasePath: 'data_final', isRelation: false },
+    { key: 'mes_convencao', label: 'Mês Convenção', supabasePath: 'mes_convencao', isRelation: false },
+    { key: 'url_documento_sindicato', label: 'URL Documento Sindicato', supabasePath: 'url_documento_sindicato', isRelation: false },
+    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
+  ],
+  tbl_resposta_calculo: [
+    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
+    { key: 'calculo_id', label: 'ID do Cálculo', supabasePath: 'calculo_id', isRelation: false },
+    { key: 'calculo_nome_funcionario', label: 'Cálculo (Nome Funcionário)', supabasePath: 'tbl_calculos(nome_funcionario)', isRelation: true, relationTable: 'tbl_calculos', relationField: 'nome_funcionario' },
+    { key: 'resposta_ai', label: 'Resposta AI', supabasePath: 'resposta_ai', isRelation: false },
+    { key: 'data_hora', label: 'Data/Hora', supabasePath: 'data_hora', isRelation: false },
+    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
+  ],
+};
+
+
 const CalculationListPage = () => {
   const { user } = useAuth();
   const [calculations, setCalculations] = useState<Calculation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sendingWebhook, setSendingWebhook] = useState<string | null>(null); // Para controlar o estado de envio por cálculo
+  const [sendingWebhook, setSendingWebhook] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -53,10 +95,10 @@ const CalculationListPage = () => {
 
   const fetchCalculations = async () => {
     setLoading(true);
-    // Selecionar todos os campos para que possam ser filtrados pelos webhooks
+    // For the list display, we only need basic info and client name
     const { data, error } = await supabase
       .from('tbl_calculos')
-      .select('*, tbl_clientes(nome)') // Seleciona todos os campos do cálculo e o nome do cliente
+      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, tbl_clientes(nome)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -87,17 +129,16 @@ const CalculationListPage = () => {
     }
   };
 
-  const handleSendToWebhook = async (calculation: Calculation) => {
+  const handleSendToWebhook = async (calculationId: string) => {
     if (!user) {
       showError('Usuário não autenticado.');
       return;
     }
 
-    setSendingWebhook(calculation.id); // Define o cálculo que está sendo enviado
+    setSendingWebhook(calculationId);
     showSuccess('Verificando webhooks e enviando cálculo...');
 
     try {
-      // 1. Buscar configurações de webhook para 'tbl_calculos' do usuário
       const { data: webhookConfigs, error: webhookError } = await supabase
         .from('tbl_webhook_configs')
         .select('*')
@@ -117,22 +158,70 @@ const CalculationListPage = () => {
 
       let sentCount = 0;
       for (const config of webhookConfigs) {
-        // 2. Filtrar os dados do cálculo com base nos selected_fields
-        const payload: { [key: string]: any } = {};
-        for (const field of config.selected_fields) {
-          if (field in calculation) {
-            payload[field] = (calculation as any)[field];
-          } else if (field === 'cliente_nome' && calculation.tbl_clientes?.[0]?.nome) {
-            payload['cliente_nome'] = calculation.tbl_clientes[0].nome;
+        // Construct dynamic select string for Supabase
+        const selectParts: string[] = [];
+        const relationSelects: Set<string> = new Set(); // To store unique relation selects like 'tbl_clientes(nome)'
+
+        // Always include 'id' of the main table for filtering
+        selectParts.push('id');
+
+        config.selected_fields.forEach(fieldKey => {
+          const fieldDef = allAvailableFieldsForWebhook['tbl_calculos'].find(f => f.key === fieldKey);
+          if (fieldDef) {
+            if (fieldDef.isRelation) {
+              relationSelects.add(fieldDef.supabasePath);
+            } else {
+              selectParts.push(fieldDef.supabasePath);
+            }
           }
+        });
+
+        const finalSelectString = [...new Set(selectParts), ...Array.from(relationSelects)].join(', ');
+
+        // Fetch the specific calculation data with the dynamically constructed select
+        const { data: specificCalculationData, error: fetchError } = await supabase
+          .from('tbl_calculos')
+          .select(finalSelectString)
+          .eq('id', calculationId)
+          .single();
+
+        if (fetchError) {
+          showError(`Erro ao buscar dados do cálculo para webhook: ${fetchError.message}`);
+          console.error('Error fetching specific calculation data:', fetchError);
+          continue; // Try next webhook config
         }
 
-        // 3. Enviar os dados para a URL do webhook
+        if (!specificCalculationData) {
+          showError('Dados do cálculo não encontrados para o webhook.');
+          continue;
+        }
+
+        // Construct the payload
+        const payload: { [key: string]: any } = {};
+        config.selected_fields.forEach(fieldKey => {
+          const fieldDef = allAvailableFieldsForWebhook['tbl_calculos'].find(f => f.key === fieldKey);
+          if (fieldDef) {
+            if (fieldDef.isRelation && fieldDef.relationTable && fieldDef.relationField) {
+              // Handle nested data from relations
+              const relatedData = (specificCalculationData as any)[fieldDef.relationTable];
+              if (relatedData && Array.isArray(relatedData) && relatedData.length > 0) {
+                payload[fieldKey] = relatedData[0][fieldDef.relationField];
+              } else if (relatedData && !Array.isArray(relatedData)) { // For single object relations
+                payload[fieldKey] = relatedData[fieldDef.relationField];
+              } else {
+                payload[fieldKey] = null; // Or undefined, depending on desired behavior
+              }
+            } else {
+              payload[fieldKey] = (specificCalculationData as any)[fieldDef.key];
+            }
+          }
+        });
+
+        // Send the data to the webhook URL
         const response = await fetch(config.webhook_url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            // Adicione headers de autenticação se o webhook exigir (ex: 'Authorization': 'Bearer seu_token')
           },
           body: JSON.stringify(payload),
         });
@@ -156,7 +245,7 @@ const CalculationListPage = () => {
       showError('Erro inesperado ao enviar cálculo para webhook: ' + error.message);
       console.error('Unexpected error sending webhook:', error);
     } finally {
-      setSendingWebhook(null); // Reseta o estado de envio
+      setSendingWebhook(null);
     }
   };
 
@@ -204,8 +293,8 @@ const CalculationListPage = () => {
                       variant="outline"
                       size="sm"
                       className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-                      onClick={() => handleSendToWebhook(calculation)}
-                      disabled={sendingWebhook === calculation.id} // Desabilita enquanto envia
+                      onClick={() => handleSendToWebhook(calculation.id)}
+                      disabled={sendingWebhook === calculation.id}
                     >
                       {sendingWebhook === calculation.id ? (
                         <RefreshCw className="h-4 w-4 animate-spin" />
