@@ -11,6 +11,8 @@ import DashboardPage from "./pages/DashboardPage";
 import ClientFormPage from "./pages/ClientFormPage";
 import CalculationFormPage from "./pages/CalculationFormPage";
 import CalculationResultPage from "./pages/CalculationResultPage";
+import SindicatoListPage from "./pages/SindicatoListPage"; // Importar a nova página
+import SindicatoFormPage from "./pages/SindicatoFormPage"; // Importar a nova página
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,9 @@ const App = () => (
             <Route path="/calculations/new" element={<CalculationFormPage />} />
             <Route path="/calculations/:id" element={<CalculationFormPage />} /> {/* For editing calculations */}
             <Route path="/calculations/:calculationId/result" element={<CalculationResultPage />} />
+            <Route path="/sindicatos" element={<SindicatoListPage />} /> {/* Nova rota para listar sindicatos */}
+            <Route path="/sindicatos/new" element={<SindicatoFormPage />} /> {/* Nova rota para criar sindicato */}
+            <Route path="/sindicatos/:id" element={<SindicatoFormPage />} /> {/* Nova rota para editar sindicato */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { LogOut, Home, Users, Calculator } from 'lucide-react';
+import { LogOut, Home, Users, Calculator, Landmark } from 'lucide-react'; // Adicionado Landmark para sindicatos
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -34,6 +34,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <Button variant="ghost" asChild className="text-white hover:text-orange-500">
             <Link to="/calculations">
               <Calculator className="mr-2 h-4 w-4" /> Cálculos
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild className="text-white hover:text-orange-500">
+            <Link to="/sindicatos"> {/* Novo link para sindicatos */}
+              <Landmark className="mr-2 h-4 w-4" /> Sindicatos
             </Link>
           </Button>
           <Button onClick={handleLogout} variant="destructive" className="bg-orange-500 hover:bg-orange-600 text-white">
