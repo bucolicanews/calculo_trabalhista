@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, FileText, Calculator } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Calculator, Send, RefreshCw } from 'lucide-react'; // Adicionado RefreshCw
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -17,12 +17,33 @@ interface Calculation {
   fim_contrato: string;
   tbl_clientes: Array<{ nome: string }> | null;
   created_at: string;
+  // Adicionar todos os campos que podem ser enviados via webhook
+  cliente_id: string;
+  sindicato_id: string | null;
+  cpf_funcionario: string | null;
+  funcao_funcionario: string | null;
+  tipo_aviso: string;
+  salario_sindicato: number | null;
+  obs_sindicato: string | null;
+  historia: string | null;
+  ctps_assinada: boolean | null;
+  media_descontos: number | null;
+  media_remuneracoes: number | null;
+  carga_horaria: string | null;
+}
+
+interface WebhookConfig {
+  id: string;
+  table_name: string;
+  selected_fields: string[];
+  webhook_url: string;
 }
 
 const CalculationListPage = () => {
   const { user } = useAuth();
   const [calculations, setCalculations] = useState<Calculation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sendingWebhook, setSendingWebhook] = useState<string | null>(null); // Para controlar o estado de envio por cálculo
 
   useEffect(() => {
     if (user) {
@@ -32,18 +53,16 @@ const CalculationListPage = () => {
 
   const fetchCalculations = async () => {
     setLoading(true);
+    // Selecionar todos os campos para que possam ser filtrados pelos webhooks
     const { data, error } = await supabase
       .from('tbl_calculos')
-      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, tbl_clientes(nome)')
+      .select('*, tbl_clientes(nome)') // Seleciona todos os campos do cálculo e o nome do cliente
       .order('created_at', { ascending: false });
 
     if (error) {
       showError('Erro ao carregar cálculos: ' + error.message);
       console.error('Error fetching calculations:', error);
     } else {
-      console.log("Dados brutos de cálculos do Supabase:", data); // Log para depuração
-      // Confiamos que o RLS já filtrou os cálculos corretamente.
-      // Apenas garantimos que tbl_clientes seja um array ou null para a tipagem.
       const processedCalculations = data?.map(calc => ({
         ...calc,
         tbl_clientes: calc.tbl_clientes ? (Array.isArray(calc.tbl_clientes) ? calc.tbl_clientes : [calc.tbl_clientes]) : null
@@ -65,6 +84,79 @@ const CalculationListPage = () => {
     } else {
       showSuccess('Cálculo deletado com sucesso!');
       fetchCalculations(); // Refresh the list
+    }
+  };
+
+  const handleSendToWebhook = async (calculation: Calculation) => {
+    if (!user) {
+      showError('Usuário não autenticado.');
+      return;
+    }
+
+    setSendingWebhook(calculation.id); // Define o cálculo que está sendo enviado
+    showSuccess('Verificando webhooks e enviando cálculo...');
+
+    try {
+      // 1. Buscar configurações de webhook para 'tbl_calculos' do usuário
+      const { data: webhookConfigs, error: webhookError } = await supabase
+        .from('tbl_webhook_configs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('table_name', 'tbl_calculos');
+
+      if (webhookError) {
+        showError('Erro ao buscar configurações de webhook: ' + webhookError.message);
+        console.error('Error fetching webhook configs:', webhookError);
+        return;
+      }
+
+      if (!webhookConfigs || webhookConfigs.length === 0) {
+        showError('Nenhum webhook configurado para cálculos. Configure um na página de Webhooks.');
+        return;
+      }
+
+      let sentCount = 0;
+      for (const config of webhookConfigs) {
+        // 2. Filtrar os dados do cálculo com base nos selected_fields
+        const payload: { [key: string]: any } = {};
+        for (const field of config.selected_fields) {
+          if (field in calculation) {
+            payload[field] = (calculation as any)[field];
+          } else if (field === 'cliente_nome' && calculation.tbl_clientes?.[0]?.nome) {
+            payload['cliente_nome'] = calculation.tbl_clientes[0].nome;
+          }
+        }
+
+        // 3. Enviar os dados para a URL do webhook
+        const response = await fetch(config.webhook_url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // Adicione headers de autenticação se o webhook exigir (ex: 'Authorization': 'Bearer seu_token')
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          console.error(`Erro ao enviar para webhook ${config.webhook_url}:`, response.status, response.statusText);
+          showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}`);
+        } else {
+          sentCount++;
+          console.log(`Cálculo enviado com sucesso para webhook: ${config.webhook_url}`);
+        }
+      }
+
+      if (sentCount > 0) {
+        showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso!`);
+      } else {
+        showError('Nenhum cálculo foi enviado para os webhooks configurados.');
+      }
+
+    } catch (error: any) {
+      showError('Erro inesperado ao enviar cálculo para webhook: ' + error.message);
+      console.error('Unexpected error sending webhook:', error);
+    } finally {
+      setSendingWebhook(null); // Reseta o estado de envio
     }
   };
 
@@ -90,7 +182,6 @@ const CalculationListPage = () => {
               <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
                 <CardHeader>
                   <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
-                  {/* Acessa o nome do cliente do primeiro elemento do array, se existir */}
                   <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.[0]?.nome || 'N/A'}</p>
                   <div className="text-xs text-gray-500 mt-2 space-y-1">
                     <p>Início Contrato: {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy')}</p>
@@ -108,6 +199,19 @@ const CalculationListPage = () => {
                       <Link to={`/calculations/${calculation.id}/result`}>
                         <Calculator className="h-4 w-4" />
                       </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
+                      onClick={() => handleSendToWebhook(calculation)}
+                      disabled={sendingWebhook === calculation.id} // Desabilita enquanto envia
+                    >
+                      {sendingWebhook === calculation.id ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
