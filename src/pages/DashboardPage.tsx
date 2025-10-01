@@ -4,41 +4,33 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, User, Briefcase, Calculator } from 'lucide-react';
+import { PlusCircle, User, Briefcase, Calculator, Landmark } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError } from '@/utils/toast';
 
-interface Client {
-  id: string;
-  nome: string;
-  tipo_empregador: string;
-  created_at: string;
-}
-
 const DashboardPage = () => {
   const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
+  const [totalClients, setTotalClients] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      fetchClients();
+      fetchTotalClients();
     }
   }, [user]);
 
-  const fetchClients = async () => {
+  const fetchTotalClients = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('tbl_clientes')
-      .select('id, nome, tipo_empregador, created_at')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
+      .select('id', { count: 'exact' })
+      .eq('user_id', user?.id);
 
     if (error) {
-      showError('Erro ao carregar clientes: ' + error.message);
-      console.error('Error fetching clients:', error);
+      showError('Erro ao carregar total de clientes: ' + error.message);
+      console.error('Error fetching total clients:', error);
     } else {
-      setClients(data || []);
+      setTotalClients(count || 0);
     }
     setLoading(false);
   };
@@ -55,7 +47,11 @@ const DashboardPage = () => {
               <User className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{clients.length}</div>
+              {loading ? (
+                <div className="text-2xl font-bold text-gray-400">...</div>
+              ) : (
+                <div className="text-2xl font-bold">{totalClients}</div>
+              )}
               <p className="text-xs text-gray-400">Clientes cadastrados</p>
             </CardContent>
           </Card>
@@ -87,29 +83,24 @@ const DashboardPage = () => {
           </Card>
         </div>
 
-        <h2 className="text-3xl font-bold text-orange-500 mb-6">Meus Clientes</h2>
-        {loading ? (
-          <p className="text-gray-400">Carregando clientes...</p>
-        ) : clients.length === 0 ? (
-          <p className="text-gray-400">Nenhum cliente cadastrado ainda. Adicione um novo cliente para começar!</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {clients.map((client) => (
-              <Card key={client.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
-                <CardHeader>
-                  <CardTitle className="text-xl text-orange-500">{client.nome}</CardTitle>
-                  <p className="text-sm text-gray-400">{client.tipo_empregador}</p>
-                </CardHeader>
-                <CardContent className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Criado em: {new Date(client.created_at).toLocaleDateString()}</span>
-                  <Button asChild variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
-                    <Link to={`/clients/${client.id}`}>Ver Detalhes</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <h2 className="text-3xl font-bold text-orange-500 mb-6">Ações Rápidas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Button asChild className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700">
+            <Link to="/clients">
+              <User className="mr-2 h-4 w-4" /> Ver Todos os Clientes
+            </Link>
+          </Button>
+          <Button asChild className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700">
+            <Link to="/calculations">
+              <Calculator className="mr-2 h-4 w-4" /> Ver Todos os Cálculos
+            </Link>
+          </Button>
+          <Button asChild className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700">
+            <Link to="/sindicatos">
+              <Landmark className="mr-2 h-4 w-4" /> Gerenciar Sindicatos
+            </Link>
+          </Button>
+        </div>
       </div>
     </MainLayout>
   );
