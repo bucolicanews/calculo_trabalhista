@@ -5,18 +5,32 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import DissidioManager from '@/components/DissidioManager'; // Importar o novo componente
+
+// Definindo a interface para o estado do sindicato
+interface SindicatoState {
+  id?: string; // Tornar id opcional
+  nome: string;
+  data_inicial: string;
+  data_final: string;
+  mes_convencao: string;
+}
 
 const SindicatoFormPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [sindicato, setSindicato] = useState({
+  const [sindicato, setSindicato] = useState<SindicatoState>({
     nome: '',
-    anexo_dissidio_url: '',
-    resumo_dissidio: '',
+    data_inicial: '',
+    data_final: '',
+    mes_convencao: '',
   });
   const [loading, setLoading] = useState(false);
   const isEditing = !!id;
@@ -40,7 +54,12 @@ const SindicatoFormPage = () => {
       console.error('Error fetching sindicato:', error);
       navigate('/sindicatos');
     } else if (data) {
-      setSindicato(data);
+      setSindicato({
+        ...data,
+        data_inicial: data.data_inicial || '',
+        data_final: data.data_final || '',
+        mes_convencao: data.mes_convencao || '',
+      });
     }
     setLoading(false);
   };
@@ -48,6 +67,13 @@ const SindicatoFormPage = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setSindicato((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDateChange = (name: string, date: Date | undefined) => {
+    setSindicato((prev) => ({
+      ...prev,
+      [name]: date ? format(date, 'yyyy-MM-dd') : '',
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,31 +139,84 @@ const SindicatoFormPage = () => {
                   className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
                 />
               </div>
+
+              {/* Data Inicial */}
               <div>
-                <Label htmlFor="anexo_dissidio_url" className="text-gray-300">URL do Anexo Dissídio (Opcional)</Label>
+                <Label htmlFor="data_inicial" className="text-gray-300">Data Inicial do Acordo</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700",
+                        !sindicato.data_inicial && "text-gray-500"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {sindicato.data_inicial ? format(new Date(sindicato.data_inicial), 'PPP') : <span>Selecione a data</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
+                    <Calendar
+                      mode="single"
+                      selected={sindicato.data_inicial ? new Date(sindicato.data_inicial) : undefined}
+                      onSelect={(date) => handleDateChange('data_inicial', date)}
+                      initialFocus
+                      className="bg-gray-900 text-white"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Data Final */}
+              <div>
+                <Label htmlFor="data_final" className="text-gray-300">Data Final do Acordo</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700",
+                        !sindicato.data_final && "text-gray-500"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {sindicato.data_final ? format(new Date(sindicato.data_final), 'PPP') : <span>Selecione a data</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
+                    <Calendar
+                      mode="single"
+                      selected={sindicato.data_final ? new Date(sindicato.data_final) : undefined}
+                      onSelect={(date) => handleDateChange('data_final', date)}
+                      initialFocus
+                      className="bg-gray-900 text-white"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Mês da Convenção */}
+              <div>
+                <Label htmlFor="mes_convencao" className="text-gray-300">Mês da Convenção (Ex: Janeiro, 01/2024)</Label>
                 <Input
-                  id="anexo_dissidio_url"
-                  name="anexo_dissidio_url"
-                  value={sindicato.anexo_dissidio_url || ''}
+                  id="mes_convencao"
+                  name="mes_convencao"
+                  value={sindicato.mes_convencao || ''}
                   onChange={handleChange}
                   className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+                  placeholder="Ex: Janeiro ou 01/2024"
                 />
               </div>
-              <div>
-                <Label htmlFor="resumo_dissidio" className="text-gray-300">Resumo do Dissídio (Opcional)</Label>
-                <Textarea
-                  id="resumo_dissidio"
-                  name="resumo_dissidio"
-                  value={sindicato.resumo_dissidio || ''}
-                  onChange={handleChange}
-                  rows={4}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
-              </div>
+
               <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
                 {loading ? 'Salvando...' : (isEditing ? 'Atualizar Sindicato' : 'Criar Sindicato')}
               </Button>
             </form>
+
+            {isEditing && sindicato.id && (
+              <DissidioManager sindicatoId={sindicato.id} />
+            )}
           </CardContent>
         </Card>
       </div>

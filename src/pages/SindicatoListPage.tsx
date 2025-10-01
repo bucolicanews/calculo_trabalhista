@@ -7,12 +7,14 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { format } from 'date-fns';
 
 interface Sindicato {
   id: string;
   nome: string;
-  anexo_dissidio_url: string | null;
-  resumo_dissidio: string | null;
+  data_inicial: string | null; // Novo campo
+  data_final: string | null;   // Novo campo
+  mes_convencao: string | null; // Novo campo
   created_at: string;
 }
 
@@ -77,9 +79,11 @@ const SindicatoListPage = () => {
               <Card key={sindicato.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
                 <CardHeader>
                   <CardTitle className="text-xl text-orange-500">{sindicato.nome}</CardTitle>
-                  {sindicato.resumo_dissidio && (
-                    <p className="text-sm text-gray-400 line-clamp-2">{sindicato.resumo_dissidio}</p>
-                  )}
+                  <div className="text-xs text-gray-500 mt-2 space-y-1">
+                    {sindicato.data_inicial && <p>Início Acordo: {format(new Date(sindicato.data_inicial), 'dd/MM/yyyy')}</p>}
+                    {sindicato.data_final && <p>Fim Acordo: {format(new Date(sindicato.data_final), 'dd/MM/yyyy')}</p>}
+                    {sindicato.mes_convencao && <p>Mês Convenção: {sindicato.mes_convencao}</p>}
+                  </div>
                 </CardHeader>
                 <CardContent className="flex justify-between items-center">
                   <div className="flex space-x-2">
@@ -110,11 +114,7 @@ const SindicatoListPage = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   </div>
-                  {sindicato.anexo_dissidio_url && (
-                    <a href={sindicato.anexo_dissidio_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline">
-                      Ver Dissídio
-                    </a>
-                  )}
+                  {/* Removido o link direto para anexo_dissidio_url, pois agora está em tbl_dissidios */}
                 </CardContent>
               </Card>
             ))}
