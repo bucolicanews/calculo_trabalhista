@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { PlusCircle, Edit, Trash2, FileText, CalendarIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -36,6 +36,7 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentDissidio, setCurrentDissidio] = useState<Partial<Dissidio> | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // Estado para o arquivo selecionado
   const isEditingDissidio = !!currentDissidio?.id;
 
   useEffect(() => {
@@ -63,17 +64,27 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
 
   const handleAddDissidioClick = () => {
     setCurrentDissidio({ sindicato_id: sindicatoId });
+    setSelectedFile(null); // Limpa o arquivo selecionado ao adicionar novo
     setIsDialogOpen(true);
   };
 
   const handleEditDissidioClick = (dissidio: Dissidio) => {
     setCurrentDissidio(dissidio);
+    setSelectedFile(null); // Limpa o arquivo selecionado ao editar
     setIsDialogOpen(true);
   };
 
   const handleDissidioFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setCurrentDissidio((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    } else {
+      setSelectedFile(null);
+    }
   };
 
   const handleDissidioDateChange = (name: string, date: Date | undefined) => {
@@ -91,16 +102,48 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
     }
 
     setLoading(true);
+    let fileUrl: string | null = currentDissidio.url_documento || null;
+
+    if (selectedFile) {
+      const fileExtension = selectedFile.name.split('.').pop();
+      const fileName = `${sindicatoId}/${currentDissidio.nome_dissidio.replace(/\s/g, '_')}_${Date.now()}.${fileExtension}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('dissidios_documents')
+        .upload(fileName, selectedFile, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        showError('Erro ao fazer upload do documento: ' + uploadError.message);
+        setLoading(false);
+        return;
+      }
+
+      // Obter a URL pública do arquivo
+      const { data: publicUrlData } = supabase.storage
+        .from('dissidios_documents')
+        .getPublicUrl(fileName);
+      
+      fileUrl = publicUrlData.publicUrl;
+      showSuccess('Documento enviado com sucesso!');
+    }
+
+    const dissidioToSave = {
+      ...currentDissidio,
+      url_documento: fileUrl,
+    };
+
     let response;
     if (isEditingDissidio) {
       response = await supabase
         .from('tbl_dissidios')
-        .update(currentDissidio)
+        .update(dissidioToSave)
         .eq('id', currentDissidio.id);
     } else {
       response = await supabase
         .from('tbl_dissidios')
-        .insert(currentDissidio);
+        .insert(dissidioToSave);
     }
 
     if (response.error) {
@@ -110,6 +153,7 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       showSuccess(`Dissídio ${isEditingDissidio ? 'atualizado' : 'criado'} com sucesso!`);
       setIsDialogOpen(false);
       setCurrentDissidio(null);
+      setSelectedFile(null); // Limpa o arquivo após salvar
       fetchDissidios();
     }
     setLoading(false);
@@ -117,6 +161,10 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
 
   const handleDeleteDissidio = async (dissidioId: string) => {
     setLoading(true);
+    // Opcional: Deletar o arquivo do storage antes de deletar o registro do banco de dados
+    // Isso exigiria buscar o url_documento primeiro para saber qual arquivo deletar.
+    // Por simplicidade, vamos apenas deletar o registro do banco de dados por enquanto.
+
     const { error } = await supabase
       .from('tbl_dissidios')
       .delete()
@@ -162,15 +210,24 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="url_documento" className="text-right text-gray-300">URL Documento</Label>
-                <Input
-                  id="url_documento"
-                  name="url_documento"
-                  value={currentDissidio?.url_documento || ''}
-                  onChange={handleDissidioFormChange}
-                  className="col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  placeholder="Link para o documento do dissídio"
-                />
+                <Label htmlFor="document_upload" className="text-right text-gray-300">Documento PDF</Label>
+                <div className="col-span-3 flex items-center space-x-2">
+                  <Input
+                    id="document_upload"
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="flex-grow bg-gray-800 border-gray-700 text-white file:text-orange-500 file:bg-gray-700 file:border-0 file:mr-4 file:py-2 file:px-4 file:rounded-md hover:file:bg-gray-600"
+                  />
+                  {selectedFile && (
+                    <span className="text-sm text-gray-400">{selectedFile.name}</span>
+                  )}
+                  {!selectedFile && currentDissidio?.url_documento && (
+                    <a href={currentDissidio.url_documento} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline flex items-center">
+                      <FileText className="h-4 w-4 mr-1" /> Ver Atual
+                    </a>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="resumo_dissidio" className="text-right text-gray-300">Resumo</Label>
