@@ -7,21 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { ArrowLeft, CalendarIcon, FileText } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, FileText, Upload } from 'lucide-react'; // Adicionado Upload icon
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import DissidioManager from '@/components/DissidioManager'; // Importar o novo componente
+import DissidioManager from '@/components/DissidioManager';
 
-// Definindo a interface para o estado do sindicato
 interface SindicatoState {
-  id?: string; // Tornar id opcional
+  id?: string;
   nome: string;
   data_inicial: string;
   data_final: string;
   mes_convencao: string;
-  url_documento_sindicato: string | null; // Novo campo para o documento do sindicato
+  url_documento_sindicato: string | null;
 }
 
 const SindicatoFormPage = () => {
@@ -35,7 +34,7 @@ const SindicatoFormPage = () => {
     url_documento_sindicato: null,
   });
   const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null); // Estado para o arquivo do sindicato
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const isEditing = !!id;
 
   useEffect(() => {
@@ -96,7 +95,10 @@ const SindicatoFormPage = () => {
 
     if (selectedFile) {
       const fileExtension = selectedFile.name.split('.').pop();
-      const fileName = `${sindicato.nome.replace(/\s/g, '_')}_${Date.now()}.${fileExtension}`;
+      // Sanitiza o nome do sindicato para o nome do arquivo
+      const sanitizedName = sindicato.nome.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      const fileName = `sindicatos/${sanitizedName}_${Date.now()}.${fileExtension}`; // Adiciona prefixo 'sindicatos/' para organização
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('sindicatos_documents')
         .upload(fileName, selectedFile, {
@@ -254,15 +256,25 @@ const SindicatoFormPage = () => {
 
               {/* Upload de Documento do Sindicato */}
               <div>
-                <Label htmlFor="sindicato_document_upload" className="text-gray-300">Documento do Sindicato (PDF)</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id="sindicato_document_upload"
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileChange}
-                    className="flex-grow bg-gray-800 border-gray-700 text-white file:text-orange-500 file:bg-gray-700 file:border-0 file:mr-4 file:py-2 file:px-4 file:rounded-md hover:file:bg-gray-600"
-                  />
+                <Label htmlFor="sindicato_document_upload" className="text-gray-300 block mb-2">Documento do Sindicato (PDF)</Label>
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="relative w-full max-w-xs"> {/* max-w-xs para centralizar e limitar largura */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 flex items-center justify-center"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {selectedFile ? "Arquivo Selecionado" : "Selecionar PDF"}
+                    </Button>
+                    <Input
+                      id="sindicato_document_upload"
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
                   {selectedFile && (
                     <span className="text-sm text-gray-400">{selectedFile.name}</span>
                   )}

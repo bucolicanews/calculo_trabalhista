@@ -106,7 +106,10 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
 
     if (selectedFile) {
       const fileExtension = selectedFile.name.split('.').pop();
-      const fileName = `${sindicatoId}/${currentDissidio.nome_dissidio.replace(/\s/g, '_')}_${Date.now()}.${fileExtension}`;
+      // Sanitiza o nome do dissídio para o nome do arquivo
+      const sanitizedName = currentDissidio.nome_dissidio.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      const fileName = `${sindicatoId}/${sanitizedName}_${Date.now()}.${fileExtension}`; // Usa sindicatoId como pasta
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('dissidios_documents')
         .upload(fileName, selectedFile, {
@@ -211,14 +214,24 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="document_upload" className="text-right text-gray-300">Documento PDF</Label>
-                <div className="col-span-3 flex items-center space-x-2">
-                  <Input
-                    id="document_upload"
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileChange}
-                    className="flex-grow bg-gray-800 border-gray-700 text-white file:text-orange-500 file:bg-gray-700 file:border-0 file:mr-4 file:py-2 file:px-4 file:rounded-md hover:file:bg-gray-600"
-                  />
+                <div className="col-span-3 flex flex-col items-center space-y-2">
+                  <div className="relative w-full">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 flex items-center justify-center"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {selectedFile ? "Arquivo Selecionado" : "Selecionar PDF"}
+                    </Button>
+                    <Input
+                      id="document_upload"
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
                   {selectedFile && (
                     <span className="text-sm text-gray-400">{selectedFile.name}</span>
                   )}
@@ -353,19 +366,19 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="bg-gray-900 border-red-600 text-white">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="text-red-500">Tem certeza?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-gray-300">
-                          Esta ação não pode ser desfeita. Isso excluirá permanentemente o dissídio "{dissidio.nome_dissidio}".
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeleteDissidio(dissidio.id)} className="bg-red-600 hover:bg-red-700 text-white">
-                          Deletar
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-red-500">Tem certeza?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-gray-300">
+                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o dissídio "{dissidio.nome_dissidio}".
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteDissidio(dissidio.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                            Deletar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
                   </AlertDialog>
                 </div>
               </CardContent>
