@@ -344,16 +344,16 @@ const WebhookConfigPage = () => {
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0 bg-gray-900 border-orange-500 text-white">
-                    <Command className="bg-gray-900">
-                      <CommandInput placeholder="Buscar campo..." className="bg-gray-800 border-gray-700 text-white" />
+                  <PopoverContent className="w-[300px] p-0 bg-gray-800 border-orange-500 text-white">
+                    <Command className="bg-gray-800">
+                      <CommandInput placeholder="Buscar campo..." className="bg-gray-700 border-gray-600 text-white" />
                       <CommandEmpty className="text-gray-400 p-2">Nenhum campo encontrado.</CommandEmpty>
                       <CommandGroup className="max-h-60 overflow-y-auto">
                         {currentTableAvailableFields.map((field) => (
                           <CommandItem
                             key={field}
                             onSelect={() => handleFieldToggle(field)}
-                            className="flex items-center justify-between cursor-pointer hover:bg-gray-800"
+                            className="flex items-center justify-between cursor-pointer hover:bg-gray-700"
                           >
                             {field}
                             <Check
