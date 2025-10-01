@@ -159,6 +159,21 @@ const WebhookConfigPage = () => {
     });
   };
 
+  const currentTableAvailableFields = currentWebhook.table_name
+    ? tableFields[currentWebhook.table_name] || []
+    : [];
+
+  const areAllFieldsSelected = currentTableAvailableFields.length > 0 &&
+    currentWebhook.selected_fields.length === currentTableAvailableFields.length;
+
+  const handleToggleSelectAllFields = () => {
+    if (areAllFieldsSelected) {
+      setCurrentWebhook((prev) => ({ ...prev, selected_fields: [] }));
+    } else {
+      setCurrentWebhook((prev) => ({ ...prev, selected_fields: currentTableAvailableFields }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -217,10 +232,6 @@ const WebhookConfigPage = () => {
   const getTableLabel = (value: string) => {
     return availableTables.find(t => t.value === value)?.label || value;
   };
-
-  const currentTableAvailableFields = currentWebhook.table_name
-    ? tableFields[currentWebhook.table_name] || []
-    : [];
 
   return (
     <MainLayout>
@@ -349,6 +360,20 @@ const WebhookConfigPage = () => {
                       <CommandInput placeholder="Buscar campo..." className="bg-gray-700 border-gray-600 text-white" />
                       <CommandEmpty className="text-white p-2">Nenhum campo encontrado.</CommandEmpty>
                       <CommandGroup className="max-h-60 overflow-y-auto">
+                        {currentWebhook.table_name && currentTableAvailableFields.length > 0 && (
+                          <CommandItem
+                            onSelect={handleToggleSelectAllFields}
+                            className="flex items-center justify-between cursor-pointer hover:bg-gray-700 text-orange-400 font-semibold"
+                          >
+                            {areAllFieldsSelected ? 'Limpar Seleção' : 'Selecionar Todos'}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                areAllFieldsSelected ? "opacity-100 text-orange-500" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        )}
                         {currentTableAvailableFields.map((field) => (
                           <CommandItem
                             key={field}
