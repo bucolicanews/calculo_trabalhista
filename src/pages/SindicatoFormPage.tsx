@@ -163,7 +163,7 @@ const SindicatoFormPage = () => {
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Button>
           <h1 className="text-4xl font-bold text-orange-500 flex-grow text-center">
-            {isEditing ? 'Editar Sindicato' : 'Novo Sindicato'}
+            {isEditing ? 'Editar Cadastro de Sindicato' : 'Novo Cadastro de Sindicato'}
           </h1>
           <div className="w-24"></div> {/* Placeholder for alignment */}
         </div>

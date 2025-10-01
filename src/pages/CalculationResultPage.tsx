@@ -118,7 +118,7 @@ const CalculationResultPage = () => {
 
     if (insertError) {
       showError('Erro ao salvar resultado do cálculo: ' + insertError.message);
-      console.error('Error saving calculation result:', insertError);
+      console.error('Error saving calculation result:', insertError); // Log mais detalhado
     } else {
       showSuccess('Cálculo preliminar gerado e salvo!');
       fetchCalculationResult(); // Refresh the displayed result
