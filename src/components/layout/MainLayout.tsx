@@ -17,7 +17,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     await supabase.auth.signOut();
   };
 
-  const NavLinks = () => (
+  // Links de navegação para o menu mobile (dentro do Sheet)
+  const MobileNavLinks = () => (
     <>
       <Button variant="ghost" asChild className="text-white hover:text-orange-500">
         <SheetClose asChild>
@@ -53,6 +54,35 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     </>
   );
 
+  // Links de navegação para o menu desktop (fora do Sheet)
+  const DesktopNavLinks = () => (
+    <>
+      <Button variant="ghost" asChild className="text-white hover:text-orange-500">
+        <Link to="/dashboard">
+          <Home className="mr-2 h-4 w-4" /> Dashboard
+        </Link>
+      </Button>
+      <Button variant="ghost" asChild className="text-white hover:text-orange-500">
+        <Link to="/clients">
+          <Users className="mr-2 h-4 w-4" /> Clientes
+        </Link>
+      </Button>
+      <Button variant="ghost" asChild className="text-white hover:text-orange-500">
+        <Link to="/calculations">
+          <Calculator className="mr-2 h-4 w-4" /> Cálculos
+        </Link>
+      </Button>
+      <Button variant="ghost" asChild className="text-white hover:text-orange-500">
+        <Link to="/sindicatos">
+          <Landmark className="mr-2 h-4 w-4" /> Sindicatos
+        </Link>
+      </Button>
+      <Button onClick={handleLogout} variant="destructive" className="bg-orange-500 hover:bg-orange-600 text-white">
+        <LogOut className="mr-2 h-4 w-4" /> Sair
+      </Button>
+    </>
+  );
+
   return (
     <div className="min-h-screen flex flex-col bg-black text-white">
       <header className="bg-gray-900 p-4 flex justify-between items-center border-b border-orange-500">
@@ -62,7 +92,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-4">
-          <NavLinks />
+          <DesktopNavLinks />
         </nav>
 
         {/* Mobile Navigation */}
@@ -77,7 +107,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <SheetContent side="right" className="bg-gray-900 border-l border-orange-500 text-white p-6 flex flex-col">
               <h2 className="text-2xl font-bold text-orange-500 mb-6">Menu</h2>
               <nav className="flex flex-col space-y-4">
-                <NavLinks />
+                <MobileNavLinks />
               </nav>
             </SheetContent>
           </Sheet>
