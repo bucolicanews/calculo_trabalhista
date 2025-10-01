@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { ArrowLeft, CalendarIcon, FileText, Upload } from 'lucide-react'; // Adicionado Upload icon
+import { ArrowLeft, CalendarIcon } from 'lucide-react'; // Removido FileText e Upload
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
@@ -20,7 +20,7 @@ interface SindicatoState {
   data_inicial: string;
   data_final: string;
   mes_convencao: string;
-  url_documento_sindicato: string | null;
+  // url_documento_sindicato: string | null; // Removido
 }
 
 const SindicatoFormPage = () => {
@@ -31,10 +31,10 @@ const SindicatoFormPage = () => {
     data_inicial: '',
     data_final: '',
     mes_convencao: '',
-    url_documento_sindicato: null,
+    // url_documento_sindicato: null, // Removido
   });
   const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // const [selectedFile, setSelectedFile] = useState<File | null>(null); // Removido
   const isEditing = !!id;
 
   useEffect(() => {
@@ -61,7 +61,7 @@ const SindicatoFormPage = () => {
         data_inicial: data.data_inicial || '',
         data_final: data.data_final || '',
         mes_convencao: data.mes_convencao || '',
-        url_documento_sindicato: data.url_documento_sindicato || null,
+        // url_documento_sindicato: data.url_documento_sindicato || null, // Removido
       });
     }
     setLoading(false);
@@ -72,13 +72,13 @@ const SindicatoFormPage = () => {
     setSindicato((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    } else {
-      setSelectedFile(null);
-    }
-  };
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { // Removido
+  //   if (e.target.files && e.target.files.length > 0) {
+  //     setSelectedFile(e.target.files[0]);
+  //   } else {
+  //     setSelectedFile(null);
+  //   }
+  // };
 
   const handleDateChange = (name: string, date: Date | undefined) => {
     setSindicato((prev) => ({
@@ -91,38 +91,37 @@ const SindicatoFormPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    let documentUrl: string | null = sindicato.url_documento_sindicato;
+    // let documentUrl: string | null = sindicato.url_documento_sindicato; // Removido
 
-    if (selectedFile) {
-      const fileExtension = selectedFile.name.split('.').pop();
-      // Sanitiza o nome do sindicato para o nome do arquivo
-      const sanitizedName = sindicato.nome.replace(/[^a-zA-Z0-9_.-]/g, '_');
-      const fileName = `sindicatos/${sanitizedName}_${Date.now()}.${fileExtension}`; // Adiciona prefixo 'sindicatos/' para organização
+    // if (selectedFile) { // Removido
+    //   const fileExtension = selectedFile.name.split('.').pop();
+    //   const sanitizedName = sindicato.nome.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    //   const fileName = `sindicatos/${sanitizedName}_${Date.now()}.${fileExtension}`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('sindicatos_documents')
-        .upload(fileName, selectedFile, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+    //   const { data: uploadData, error: uploadError } = await supabase.storage
+    //     .from('sindicatos_documents')
+    //     .upload(fileName, selectedFile, {
+    //       cacheControl: '3600',
+    //       upsert: false,
+    //     });
 
-      if (uploadError) {
-        showError('Erro ao fazer upload do documento do sindicato: ' + uploadError.message);
-        setLoading(false);
-        return;
-      }
+    //   if (uploadError) {
+    //     showError('Erro ao fazer upload do documento do sindicato: ' + uploadError.message);
+    //     setLoading(false);
+    //     return;
+    //   }
 
-      const { data: publicUrlData } = supabase.storage
-        .from('sindicatos_documents')
-        .getPublicUrl(fileName);
+    //   const { data: publicUrlData } = supabase.storage
+    //     .from('sindicatos_documents')
+    //     .getPublicUrl(fileName);
       
-      documentUrl = publicUrlData.publicUrl;
-      showSuccess('Documento do sindicato enviado com sucesso!');
-    }
+    //   documentUrl = publicUrlData.publicUrl;
+    //   showSuccess('Documento do sindicato enviado com sucesso!');
+    // }
 
     const sindicatoToSave = {
       ...sindicato,
-      url_documento_sindicato: documentUrl,
+      // url_documento_sindicato: documentUrl, // Removido
     };
 
     let response;
@@ -254,11 +253,11 @@ const SindicatoFormPage = () => {
                 />
               </div>
 
-              {/* Upload de Documento do Sindicato */}
-              <div>
+              {/* Upload de Documento do Sindicato - REMOVIDO */}
+              {/* <div>
                 <Label htmlFor="sindicato_document_upload" className="text-gray-300 block mb-2">Documento do Sindicato (PDF)</Label>
                 <div className="flex flex-col items-center space-y-2">
-                  <div className="relative w-full max-w-xs"> {/* max-w-xs para centralizar e limitar largura */}
+                  <div className="relative w-full max-w-xs">
                     <Button
                       type="button"
                       variant="outline"
@@ -284,7 +283,7 @@ const SindicatoFormPage = () => {
                     </a>
                   )}
                 </div>
-              </div>
+              </div> */}
 
               <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
                 {loading ? 'Salvando...' : (isEditing ? 'Atualizar Sindicato' : 'Criar Sindicato')}
