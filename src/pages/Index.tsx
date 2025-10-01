@@ -1,29 +1,24 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 
 const Index = () => {
-  const { session, loading } = useAuth();
+  const { user, loading } = useAuth(); // Corrigido: usando 'user' em vez de 'session'
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading) {
-      if (session) {
+      if (user) { // Corrigido: verificando 'user'
         navigate('/dashboard');
       } else {
         navigate('/auth');
       }
     }
-  }, [session, loading, navigate]);
+  }, [user, loading, navigate]); // Adicionado 'user' às dependências
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 text-orange-500">Carregando...</h1>
-        <p className="text-xl text-gray-400">Redirecionando para a página correta.</p>
-      </div>
-      <MadeWithDyad />
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 text-orange-500">
+      Carregando...
     </div>
   );
 };

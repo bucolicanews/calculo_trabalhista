@@ -1,76 +1,71 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Home, Users, Calculator, Settings, LogOut, Briefcase, Building2, BellRing } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { LogOut, Home, Users, Calculator, Landmark, ChevronDown, Menu } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import { showError } from '@/utils/toast';
 
 interface SidebarProps {
   isMobile?: boolean;
-  onLinkClick?: () => void; // Para fechar o sheet no mobile
+  onLinkClick?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onLinkClick }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
+  const { signOut } = useAuth();
   const location = useLocation();
-  const [isCadastrosOpen, setIsCadastrosOpen] = useState(
-    location.pathname.startsWith('/clients') || location.pathname.startsWith('/sindicatos')
-  );
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    if (onLinkClick) onLinkClick(); // Fecha o menu mobile após logout
+    try {
+      await signOut();
+    } catch (error: any) {
+      showError('Erro ao fazer logout: ' + error.message);
+    }
   };
 
-  const NavLink = ({ to, icon: Icon, label, onClick }: { to: string; icon: React.ElementType; label: string; onClick?: () => void }) => (
-    <Button
-      variant="ghost"
-      className={cn(
-        "w-full justify-start text-white hover:text-orange-500 hover:bg-gray-800",
-        location.pathname === to && "bg-gray-800 text-orange-500"
-      )}
-      asChild
-      onClick={onClick || onLinkClick}
-    >
-      <Link to={to}>
-        <Icon className="mr-2 h-4 w-4" /> {label}
-      </Link>
-    </Button>
-  );
+  const navItems = [
+    { name: 'Dashboard', icon: Home, path: '/dashboard' },
+    { name: 'Clientes', icon: Users, path: '/clients' },
+    { name: 'Cálculos', icon: Calculator, path: '/calculations' },
+    { name: 'Sindicatos', icon: Building2, path: '/sindicatos' },
+    { name: 'Webhooks', icon: BellRing, path: '/webhooks' },
+    // { name: 'Configurações', icon: Settings, path: '/settings' }, // Futuro
+  ];
 
   return (
-    <div className="flex flex-col h-full p-4 space-y-2 bg-gray-900 border-r border-orange-500">
-      <NavLink to="/dashboard" icon={Home} label="Dashboard" />
-
-      <Collapsible open={isCadastrosOpen} onOpenChange={setIsCadastrosOpen} className="w-full">
-        <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            className={cn(
-              "w-full justify-between text-white hover:text-orange-500 hover:bg-gray-800",
-              (location.pathname.startsWith('/clients') || location.pathname.startsWith('/sindicatos')) && "bg-gray-800 text-orange-500"
-            )}
-          >
-            <div className="flex items-center">
-              <Users className="mr-2 h-4 w-4" /> Cadastros
-            </div>
-            <ChevronDown className={cn("h-4 w-4 transition-transform", isCadastrosOpen && "rotate-180")} />
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-1 pl-4 pt-1">
-          <NavLink to="/clients" icon={Users} label="Clientes" />
-          <NavLink to="/sindicatos" icon={Landmark} label="Sindicatos" />
-        </CollapsibleContent>
-      </Collapsible>
-
-      <NavLink to="/calculations" icon={Calculator} label="Cálculos" />
-
-      <div className="mt-auto pt-4"> {/* Empurra o botão de sair para o final */}
-        <Button onClick={handleLogout} variant="destructive" className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-          <LogOut className="mr-2 h-4 w-4" /> Sair
+    <aside className="w-64 bg-gray-900 text-white p-4 flex flex-col h-screen border-r border-gray-700">
+      <div className="text-2xl font-bold text-orange-500 mb-8 text-center">
+        Rescisão App
+      </div>
+      <nav className="flex-grow">
+        <ul className="space-y-2">
+          {navItems.map((item) => (
+            <li key={item.name}>
+              <Link to={item.path} onClick={isMobile && onLinkClick ? onLinkClick : undefined}>
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start text-lg py-6 ${
+                    location.pathname.startsWith(item.path) ? 'bg-orange-500 text-white hover:bg-orange-600' : 'hover:bg-gray-800 text-gray-300'
+                  }`}
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.name}
+                </Button>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <div className="mt-auto pt-4 border-t border-gray-700">
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className="w-full justify-start text-lg py-6 text-red-400 hover:bg-gray-800 hover:text-red-500"
+        >
+          <LogOut className="mr-3 h-5 w-5" />
+          Sair
         </Button>
       </div>
-    </div>
+    </aside>
   );
 };
 
