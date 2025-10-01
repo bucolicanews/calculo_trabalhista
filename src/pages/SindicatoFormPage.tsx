@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { ArrowLeft, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, FileText } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
@@ -21,6 +21,7 @@ interface SindicatoState {
   data_inicial: string;
   data_final: string;
   mes_convencao: string;
+  url_documento_sindicato: string | null; // Novo campo para o documento do sindicato
 }
 
 const SindicatoFormPage = () => {
@@ -31,8 +32,10 @@ const SindicatoFormPage = () => {
     data_inicial: '',
     data_final: '',
     mes_convencao: '',
+    url_documento_sindicato: null,
   });
   const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // Estado para o arquivo do sindicato
   const isEditing = !!id;
 
   useEffect(() => {
@@ -59,6 +62,7 @@ const SindicatoFormPage = () => {
         data_inicial: data.data_inicial || '',
         data_final: data.data_final || '',
         mes_convencao: data.mes_convencao || '',
+        url_documento_sindicato: data.url_documento_sindicato || null,
       });
     }
     setLoading(false);
@@ -67,6 +71,14 @@ const SindicatoFormPage = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setSindicato((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    } else {
+      setSelectedFile(null);
+    }
   };
 
   const handleDateChange = (name: string, date: Date | undefined) => {
@@ -80,16 +92,47 @@ const SindicatoFormPage = () => {
     e.preventDefault();
     setLoading(true);
 
+    let documentUrl: string | null = sindicato.url_documento_sindicato;
+
+    if (selectedFile) {
+      const fileExtension = selectedFile.name.split('.').pop();
+      const fileName = `${sindicato.nome.replace(/\s/g, '_')}_${Date.now()}.${fileExtension}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('sindicatos_documents')
+        .upload(fileName, selectedFile, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        showError('Erro ao fazer upload do documento do sindicato: ' + uploadError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('sindicatos_documents')
+        .getPublicUrl(fileName);
+      
+      documentUrl = publicUrlData.publicUrl;
+      showSuccess('Documento do sindicato enviado com sucesso!');
+    }
+
+    const sindicatoToSave = {
+      ...sindicato,
+      url_documento_sindicato: documentUrl,
+    };
+
     let response;
     if (isEditing) {
       response = await supabase
         .from('tbl_sindicatos')
-        .update(sindicato)
+        .update(sindicatoToSave)
         .eq('id', id);
     } else {
       response = await supabase
         .from('tbl_sindicatos')
-        .insert(sindicato);
+        .insert(sindicatoToSave);
     }
 
     if (response.error) {
@@ -207,6 +250,28 @@ const SindicatoFormPage = () => {
                   className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
                   placeholder="Ex: Janeiro ou 01/2024"
                 />
+              </div>
+
+              {/* Upload de Documento do Sindicato */}
+              <div>
+                <Label htmlFor="sindicato_document_upload" className="text-gray-300">Documento do Sindicato (PDF)</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="sindicato_document_upload"
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="flex-grow bg-gray-800 border-gray-700 text-white file:text-orange-500 file:bg-gray-700 file:border-0 file:mr-4 file:py-2 file:px-4 file:rounded-md hover:file:bg-gray-600"
+                  />
+                  {selectedFile && (
+                    <span className="text-sm text-gray-400">{selectedFile.name}</span>
+                  )}
+                  {!selectedFile && sindicato.url_documento_sindicato && (
+                    <a href={sindicato.url_documento_sindicato} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline flex items-center">
+                      <FileText className="h-4 w-4 mr-1" /> Ver Atual
+                    </a>
+                  )}
+                </div>
               </div>
 
               <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white">

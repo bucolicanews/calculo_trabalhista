@@ -3,7 +3,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -12,9 +12,10 @@ import { format } from 'date-fns';
 interface Sindicato {
   id: string;
   nome: string;
-  data_inicial: string | null; // Novo campo
-  data_final: string | null;   // Novo campo
-  mes_convencao: string | null; // Novo campo
+  data_inicial: string | null;
+  data_final: string | null;
+  mes_convencao: string | null;
+  url_documento_sindicato: string | null; // Novo campo
   created_at: string;
 }
 
@@ -114,7 +115,11 @@ const SindicatoListPage = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   </div>
-                  {/* Removido o link direto para anexo_dissidio_url, pois agora está em tbl_dissidios */}
+                  {sindicato.url_documento_sindicato && (
+                    <a href={sindicato.url_documento_sindicato} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline flex items-center">
+                      <FileText className="h-4 w-4 mr-1" /> Documento
+                    </a>
+                  )}
                 </CardContent>
               </Card>
             ))}
