@@ -32,12 +32,10 @@ const AuthPage = () => {
                   anchorTextHoverColor: '#FF6347',
                   messageBackground: '#222222',
                   messageText: '#FFFFFF',
-                  messageActionText: '#FF4500',
                 },
                 radii: {
                   borderRadiusButton: '0.5rem',
-                  button: '0.5rem',
-                  input: '0.5rem',
+                  inputBorderRadius: '0.5rem', // Corrigido: input -> inputBorderRadius
                 },
               },
             },
@@ -51,7 +49,7 @@ const AuthPage = () => {
                 email_input_placeholder: 'Seu email',
                 password_input_placeholder: 'Sua senha',
                 button_label: 'Entrar',
-                social_auth_button_text: 'Entrar com {{provider}}',
+                social_provider_text: 'Entrar com {{provider}}',
                 link_text: 'Já tem uma conta? Entrar',
               },
               sign_up: {
@@ -60,7 +58,7 @@ const AuthPage = () => {
                 email_input_placeholder: 'Seu email',
                 password_input_placeholder: 'Sua senha',
                 button_label: 'Cadastrar',
-                social_auth_button_text: 'Cadastrar com {{provider}}',
+                social_provider_text: 'Cadastrar com {{provider}}',
                 link_text: 'Não tem uma conta? Cadastrar',
               },
               forgotten_password: {
@@ -76,18 +74,6 @@ const AuthPage = () => {
               },
             },
           }}
-          // Customizing the password input to use our component
-          // This requires a custom component mapping if Auth UI doesn't support it directly
-          // For now, we'll rely on the default Auth UI password input, but the custom component is ready if needed.
-          // If direct component replacement is needed, it would look something like:
-          // components={{
-          //   Input: (props) => {
-          //     if (props.type === 'password') {
-          //       return <PasswordInput {...props} />;
-          //     }
-          //     return <Input {...props} />;
-          //   },
-          // }}
         />
       </div>
       <MadeWithDyad />
