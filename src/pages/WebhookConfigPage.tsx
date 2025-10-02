@@ -66,7 +66,6 @@ interface WebhookFormState {
   webhook_url: string;
 }
 
-// Hardcoded tables and their fields for selection
 const availableTables = [
   { value: 'tbl_clientes', label: 'Clientes' },
   { value: 'tbl_calculos', label: 'Cálculos' },
@@ -74,83 +73,98 @@ const availableTables = [
   { value: 'tbl_resposta_calculo', label: 'Respostas de Cálculo' },
 ];
 
-// Define all available fields, including related ones
-const allAvailableFields: Record<string, Array<{ key: string; label: string; supabasePath: string; isRelation: boolean; relationTable?: string; relationField?: string }>> = {
-  tbl_clientes: [
-    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
-    { key: 'user_id', label: 'ID do Usuário', supabasePath: 'user_id', isRelation: false },
-    { key: 'nome', label: 'Nome/Razão Social', supabasePath: 'nome', isRelation: false },
-    { key: 'cpf', label: 'CPF', supabasePath: 'cpf', isRelation: false },
-    { key: 'cnpj', label: 'CNPJ', supabasePath: 'cnpj', isRelation: false },
-    { key: 'tipo_empregador', label: 'Tipo de Empregador', supabasePath: 'tipo_empregador', isRelation: false },
-    { key: 'responsavel', label: 'Responsável', supabasePath: 'responsavel', isRelation: false },
-    { key: 'cpf_responsavel', label: 'CPF do Responsável', supabasePath: 'cpf_responsavel', isRelation: false },
-    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
-  ],
-  tbl_calculos: [
-    // Fields directly from tbl_calculos
-    { key: 'id', label: 'ID do Cálculo', supabasePath: 'id', isRelation: false },
-    { key: 'nome_funcionario', label: 'Nome do Funcionário', supabasePath: 'nome_funcionario', isRelation: false },
-    { key: 'cpf_funcionario', label: 'CPF do Funcionário', supabasePath: 'cpf_funcionario', isRelation: false },
-    { key: 'funcao_funcionario', label: 'Função do Funcionário', supabasePath: 'funcao_funcionario', isRelation: false },
-    { key: 'inicio_contrato', label: 'Início do Contrato', supabasePath: 'inicio_contrato', isRelation: false },
-    { key: 'fim_contrato', label: 'Fim do Contrato', supabasePath: 'fim_contrato', isRelation: false },
-    { key: 'tipo_aviso', label: 'Tipo de Aviso', supabasePath: 'tipo_aviso', isRelation: false },
-    { key: 'salario_sindicato', label: 'Piso Salarial Sindicato', supabasePath: 'salario_sindicato', isRelation: false },
-    { key: 'obs_sindicato', label: 'Obs. Sindicato', supabasePath: 'obs_sindicato', isRelation: false },
-    { key: 'historia', label: 'História do Contrato', supabasePath: 'historia', isRelation: false },
-    { key: 'ctps_assinada', label: 'CTPS Assinada', supabasePath: 'ctps_assinada', isRelation: false },
-    { key: 'media_descontos', label: 'Média Descontos', supabasePath: 'media_descontos', isRelation: false },
-    { key: 'media_remuneracoes', label: 'Média Remunerações', supabasePath: 'media_remuneracoes', isRelation: false },
-    { key: 'carga_horaria', label: 'Carga Horária', supabasePath: 'carga_horaria', isRelation: false },
-    { key: 'created_at', label: 'Cálculo (Criado Em)', supabasePath: 'created_at', isRelation: false },
+// Define ALL possible fields and their Supabase paths
+// The 'supabasePath' defines how to fetch the data from Supabase.
+// The 'key' defines the key name in the final webhook payload.
+// The 'mainTable' indicates which table this field primarily belongs to for filtering purposes.
+const allAvailableFieldsDefinition = [
+  // tbl_clientes fields
+  { key: 'cliente_id', label: 'Cliente (ID)', supabasePath: 'id', mainTable: 'tbl_clientes' },
+  { key: 'cliente_user_id', label: 'Cliente (ID do Usuário)', supabasePath: 'user_id', mainTable: 'tbl_clientes' },
+  { key: 'cliente_nome', label: 'Cliente (Nome/Razão Social)', supabasePath: 'nome', mainTable: 'tbl_clientes' },
+  { key: 'cliente_cpf', label: 'Cliente (CPF)', supabasePath: 'cpf', mainTable: 'tbl_clientes' },
+  { key: 'cliente_cnpj', label: 'Cliente (CNPJ)', supabasePath: 'cnpj', mainTable: 'tbl_clientes' },
+  { key: 'cliente_tipo_empregador', label: 'Cliente (Tipo de Empregador)', supabasePath: 'tipo_empregador', mainTable: 'tbl_clientes' },
+  { key: 'cliente_responsavel', label: 'Cliente (Responsável)', supabasePath: 'responsavel', mainTable: 'tbl_clientes' },
+  { key: 'cliente_cpf_responsavel', label: 'Cliente (CPF do Responsável)', supabasePath: 'cpf_responsavel', mainTable: 'tbl_clientes' },
+  { key: 'cliente_created_at', label: 'Cliente (Criado Em)', supabasePath: 'created_at', mainTable: 'tbl_clientes' },
 
-    // Fields from tbl_clientes (related via cliente_id)
-    { key: 'cliente_id', label: 'Cliente (ID)', supabasePath: 'cliente_id', isRelation: false },
-    { key: 'cliente_nome', label: 'Cliente (Nome/Razão Social)', supabasePath: 'tbl_clientes(nome)', isRelation: true, relationTable: 'tbl_clientes', relationField: 'nome' },
-    { key: 'cliente_cpf', label: 'Cliente (CPF)', supabasePath: 'tbl_clientes(cpf)', isRelation: true, relationTable: 'tbl_clientes', relationField: 'cpf' },
-    { key: 'cliente_cnpj', label: 'Cliente (CNPJ)', supabasePath: 'tbl_clientes(cnpj)', isRelation: true, relationTable: 'tbl_clientes', relationField: 'cnpj' },
-    { key: 'cliente_tipo_empregador', label: 'Cliente (Tipo Empregador)', supabasePath: 'tbl_clientes(tipo_empregador)', isRelation: true, relationTable: 'tbl_clientes', relationField: 'tipo_empregador' },
-    { key: 'cliente_responsavel', label: 'Cliente (Responsável)', supabasePath: 'tbl_clientes(responsavel)', isRelation: true, relationTable: 'tbl_clientes', relationField: 'responsavel' },
-    { key: 'cliente_cpf_responsavel', label: 'Cliente (CPF Responsável)', supabasePath: 'tbl_clientes(cpf_responsavel)', isRelation: true, relationTable: 'tbl_clientes', relationField: 'cpf_responsavel' },
-    { key: 'cliente_created_at', label: 'Cliente (Criado Em)', supabasePath: 'tbl_clientes(created_at)', isRelation: true, relationTable: 'tbl_clientes', relationField: 'created_at' },
+  // tbl_sindicatos fields
+  { key: 'sindicato_id', label: 'Sindicato (ID)', supabasePath: 'id', mainTable: 'tbl_sindicatos' },
+  { key: 'sindicato_nome', label: 'Sindicato (Nome)', supabasePath: 'nome', mainTable: 'tbl_sindicatos' },
+  { key: 'sindicato_data_inicial', label: 'Sindicato (Data Inicial)', supabasePath: 'data_inicial', mainTable: 'tbl_sindicatos' },
+  { key: 'sindicato_data_final', label: 'Sindicato (Data Final)', supabasePath: 'data_final', mainTable: 'tbl_sindicatos' },
+  { key: 'sindicato_mes_convencao', label: 'Sindicato (Mês Convenção)', supabasePath: 'mes_convencao', mainTable: 'tbl_sindicatos' },
+  { key: 'sindicato_url_documento_sindicato', label: 'Sindicato (URL Documento)', supabasePath: 'url_documento_sindicato', mainTable: 'tbl_sindicatos' },
+  { key: 'sindicato_created_at', label: 'Sindicato (Criado Em)', supabasePath: 'created_at', mainTable: 'tbl_sindicatos' },
 
-    // Fields from tbl_sindicatos (related via sindicato_id)
-    { key: 'sindicato_id', label: 'Sindicato (ID)', supabasePath: 'sindicato_id', isRelation: false },
-    { key: 'sindicato_nome', label: 'Sindicato (Nome)', supabasePath: 'tbl_sindicatos(nome)', isRelation: true, relationTable: 'tbl_sindicatos', relationField: 'nome' },
-    { key: 'sindicato_data_inicial', label: 'Sindicato (Data Inicial)', supabasePath: 'tbl_sindicatos(data_inicial)', isRelation: true, relationTable: 'tbl_sindicatos', relationField: 'data_inicial' },
-    { key: 'sindicato_data_final', label: 'Sindicato (Data Final)', supabasePath: 'tbl_sindicatos(data_final)', isRelation: true, relationTable: 'tbl_sindicatos', relationField: 'data_final' },
-    { key: 'sindicato_mes_convencao', label: 'Sindicato (Mês Convenção)', supabasePath: 'tbl_sindicatos(mes_convencao)', isRelation: true, relationTable: 'tbl_sindicatos', relationField: 'mes_convencao' },
-    { key: 'sindicato_url_documento', label: 'Sindicato (URL Documento)', supabasePath: 'tbl_sindicatos(url_documento_sindicato)', isRelation: true, relationTable: 'tbl_sindicatos', relationField: 'url_documento_sindicato' },
-    { key: 'sindicato_created_at', label: 'Sindicato (Criado Em)', supabasePath: 'tbl_sindicatos(created_at)', isRelation: true, relationTable: 'tbl_sindicatos', relationField: 'created_at' },
-  ],
-  tbl_sindicatos: [
-    { key: 'id', label: 'ID do Sindicato', supabasePath: 'id', isRelation: false },
-    { key: 'nome', label: 'Nome do Sindicato', supabasePath: 'nome', isRelation: false },
-    { key: 'data_inicial', label: 'Data Inicial do Acordo', supabasePath: 'data_inicial', isRelation: false },
-    { key: 'data_final', label: 'Data Final do Acordo', supabasePath: 'data_final', isRelation: false },
-    { key: 'mes_convencao', label: 'Mês da Convenção', supabasePath: 'mes_convencao', isRelation: false },
-    { key: 'url_documento_sindicato', label: 'URL Documento Sindicato', supabasePath: 'url_documento_sindicato', isRelation: false },
-    { key: 'created_at', label: 'Sindicato (Criado Em)', supabasePath: 'created_at', isRelation: false },
+  // tbl_dissidios fields (related to tbl_sindicatos)
+  { key: 'dissidio_id', label: 'Dissídio (ID)', supabasePath: 'tbl_dissidios(id)', mainTable: 'tbl_sindicatos' },
+  { key: 'dissidio_nome_dissidio', label: 'Dissídio (Nome)', supabasePath: 'tbl_dissidios(nome_dissidio)', mainTable: 'tbl_sindicatos' },
+  { key: 'dissidio_url_documento', label: 'Dissídio (URL Documento)', supabasePath: 'tbl_dissidios(url_documento)', mainTable: 'tbl_sindicatos' },
+  { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo)', supabasePath: 'tbl_dissidios(resumo_dissidio)', mainTable: 'tbl_sindicatos' },
+  { key: 'dissidio_data_vigencia_inicial', label: 'Dissídio (Início Vigência)', supabasePath: 'tbl_dissidios(data_vigencia_inicial)', mainTable: 'tbl_sindicatos' },
+  { key: 'dissidio_data_vigencia_final', label: 'Dissídio (Fim Vigência)', supabasePath: 'tbl_dissidios(data_vigencia_final)', mainTable: 'tbl_sindicatos' },
+  { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', supabasePath: 'tbl_dissidios(mes_convencao)', mainTable: 'tbl_sindicatos' },
+  { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', supabasePath: 'tbl_dissidios(created_at)', mainTable: 'tbl_sindicatos' },
 
-    // Fields from tbl_dissidios (related via sindicato_id)
-    { key: 'dissidio_id', label: 'Dissídio (ID)', supabasePath: 'tbl_dissidios(id)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'id' },
-    { key: 'dissidio_nome_dissidio', label: 'Dissídio (Nome)', supabasePath: 'tbl_dissidios(nome_dissidio)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'nome_dissidio' },
-    { key: 'dissidio_url_documento', label: 'Dissídio (URL Documento)', supabasePath: 'tbl_dissidios(url_documento)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'url_documento' },
-    { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo)', supabasePath: 'tbl_dissidios(resumo_dissidio)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'resumo_dissidio' },
-    { key: 'dissidio_data_vigencia_inicial', label: 'Dissídio (Início Vigência)', supabasePath: 'tbl_dissidios(data_vigencia_inicial)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'data_vigencia_inicial' },
-    { key: 'dissidio_data_vigencia_final', label: 'Dissídio (Fim Vigência)', supabasePath: 'tbl_dissidios(data_vigencia_final)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'data_vigencia_final' },
-    { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', supabasePath: 'tbl_dissidios(mes_convencao)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'mes_convencao' },
-    { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', supabasePath: 'tbl_dissidios(created_at)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'created_at' },
-  ],
-  tbl_resposta_calculo: [
-    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
-    { key: 'calculo_id', label: 'ID do Cálculo', supabasePath: 'calculo_id', isRelation: false },
-    { key: 'calculo_nome_funcionario', label: 'Cálculo (Nome Funcionário)', supabasePath: 'tbl_calculos(nome_funcionario)', isRelation: true, relationTable: 'tbl_calculos', relationField: 'nome_funcionario' },
-    { key: 'resposta_ai', label: 'Resposta AI', supabasePath: 'resposta_ai', isRelation: false },
-    { key: 'data_hora', label: 'Data/Hora', supabasePath: 'data_hora', isRelation: false },
-    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
-  ],
+  // tbl_calculos fields
+  { key: 'calculo_id', label: 'Cálculo (ID)', supabasePath: 'id', mainTable: 'tbl_calculos' },
+  { key: 'calculo_nome_funcionario', label: 'Cálculo (Nome Funcionário)', supabasePath: 'nome_funcionario', mainTable: 'tbl_calculos' },
+  { key: 'calculo_cpf_funcionario', label: 'Cálculo (CPF Funcionário)', supabasePath: 'cpf_funcionario', mainTable: 'tbl_calculos' },
+  { key: 'calculo_funcao_funcionario', label: 'Cálculo (Função Funcionário)', supabasePath: 'funcao_funcionario', mainTable: 'tbl_calculos' },
+  { key: 'calculo_inicio_contrato', label: 'Cálculo (Início Contrato)', supabasePath: 'inicio_contrato', mainTable: 'tbl_calculos' },
+  { key: 'calculo_fim_contrato', label: 'Cálculo (Fim Contrato)', supabasePath: 'fim_contrato', mainTable: 'tbl_calculos' },
+  { key: 'calculo_tipo_aviso', label: 'Cálculo (Tipo de Aviso)', supabasePath: 'tipo_aviso', mainTable: 'tbl_calculos' },
+  { key: 'calculo_salario_sindicato', label: 'Cálculo (Piso Salarial Sindicato)', supabasePath: 'salario_sindicato', mainTable: 'tbl_calculos' },
+  { key: 'calculo_obs_sindicato', label: 'Cálculo (Obs. Sindicato)', supabasePath: 'obs_sindicato', mainTable: 'tbl_calculos' },
+  { key: 'calculo_historia', label: 'Cálculo (História do Contrato)', supabasePath: 'historia', mainTable: 'tbl_calculos' },
+  { key: 'calculo_ctps_assinada', label: 'Cálculo (CTPS Assinada)', supabasePath: 'ctps_assinada', mainTable: 'tbl_calculos' },
+  { key: 'calculo_media_descontos', label: 'Cálculo (Média Descontos)', supabasePath: 'media_descontos', mainTable: 'tbl_calculos' },
+  { key: 'calculo_media_remuneracoes', label: 'Cálculo (Média Remunerações)', supabasePath: 'media_remuneracoes', mainTable: 'tbl_calculos' },
+  { key: 'calculo_carga_horaria', label: 'Cálculo (Carga Horária)', supabasePath: 'carga_horaria', mainTable: 'tbl_calculos' },
+  { key: 'calculo_created_at', label: 'Cálculo (Criado Em)', supabasePath: 'created_at', mainTable: 'tbl_calculos' },
+
+  // tbl_resposta_calculo fields
+  { key: 'resposta_id', label: 'Resposta Cálculo (ID)', supabasePath: 'id', mainTable: 'tbl_resposta_calculo' },
+  { key: 'resposta_calculo_id', label: 'Resposta Cálculo (ID do Cálculo)', supabasePath: 'calculo_id', mainTable: 'tbl_resposta_calculo' },
+  { key: 'resposta_ai', label: 'Resposta Cálculo (Resposta AI)', supabasePath: 'resposta_ai', mainTable: 'tbl_resposta_calculo' },
+  { key: 'resposta_data_hora', label: 'Resposta Cálculo (Data/Hora)', supabasePath: 'data_hora', mainTable: 'tbl_resposta_calculo' },
+  { key: 'resposta_created_at', label: 'Resposta Cálculo (Criado Em)', supabasePath: 'created_at', mainTable: 'tbl_resposta_calculo' },
+];
+
+// Helper to get fields relevant to a specific main table, including its relations
+const getFieldsForMainTable = (mainTableName: string) => {
+  const fields: typeof allAvailableFieldsDefinition = [];
+
+  // Add direct fields of the main table
+  allAvailableFieldsDefinition.filter(f => f.mainTable === mainTableName && !f.supabasePath.includes('(')).forEach(f => fields.push(f));
+
+  // Add fields from directly related tables and their nested relations
+  if (mainTableName === 'tbl_calculos') {
+    // Client fields via tbl_clientes
+    allAvailableFieldsDefinition.filter(f => f.mainTable === 'tbl_clientes').forEach(f => fields.push({ ...f, supabasePath: `tbl_clientes(${f.supabasePath})` }));
+    // Sindicato fields via tbl_sindicatos
+    allAvailableFieldsDefinition.filter(f => f.mainTable === 'tbl_sindicatos' && !f.key.startsWith('dissidio_')).forEach(f => fields.push({ ...f, supabasePath: `tbl_sindicatos(${f.supabasePath})` }));
+    // Dissidio fields via tbl_sindicatos
+    allAvailableFieldsDefinition.filter(f => f.mainTable === 'tbl_sindicatos' && f.key.startsWith('dissidio_')).forEach(f => fields.push({ ...f, supabasePath: `tbl_sindicatos(${f.supabasePath})` }));
+  } else if (mainTableName === 'tbl_sindicatos') {
+    // Dissidio fields directly related to sindicato
+    allAvailableFieldsDefinition.filter(f => f.mainTable === 'tbl_sindicatos' && f.key.startsWith('dissidio_')).forEach(f => fields.push(f));
+  } else if (mainTableName === 'tbl_resposta_calculo') {
+    // Calculation fields via tbl_calculos
+    allAvailableFieldsDefinition.filter(f => f.mainTable === 'tbl_calculos' && !f.key.startsWith('cliente_') && !f.key.startsWith('sindicato_')).forEach(f => fields.push({ ...f, supabasePath: `tbl_calculos(${f.supabasePath})` }));
+    // Client fields via tbl_calculos -> tbl_clientes
+    allAvailableFieldsDefinition.filter(f => f.mainTable === 'tbl_clientes').forEach(f => fields.push({ ...f, supabasePath: `tbl_calculos(tbl_clientes(${f.supabasePath}))` }));
+    // Sindicato fields via tbl_calculos -> tbl_sindicatos
+    allAvailableFieldsDefinition.filter(f => f.mainTable === 'tbl_sindicatos' && !f.key.startsWith('dissidio_')).forEach(f => fields.push({ ...f, supabasePath: `tbl_calculos(tbl_sindicatos(${f.supabasePath}))` }));
+    // Dissidio fields via tbl_calculos -> tbl_sindicatos -> tbl_dissidios
+    allAvailableFieldsDefinition.filter(f => f.mainTable === 'tbl_sindicatos' && f.key.startsWith('dissidio_')).forEach(f => fields.push({ ...f, supabasePath: `tbl_calculos(tbl_sindicatos(${f.supabasePath}))` }));
+  }
+
+  // Ensure unique keys and sort for better UX
+  const uniqueFields = Array.from(new Map(fields.map(item => [item.key, item])).values());
+  return uniqueFields.sort((a, b) => a.label.localeCompare(b.label));
 };
 
 const WebhookConfigPage = () => {
@@ -228,7 +242,7 @@ const WebhookConfigPage = () => {
   };
 
   const currentTableAvailableFields = currentWebhook.table_name
-    ? allAvailableFields[currentWebhook.table_name] || []
+    ? getFieldsForMainTable(currentWebhook.table_name)
     : [];
 
   const areAllFieldsSelected = currentTableAvailableFields.length > 0 &&
@@ -303,7 +317,9 @@ const WebhookConfigPage = () => {
 
   // Helper to get the field label for display in badges
   const getFieldLabel = (table: string, fieldKey: string) => {
-    return allAvailableFields[table]?.find(f => f.key === fieldKey)?.label || fieldKey;
+    // Find the field definition based on the key and the current main table context
+    const fieldDef = getFieldsForMainTable(table).find(f => f.key === fieldKey);
+    return fieldDef?.label || fieldKey;
   };
 
   return (
