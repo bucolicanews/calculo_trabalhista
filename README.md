@@ -12,124 +12,263 @@ Criar um aplicativo web utilizando React e Supabase para permitir que usuários 
 ## 3. Estrutura do Banco de Dados (Supabase Schema)
 O banco de dados deve ser modelado com as seguintes tabelas e relacionamentos. Todas as tabelas devem ter a coluna padrão `created_at` (TIMESTAMP WITH TIME ZONE DEFAULT NOW()).
 
+### Tabela: `public.profiles`
+Função: Armazenar informações de perfil do usuário.
+```sql
+-- Create profiles table
+CREATE TABLE public.profiles (
+  id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  first_name TEXT,
+  last_name TEXT,
+  avatar_url TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (id)
+);
+
+-- Enable RLS (REQUIRED for security)
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Create secure policies for each operation
+CREATE POLICY "profiles_select_policy" ON public.profiles
+FOR SELECT TO authenticated USING (auth.uid() = id);
+
+CREATE POLICY "profiles_insert_policy" ON public.profiles
+FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "profiles_update_policy" ON public.profiles
+FOR UPDATE TO authenticated USING (auth.uid() = id);
+
+CREATE POLICY "profiles_delete_policy" ON public.profiles
+FOR DELETE TO authenticated USING (auth.uid() = id);
+```
+
 ### Tabela: `tbl_clientes`
 Função: Armazenar informações do empregador/cliente que está solicitando o cálculo.
-| Campo | Tipo de Dado | Descrição |
-| :--- | :--- | :--- |
-| id | UUID (PK) | Chave primária. |
-| user_id | UUID (FK) | ID do usuário autenticado responsável por este cliente. |
-| nome | TEXT | Nome/Razão Social do cliente/empregador. |
-| cpf | TEXT | CPF do empregador (se for pessoa física). |
-| cnpj | TEXT | CNPJ do empregador (se for pessoa jurídica). |
-| tipo_empregador | ENUM | Lista de opções (e.g., 'Empresa', 'Empregador Doméstico', 'Pessoa Física', 'Produtor Rural', 'Outros'). |
-| responsavel | TEXT | Nome do responsável pelo cliente/contato. |
-| cpf_responsavel | TEXT | CPF do responsável/contato. |
+```sql
+-- Create table
+CREATE TABLE tbl_clientes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  nome TEXT NOT NULL,
+  cpf TEXT,
+  cnpj TEXT,
+  tipo_empregador TEXT NOT NULL, -- Assuming ENUM is handled by text for simplicity in SQL, or define ENUM type
+  responsavel TEXT,
+  cpf_responsavel TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-**RLS Policies para `tbl_clientes`:**
-*   **Enable RLS**: ON
-*   **Policy for SELECT**: `(user_id = auth.uid())`
-*   **Policy for INSERT**: `(user_id = auth.uid())`
-*   **Policy for UPDATE**: `(user_id = auth.uid())`
-*   **Policy for DELETE**: `(user_id = auth.uid())`
+-- Enable RLS (REQUIRED)
+ALTER TABLE tbl_clientes ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for tbl_clientes
+CREATE POLICY "Clientes podem ver apenas seus próprios clientes" ON tbl_clientes
+FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+CREATE POLICY "Clientes podem inserir seus próprios clientes" ON tbl_clientes
+FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Clientes podem atualizar seus próprios clientes" ON tbl_clientes
+FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+
+CREATE POLICY "Clientes podem deletar seus próprios clientes" ON tbl_clientes
+FOR DELETE TO authenticated USING (auth.uid() = user_id);
+```
 
 ### Tabela: `tbl_sindicatos`
 Função: Armazenar informações sindicais que podem afetar o cálculo.
-| Campo | Tipo de Dado | Descrição |
-| :--- | :--- | :--- |
-| id | UUID (PK) | Chave primária. |
-| nome | TEXT | Nome do Sindicato (e.g., "SINTRACON"). |
-| data_inicial | DATE | Data de início da vigência do acordo/dissídio. |
-| data_final | DATE | Data de fim da vigência do acordo/dissídio. |
-| mes_convencao | TEXT | Mês da convenção (Ex: Janeiro, 01/2024). |
+```sql
+-- Create table
+CREATE TABLE tbl_sindicatos (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  nome TEXT NOT NULL,
+  data_inicial DATE,
+  data_final DATE,
+  mes_convencao TEXT,
+  url_documento_sindicato TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-**RLS Policies para `tbl_sindicatos`:**
-*   **Enable RLS**: ON
-*   **Policy for SELECT**: `(true)` (Sindicatos são públicos para todos os usuários)
-*   **Policy for INSERT**: `(auth.uid() IS NOT NULL)` (Apenas usuários autenticados podem adicionar)
-*   **Policy for UPDATE**: `(auth.uid() IS NOT NULL)`
-*   **Policy for DELETE**: `(auth.uid() IS NOT NULL)`
+-- Enable RLS (REQUIRED)
+ALTER TABLE tbl_sindicatos ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for tbl_sindicatos
+CREATE POLICY "Sindicatos podem ser lidos por autenticados" ON tbl_sindicatos
+FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Sindicatos podem ser inseridos por autenticados" ON tbl_sindicatos
+FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Sindicatos podem ser atualizados por autenticados" ON tbl_sindicatos
+FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Sindicatos podem ser deletados por autenticados" ON tbl_sindicatos
+FOR DELETE TO authenticated USING (auth.uid() IS NOT NULL);
+```
 
 ### Tabela: `tbl_dissidios`
 Função: Armazenar os anexos de dissídios para cada sindicato.
-| Campo | Tipo de Dado | Descrição |
-| :--- | :--- | :--- |
-| id | UUID (PK) | Chave primária. |
-| sindicato_id | UUID (FK) | Chave estrangeira para `tbl_sindicatos`. |
-| nome_dissidio | TEXT | Nome do dissídio. |
-| url_documento | TEXT | URL para o anexo do dissídio (PDF, etc.) no Supabase Storage. |
-| resumo_dissidio | TEXT | Resumo das cláusulas relevantes do dissídio. |
-| data_vigencia_inicial | DATE | Data de início da vigência do dissídio. |
-| data_vigencia_final | DATE | Data de fim da vigência do dissídio. |
-| mes_convencao | TEXT | Mês da convenção do dissídio. |
+```sql
+-- Create table
+CREATE TABLE tbl_dissidios (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sindicato_id UUID REFERENCES tbl_sindicatos(id) ON DELETE CASCADE NOT NULL,
+  nome_dissidio TEXT NOT NULL,
+  url_documento TEXT,
+  resumo_dissidio TEXT,
+  data_vigencia_inicial DATE,
+  data_vigencia_final DATE,
+  mes_convencao TEXT,
+  texto_extraido TEXT,
+  resumo_ai TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-**RLS Policies para `tbl_dissidios`:**
-*   **Enable RLS**: ON
-*   **Policy for SELECT**: `(true)` (Dissídios são públicos para todos os usuários)
-*   **Policy for INSERT**: `(auth.uid() IS NOT NULL)` (Apenas usuários autenticados podem adicionar)
-*   **Policy for UPDATE**: `(auth.uid() IS NOT NULL)`
-*   **Policy for DELETE**: `(auth.uid() IS NOT NULL)`
+-- Enable RLS (REQUIRED)
+ALTER TABLE tbl_dissidios ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for tbl_dissidios
+CREATE POLICY "Dissidios podem ser lidos por autenticados" ON tbl_dissidios
+FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Dissidios podem ser inseridos por autenticados" ON tbl_dissidios
+FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Dissidios podem ser atualizados por autenticados" ON tbl_dissidios
+FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Dissidios podem ser deletados por autenticados" ON tbl_dissidios
+FOR DELETE TO authenticated USING (auth.uid() IS NOT NULL);
+```
 
 ### Tabela: `tbl_calculos`
 Função: Armazenar os dados específicos de um cálculo de rescisão de um funcionário.
-| Campo | Tipo de Dado | Descrição |
-| :--- | :--- | :--- |
-| id | UUID (PK) | Chave primária. |
-| cliente_id | UUID (FK) | Chave estrangeira para `tbl_clientes`. |
-| sindicato_id | UUID (FK) | Chave estrangeira para `tbl_sindicatos`. |
-| nome_funcionario | TEXT | Nome completo do funcionário. |
-| cpf_funcionario | TEXT | CPF do funcionário. |
-| funcao_funcionario | TEXT | Cargo/Função exercida. |
-| inicio_contrato | DATE | Data de admissão. |
-| fim_contrato | DATE | Data de demissão (ou projeção do aviso prévio). |
-| tipo_aviso | ENUM | Tipo de aviso (e.g., 'Trabalhado pelo Empregado', 'Trabalhado pelo Empregador', 'Indenizado pelo Empregador', 'Indenizado pelo Empregado'). |
-| salario_sindicato | NUMERIC | Piso salarial da categoria (se aplicável). |
-| obs_sindicato | TEXT | Observações relevantes sobre o sindicato/CCT. |
-| historia | TEXT | Histórico do contrato/motivo da rescisão (texto longo). |
-| ctps_assinada | BOOLEAN | Indica se a CTPS foi devidamente assinada. |
-| media_descontos | NUMERIC | Média dos descontos dos últimos 12 meses (para médias). |
-| media_remuneracoes | NUMERIC | Média das remunerações variáveis dos últimos 12 meses (para médias - e.g., horas extras, comissões). |
-| carga_horaria | TEXT | Descrição da jornada de trabalho (e.g., "44 horas semanais, segunda a sexta"). |
+```sql
+-- Create table
+CREATE TABLE tbl_calculos (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  cliente_id UUID REFERENCES tbl_clientes(id) ON DELETE CASCADE NOT NULL,
+  sindicato_id UUID REFERENCES tbl_sindicatos(id) ON DELETE SET NULL, -- Changed to SET NULL as per common practice if sindicato is optional
+  nome_funcionario TEXT NOT NULL,
+  cpf_funcionario TEXT,
+  funcao_funcionario TEXT,
+  inicio_contrato DATE NOT NULL,
+  fim_contrato DATE NOT NULL,
+  tipo_aviso TEXT NOT NULL, -- Assuming ENUM is handled by text
+  salario_sindicato NUMERIC DEFAULT 0,
+  obs_sindicato TEXT,
+  historia TEXT,
+  ctps_assinada BOOLEAN DEFAULT FALSE,
+  media_descontos NUMERIC DEFAULT 0,
+  media_remuneracoes NUMERIC DEFAULT 0,
+  carga_horaria TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-**RLS Policies para `tbl_calculos`:**
-*   **Enable RLS**: ON
-*   **Policy for SELECT**: `(EXISTS ( SELECT 1 FROM tbl_clientes WHERE (tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid())))`
-*   **Policy for INSERT**: `(EXISTS ( SELECT 1 FROM tbl_clientes WHERE (tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid())))`
-*   **Policy for UPDATE**: `(EXISTS ( SELECT 1 FROM tbl_clientes WHERE (tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid())))`
-*   **Policy for DELETE**: `(EXISTS ( SELECT 1 FROM tbl_clientes WHERE (tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid())))`
+-- Enable RLS (REQUIRED)
+ALTER TABLE tbl_calculos ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for tbl_calculos
+CREATE POLICY "Calculos podem ser vistos apenas pelos donos dos clientes" ON tbl_calculos
+FOR SELECT TO authenticated USING (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid()))));
+
+CREATE POLICY "Calculos podem ser inseridos apenas pelos donos dos clientes" ON tbl_calculos
+FOR INSERT TO authenticated WITH CHECK (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid()))));
+
+CREATE POLICY "Calculos podem ser atualizados apenas pelos donos dos clientes" ON tbl_calculos
+FOR UPDATE TO authenticated USING (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid()))));
+
+CREATE POLICY "Calculos podem ser deletados apenas pelos donos dos clientes" ON tbl_calculos
+FOR DELETE TO authenticated USING (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid()))));
+```
 
 ### Tabela: `tbl_resposta_calculo`
 Função: Armazenar a resposta gerada pela lógica de cálculo ou por um modelo de IA.
-| Campo | Tipo de Dado | Descrição |
-| :--- | :--- | :--- |
-| id | UUID (PK) | Chave primária. |
-| calculo_id | UUID (FK) | Chave estrangeira para `tbl_calculos`. |
-| resposta_ai | TEXT | O texto/JSON contendo a discriminação do cálculo (detalhes das verbas, bases de cálculo, etc.). |
-| data_hora | TIMESTAMP | Data e hora da geração da resposta. |
+```sql
+-- Create table
+CREATE TABLE tbl_resposta_calculo (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  calculo_id UUID REFERENCES tbl_calculos(id) ON DELETE CASCADE NOT NULL,
+  resposta_ai TEXT,
+  data_hora TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-**RLS Policies para `tbl_resposta_calculo`:**
-*   **Enable RLS**: ON
-*   **Policy for SELECT**: `(EXISTS ( SELECT 1 FROM tbl_calculos WHERE (tbl_calculos.id = tbl_resposta_calculo.calculo_id) AND (EXISTS ( SELECT 1 FROM tbl_clientes WHERE (tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid())))))`
-*   **Policy for INSERT**: `(EXISTS ( SELECT 1 FROM tbl_calculos WHERE (tbl_calculos.id = tbl_resposta_calculo.calculo_id) AND (EXISTS ( SELECT 1 FROM tbl_clientes WHERE (tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid())))))`
-*   **Policy for UPDATE**: `(EXISTS ( SELECT 1 FROM tbl_calculos WHERE (tbl_calculos.id = tbl_resposta_calculo.calculo_id) AND (EXISTS ( SELECT 1 FROM tbl_clientes WHERE (tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid())))))`
-*   **Policy for DELETE**: `(EXISTS ( SELECT 1 FROM tbl_calculos WHERE (tbl_calculos.id = tbl_resposta_calculo.calculo_id) AND (EXISTS ( SELECT 1 FROM tbl_clientes WHERE (tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid())))))`
+-- Enable RLS (REQUIRED)
+ALTER TABLE tbl_resposta_calculo ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for tbl_resposta_calculo
+CREATE POLICY "Respostas de calculo podem ser vistas apenas pelos donos dos ca" ON tbl_resposta_calculo
+FOR SELECT TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_resposta_calculo.calculo_id) AND (cl.user_id = auth.uid()))));
+
+CREATE POLICY "Respostas de calculo podem ser inseridas apenas pelos donos dos" ON tbl_resposta_calculo
+FOR INSERT TO authenticated WITH CHECK (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_resposta_calculo.calculo_id) AND (cl.user_id = auth.uid()))));
+
+CREATE POLICY "Respostas de calculo podem ser atualizadas apenas pelos donos d" ON tbl_resposta_calculo
+FOR UPDATE TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_resposta_calculo.calculo_id) AND (cl.user_id = auth.uid()))));
+
+CREATE POLICY "Respostas de calculo podem ser deletadas apenas pelos donos dos" ON tbl_resposta_calculo
+FOR DELETE TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_resposta_calculo.calculo_id) AND (cl.user_id = auth.uid()))));
+```
 
 ### Tabela: `tbl_webhook_configs`
 Função: Armazenar as configurações de webhooks para cada usuário.
-| Campo | Tipo de Dado | Descrição |
-| :--- | :--- | :--- |
-| id | UUID (PK) | Chave primária. |
-| user_id | UUID (FK) | ID do usuário autenticado responsável por esta configuração. |
-| title | TEXT | Título descritivo para o webhook (ex: 'Webhook para Clientes Salesforce'). |
-| table_name | TEXT | Nome da tabela que o webhook monitora (e.g., 'tbl_clientes' ou 'all_tables'). |
-| selected_fields | TEXT[] | Array de nomes dos campos selecionados para enviar. |
-| webhook_url | TEXT | URL do endpoint do webhook. |
+```sql
+-- Create table
+CREATE TABLE tbl_webhook_configs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title TEXT,
+  table_name TEXT NOT NULL,
+  selected_fields TEXT[] NOT NULL,
+  webhook_url TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-**RLS Policies para `tbl_webhook_configs`:**
-*   **Enable RLS**: ON
-*   **Policy for SELECT**: `(user_id = auth.uid())`
-*   **Policy for INSERT**: `(user_id = auth.uid())`
-*   **Policy for UPDATE**: `(user_id = auth.uid())`
-*   **Policy for DELETE**: `(user_id = auth.uid())`
+-- Enable RLS (REQUIRED)
+ALTER TABLE tbl_webhook_configs ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for tbl_webhook_configs
+CREATE POLICY "Users can only see their own webhook configs" ON tbl_webhook_configs
+FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can only insert their own webhook configs" ON tbl_webhook_configs
+FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can only update their own webhook configs" ON tbl_webhook_configs
+FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can only delete their own webhook configs" ON tbl_webhook_configs
+FOR DELETE TO authenticated USING (auth.uid() = user_id);
+```
+
+### Funções SQL (PostgreSQL)
+
+#### Função: `public.handle_new_user()`
+Função para criar automaticamente um perfil público para novos usuários autenticados.
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE PLPGSQL
+SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, first_name, last_name)
+  VALUES (
+    new.id,
+    new.raw_user_meta_data ->> 'first_name',
+    new.raw_user_meta_data ->> 'last_name'
+  );
+  RETURN new;
+END;
+$$;
+
+-- Trigger the function on user creation
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+```
 
 ## 4. Requisitos de Frontend (React)
 
@@ -197,3 +336,75 @@ Função: Armazenar as configurações de webhooks para cada usuário.
 *   `src/utils/toast.ts`: Funções para exibir notificações de sucesso, erro e carregamento.
 *   `src/utils/supabaseDataExtraction.ts`: Função auxiliar para extrair valores de objetos Supabase aninhados.
 *   `src/utils/webhookFields.ts`: Definições de campos e funções para construir caminhos de seleção do Supabase e filtrar campos para exibição na UI.
+
+## 5. Edge Functions (Supabase)
+
+### Função: `supabase/functions/store-ai-summary/index.ts`
+Função Edge para receber e armazenar o resumo de IA e texto extraído de documentos de dissídios.
+```typescript
+/// <reference lib="deno.ns" />
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { dissidioId, resumo, url_documento, texto_extraido } = await req.json();
+
+    if (!dissidioId || !resumo) {
+      return new Response(JSON.stringify({ error: 'Missing dissidioId or resumo' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for server-side operations
+    );
+
+    const updatePayload: { resumo_ai: string; url_documento?: string; texto_extraido?: string } = {
+      resumo_ai: resumo,
+    };
+
+    if (url_documento) {
+      updatePayload.url_documento = url_documento;
+    }
+    if (texto_extraido) {
+      updatePayload.texto_extraido = texto_extraido;
+    }
+
+    const { data, error } = await supabaseClient
+      .from('tbl_dissidios')
+      .update(updatePayload)
+      .eq('id', dissidioId);
+
+    if (error) {
+      console.error('Error updating dissidio with AI summary/extracted text:', error);
+      return new Response(JSON.stringify({ error: 'Failed to update dissidio with AI summary/extracted text', details: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    return new Response(JSON.stringify({ message: 'AI summary and other fields received and updated successfully', dissidioId }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
+
+  } catch (error) {
+    console.error('Error in store-ai-summary Edge Function:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    });
+  }
+});
