@@ -47,7 +47,7 @@ const DissidioWebhookSender: React.FC<DissidioWebhookSenderProps> = ({
       .from('tbl_webhook_configs')
       .select('*')
       .eq('user_id', user?.id)
-      .or('table_name.eq.tbl_dissidios,table_name.eq.all_tables');
+      .or('table_name.eq.tbl_dissidios,table_name.eq.tbl_sindicatos,table_name.eq.all_tables'); // Modificado para incluir 'tbl_sindicatos'
 
     if (error) {
       showError('Erro ao carregar webhooks disponíveis: ' + error.message);

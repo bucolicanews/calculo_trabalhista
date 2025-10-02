@@ -254,8 +254,8 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
           continue; // Skip to next webhook config
         }
 
-        // Explicitly cast specificDissidioData to Dissidio after null check
-        const dissidioRecord: Dissidio = specificDissidioData as Dissidio;
+        // Explicitly cast specificDissidioData to unknown first, then to Dissidio
+        const dissidioRecord: Dissidio = specificDissidioData as unknown as Dissidio;
 
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach(fieldKey => {
