@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { FieldDefinition, getFieldsForMainTable } from '@/utils/webhookFields';
+import { FieldDefinition, getDisplayFieldsForTable, allAvailableFieldsDefinition } from '@/utils/webhookFields'; // Importar getDisplayFieldsForTable e allAvailableFieldsDefinition
 
 export interface WebhookConfig {
   id: string;
@@ -79,7 +79,7 @@ export const useWebhookManagement = () => {
 
   const handleTableChange = (value: string) => {
     setCurrentWebhook((prev) => {
-      console.log(`[useWebhookManagement] Table changed to: ${value}, resetting selected_fields.`); // Log para depuração
+      console.log(`[useWebhookManagement] Table changed to: ${value}, resetting selected_fields.`);
       return {
         ...prev,
         table_name: value,
@@ -98,7 +98,7 @@ export const useWebhookManagement = () => {
   };
 
   const currentTableAvailableFields: FieldDefinition[] = currentWebhook.table_name
-    ? getFieldsForMainTable(currentWebhook.table_name)
+    ? getDisplayFieldsForTable(currentWebhook.table_name) // Usar getDisplayFieldsForTable
     : [];
 
   const areAllFieldsSelected = currentTableAvailableFields.length > 0 &&
@@ -168,7 +168,8 @@ export const useWebhookManagement = () => {
   };
 
   const getFieldLabel = (table: string, fieldKey: string) => {
-    const fieldDef = getFieldsForMainTable(table).find(f => f.key === fieldKey);
+    // Usar allAvailableFieldsDefinition para encontrar o rótulo, pois ele contém todos os campos
+    const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
     return fieldDef?.label || fieldKey;
   };
 

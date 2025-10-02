@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { allAvailableFieldsDefinition, getFieldsForMainTable } from '@/utils/webhookFields'; // Importação corrigida
+import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webhookFields'; // Importar allAvailableFieldsDefinition e getFullSupabasePath
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 
 interface Calculation {
@@ -111,14 +111,13 @@ const CalculationListPage = () => {
         // Always include 'id' of the main table for filtering
         selectParts.add('id');
 
-        // Get the full list of available fields for 'tbl_calculos' context
-        const fieldsForCalculos = getFieldsForMainTable('tbl_calculos');
-
-        // Map selected field keys to their Supabase paths
+        // Map selected field keys to their Supabase paths using allAvailableFieldsDefinition
+        // and getFullSupabasePath for the 'tbl_calculos' context.
         config.selected_fields.forEach(fieldKey => {
-          const fieldDef = fieldsForCalculos.find(f => f.key === fieldKey);
-          if (fieldDef && fieldDef.supabasePath) {
-            selectParts.add(fieldDef.supabasePath);
+          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
+          if (fieldDef) {
+            const supabasePath = getFullSupabasePath('tbl_calculos', fieldDef);
+            selectParts.add(supabasePath);
           }
         });
 
@@ -145,10 +144,11 @@ const CalculationListPage = () => {
         // Construct the payload using the generic extractValueFromPath
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach(fieldKey => {
-          // Use fieldsForCalculos to find the field definition, which already has the correct supabasePath
-          const fieldDef = fieldsForCalculos.find(f => f.key === fieldKey);
-          if (fieldDef && fieldDef.supabasePath) {
-            payload[fieldDef.key] = extractValueFromPath(specificCalculationData, fieldDef.supabasePath);
+          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
+          if (fieldDef) {
+            // Use getFullSupabasePath again to ensure the correct path for extraction
+            const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
+            payload[fieldDef.key] = extractValueFromPath(specificCalculationData, extractionPath);
           }
         });
 
