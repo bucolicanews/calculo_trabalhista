@@ -6,14 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload, RefreshCw } from 'lucide-react'; // Removido FileSearch
+import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload, RefreshCw, Send } from 'lucide-react'; // Adicionado Send
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-
+import DissidioWebhookSender from './dissidios/DissidioWebhookSender'; // Caminho corrigido para relativo
 
 interface Dissidio {
   id: string;
@@ -39,7 +39,9 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentDissidio, setCurrentDissidio] = useState<Partial<Dissidio> | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isProcessingN8n, setIsProcessingN8n] = useState(false); // Novo estado para processamento no n8n
+  const [isSendingWebhook, setIsSendingWebhook] = useState(false); // Estado para o envio de webhook
+  const [isDissidioWebhookSenderOpen, setIsDissidioWebhookSenderOpen] = useState(false); // Estado para o modal de seleção de webhook
+  const [currentDissidioForWebhook, setCurrentDissidioForWebhook] = useState<Dissidio | null>(null); // Dissídio a ser enviado
   const isEditingDissidio = !!currentDissidio?.id;
 
   useEffect(() => {
@@ -105,93 +107,67 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
     }
 
     setLoading(true);
+    let fileUrl: string | null = currentDissidio.url_documento || null;
+    let dissidioIdToUpdate = currentDissidio.id;
 
     if (selectedFile) {
-      // Se um arquivo foi selecionado, enviar para o n8n para processamento completo
-      const n8nWebhookUrl = "YOUR_N8N_WEBHOOK_URL_HERE"; // <<< SUBSTITUA PELA SUA URL DO WEBHOOK DO N8N
+      const fileExtension = selectedFile.name.split('.').pop();
+      const sanitizedName = currentDissidio.nome_dissidio.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      const fileName = `${sindicatoId}/${sanitizedName}_${Date.now()}.${fileExtension}`;
 
-      if (n8nWebhookUrl === "YOUR_N8N_WEBHOOK_URL_HERE") {
-        showError("Por favor, configure a URL do webhook do n8n no DissidioManager.tsx");
-        setLoading(false);
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('pdfFile', selectedFile);
-      formData.append('sindicato_id', sindicatoId);
-      if (isEditingDissidio && currentDissidio?.id) {
-        formData.append('dissidio_id', currentDissidio.id);
-      }
-      formData.append('nome_dissidio', currentDissidio.nome_dissidio);
-      formData.append('resumo_dissidio', currentDissidio.resumo_dissidio || '');
-      formData.append('data_vigencia_inicial', currentDissidio.data_vigencia_inicial || '');
-      formData.append('data_vigencia_final', currentDissidio.data_vigencia_final || '');
-      formData.append('mes_convencao', currentDissidio.mes_convencao || '');
-      // Não enviar texto_extraido ou resumo_ai, pois o n8n irá gerá-los/atualizá-los
-
-      setIsProcessingN8n(true);
-      try {
-        const n8nResponse = await fetch(n8nWebhookUrl, {
-          method: 'POST',
-          body: formData, // FormData automaticamente define Content-Type: multipart/form-data
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('dissidios_documents')
+        .upload(fileName, selectedFile, {
+          cacheControl: '3600',
+          upsert: false,
         });
 
-        if (!n8nResponse.ok) {
-          const errorText = await n8nResponse.text();
-          showError('Erro ao enviar PDF para n8n: ' + errorText);
-          console.error('n8n webhook failed:', errorText);
-        } else {
-          showSuccess('PDF enviado para n8n para processamento! O resumo e texto extraído serão atualizados em breve.');
-          // O n8n é responsável por atualizar o Supabase com a URL do documento, texto extraído e resumo AI.
-          // Apenas fechamos o diálogo e atualizamos a lista.
-          setIsDialogOpen(false);
-          setCurrentDissidio(null);
-          setSelectedFile(null);
-          fetchDissidios(); // Atualiza a lista para refletir as mudanças quando o n8n terminar
-        }
-      } catch (error: any) {
-        showError('Erro de rede ao enviar PDF para n8n: ' + error.message);
-        console.error('Network error sending to n8n:', error);
-      } finally {
-        setIsProcessingN8n(false);
-        setLoading(false);
-      }
-      return; // Sair da função, pois o n8n está lidando com a atualização completa
-    } else {
-      // Se nenhum arquivo foi selecionado, proceder com a atualização normal do Supabase
-      const dissidioToSave = {
-        ...currentDissidio,
-        url_documento: currentDissidio?.url_documento || null, // Manter URL existente se não houver novo upload
-        // Não tocar em texto_extraido ou resumo_ai aqui, eles são atualizados pelo n8n/Edge Function
-      };
-
-      let response;
-      if (isEditingDissidio) {
-        response = await supabase
-          .from('tbl_dissidios')
-          .update(dissidioToSave)
-          .eq('id', currentDissidio.id)
-          .select('id')
-          .single();
-      } else {
-        // Não deve acontecer se o nome do dissídio for obrigatório e não houver arquivo
-        showError('Nenhum arquivo selecionado e não é uma edição. Por favor, selecione um arquivo.');
+      if (uploadError) {
+        showError('Erro ao fazer upload do documento: ' + uploadError.message);
+        console.error('Error uploading document:', uploadError);
         setLoading(false);
         return;
       }
 
-      if (response.error) {
-        showError('Erro ao salvar dissídio: ' + response.error.message);
-        console.error('Error saving dissídio:', response.error);
-      } else {
-        showSuccess(`Dissídio ${isEditingDissidio ? 'atualizado' : 'criado'} com sucesso!`);
-        setIsDialogOpen(false);
-        setCurrentDissidio(null);
-        setSelectedFile(null);
-        fetchDissidios();
-      }
-      setLoading(false);
+      const { data: publicUrlData } = supabase.storage
+        .from('dissidios_documents')
+        .getPublicUrl(fileName);
+      
+      fileUrl = publicUrlData.publicUrl;
+      showSuccess('Documento enviado para o armazenamento!');
     }
+
+    const dissidioToSave = {
+      ...currentDissidio,
+      url_documento: fileUrl,
+    };
+
+    let response;
+    if (isEditingDissidio) {
+      response = await supabase
+        .from('tbl_dissidios')
+        .update(dissidioToSave)
+        .eq('id', currentDissidio.id)
+        .select('*') // Select all to get updated data for webhook sender
+        .single();
+    } else {
+      response = await supabase
+        .from('tbl_dissidios')
+        .insert(dissidioToSave)
+        .select('*') // Select all to get newly created data for webhook sender
+        .single();
+    }
+
+    if (response.error) {
+      showError('Erro ao salvar dissídio: ' + response.error.message);
+      console.error('Error saving dissídio:', response.error);
+    } else {
+      showSuccess(`Dissídio ${isEditingDissidio ? 'atualizado' : 'criado'} com sucesso!`);
+      setCurrentDissidio(response.data); // Update currentDissidio with fresh data
+      setSelectedFile(null); // Clear selected file after successful save/upload
+      fetchDissidios(); // Refresh the list
+    }
+    setLoading(false);
   };
 
   const handleDeleteDissidio = async (dissidioId: string) => {
@@ -209,6 +185,125 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       fetchDissidios();
     }
     setLoading(false);
+  };
+
+  const handleOpenWebhookSelection = (dissidio: Dissidio) => {
+    setCurrentDissidioForWebhook(dissidio);
+    setIsDissidioWebhookSenderOpen(true);
+  };
+
+  const handleSendDissidioToWebhook = async (
+    dissidioId: string,
+    webhookConfigIds: string[],
+    pdfFile: File | null,
+    pdfUrl: string | null
+  ) => {
+    setIsSendingWebhook(true);
+    showSuccess('Iniciando envio para webhooks selecionados...');
+
+    try {
+      const { data: dissidioData, error: fetchError } = await supabase
+        .from('tbl_dissidios')
+        .select('*') // Fetch all fields for the payload
+        .eq('id', dissidioId)
+        .single();
+
+      if (fetchError || !dissidioData) {
+        showError('Erro ao buscar dados do dissídio para webhook: ' + (fetchError?.message || 'Dados não encontrados.'));
+        setIsSendingWebhook(false);
+        return;
+      }
+
+      const { data: webhookConfigs, error: webhookError } = await supabase
+        .from('tbl_webhook_configs')
+        .select('*')
+        .in('id', webhookConfigIds);
+
+      if (webhookError) {
+        showError('Erro ao buscar configurações de webhook: ' + webhookError.message);
+        console.error('Error fetching webhook configs:', webhookError);
+        setIsSendingWebhook(false);
+        return;
+      }
+
+      if (!webhookConfigs || webhookConfigs.length === 0) {
+        showError('Nenhum webhook selecionado ou configurado encontrado.');
+        setIsSendingWebhook(false);
+        return;
+      }
+
+      let sentCount = 0;
+      for (const config of webhookConfigs) {
+        const payload: { [key: string]: any } = {};
+        
+        // Populate payload with selected fields from dissidioData
+        config.selected_fields.forEach(fieldKey => {
+          // For dissidios, the fields are direct or nested under tbl_dissidios
+          // We need to map fieldKey (e.g., 'dissidio_nome_dissidio') to actual column name (e.g., 'nome_dissidio')
+          // Or handle nested paths if 'all_tables' is selected and it's a complex path
+          const actualColumnName = fieldKey.replace('dissidio_', ''); // Simple mapping for direct fields
+          if (dissidioData.hasOwnProperty(actualColumnName)) {
+            payload[fieldKey] = dissidioData[actualColumnName];
+          } else {
+            // Fallback for more complex paths or if fieldKey doesn't match directly
+            // This part would need more sophisticated logic if 'all_tables' fields are selected
+            // and they refer to related tables for dissidios. For now, focusing on direct fields.
+            payload[fieldKey] = dissidioData[fieldKey]; // Try direct access
+          }
+        });
+
+        // Always include dissidio ID and URL for n8n processing
+        payload.dissidio_id = dissidioData.id;
+        payload.sindicato_id = dissidioData.sindicato_id;
+        payload.url_documento = pdfUrl || dissidioData.url_documento; // Use new URL if available, else existing
+
+        let requestBody: FormData | string;
+        let headers: HeadersInit = {};
+
+        if (pdfFile) {
+          // If a new binary file is selected, send it as FormData
+          const formData = new FormData();
+          formData.append('pdfFile', pdfFile);
+          Object.keys(payload).forEach(key => {
+            formData.append(key, payload[key]);
+          });
+          requestBody = formData;
+          // Content-Type will be set automatically by fetch for FormData
+        } else {
+          // If no new binary file, send as JSON
+          requestBody = JSON.stringify(payload);
+          headers['Content-Type'] = 'application/json';
+        }
+
+        const response = await fetch(config.webhook_url, {
+          method: 'POST',
+          headers: headers,
+          body: requestBody,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Erro ao enviar para webhook ${config.webhook_url}:`, response.status, response.statusText, errorText);
+          showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}`);
+        } else {
+          sentCount++;
+          console.log(`Dissídio enviado com sucesso para webhook: ${config.webhook_url}`);
+        }
+      }
+
+      if (sentCount > 0) {
+        showSuccess(`Dissídio enviado para ${sentCount} webhook(s) com sucesso!`);
+      } else {
+        showError('Nenhum dissídio foi enviado para os webhooks selecionados.');
+      }
+
+    } catch (error: any) {
+      showError('Erro inesperado ao enviar dissídio para webhook: ' + error.message);
+      console.error('Unexpected error sending webhook:', error);
+    } finally {
+      setIsSendingWebhook(false);
+      fetchDissidios(); // Refresh list in case n8n updated something
+    }
   };
 
   return (
@@ -370,15 +465,30 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                 <DialogClose asChild>
                   <Button type="button" variant="ghost" className="bg-gray-700 text-white hover:bg-gray-600">Cancelar</Button>
                 </DialogClose>
-                <Button type="submit" disabled={loading || isProcessingN8n} className="bg-orange-500 hover:bg-orange-600 text-white">
-                  {loading || isProcessingN8n ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> {isProcessingN8n ? 'Enviando para n8n...' : 'Salvando...'}
-                    </>
-                  ) : (isEditingDissidio ? 'Atualizar Dissídio' : 'Criar Dissídio')}
+                <Button type="submit" disabled={loading || isSendingWebhook} className="bg-orange-500 hover:bg-orange-600 text-white">
+                  {loading ? 'Salvando...' : (isEditingDissidio ? 'Atualizar Dissídio' : 'Criar Dissídio')}
                 </Button>
               </DialogFooter>
             </form>
+            {currentDissidio?.id && (currentDissidio.url_documento || selectedFile) && (
+              <div className="mt-4 pt-4 border-t border-gray-700 flex justify-end">
+                <Button
+                  onClick={() => handleOpenWebhookSelection(currentDissidio as Dissidio)}
+                  disabled={isSendingWebhook || loading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isSendingWebhook ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" /> Processar com Webhook
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -445,6 +555,18 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
             </Card>
           ))}
         </div>
+      )}
+
+      {currentDissidioForWebhook && (
+        <DissidioWebhookSender
+          dissidioId={currentDissidioForWebhook.id}
+          pdfFile={selectedFile} // Pass the currently selected file
+          pdfUrl={currentDissidioForWebhook.url_documento} // Pass the saved URL
+          isOpen={isDissidioWebhookSenderOpen}
+          onOpenChange={setIsDissidioWebhookSenderOpen}
+          onSend={handleSendDissidioToWebhook}
+          isSending={isSendingWebhook}
+        />
       )}
     </div>
   );
