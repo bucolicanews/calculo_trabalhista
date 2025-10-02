@@ -6,7 +6,7 @@ export interface FieldDefinition {
   supabasePath?: string; // Full Supabase path, dynamically generated for the selected main table
 }
 
-const baseFieldDefinitions: FieldDefinition[] = [
+export const allAvailableFieldsDefinition: FieldDefinition[] = [ // Renomeado e exportado
   // tbl_clientes fields
   { key: 'cliente_id', label: 'Cliente (ID)', baseSupabasePath: 'id', sourceTable: 'tbl_clientes' },
   { key: 'cliente_user_id', label: 'Cliente (ID do Usuário)', baseSupabasePath: 'user_id', sourceTable: 'tbl_clientes' },
@@ -34,7 +34,7 @@ const baseFieldDefinitions: FieldDefinition[] = [
   { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo)', baseSupabasePath: 'tbl_dissidios(resumo_dissidio)', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_data_vigencia_inicial', label: 'Dissídio (Início Vigência)', baseSupabasePath: 'tbl_dissidios(data_vigencia_inicial)', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_data_vigencia_final', label: 'Dissídio (Fim Vigência)', baseSupabasePath: 'tbl_dissidios(data_vigencia_final)', sourceTable: 'tbl_sindicatos' },
-  { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', baseSupabasePath: 'tbl_dissidios(mes_convencao)', sourceTable: 'tbl_sindicatos' },
+  { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', baseSupabasePath: 'mes_convencao', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_sindicatos' },
 
   // tbl_calculos fields
@@ -51,7 +51,7 @@ const baseFieldDefinitions: FieldDefinition[] = [
   { key: 'calculo_ctps_assinada', label: 'Cálculo (CTPS Assinada)', baseSupabasePath: 'ctps_assinada', sourceTable: 'tbl_calculos' },
   { key: 'calculo_media_descontos', label: 'Cálculo (Média Descontos)', baseSupabasePath: 'media_descontos', sourceTable: 'tbl_calculos' },
   { key: 'calculo_media_remuneracoes', label: 'Cálculo (Média Remunerações)', baseSupabasePath: 'media_remuneracoes', sourceTable: 'tbl_calculos' },
-  { key: 'calculo_carga_horaria', label: 'Cálculo (Carga Horária)', baseSupabasePath: 'carga_horaria', sourceTable: 'tbl_calculos' },
+  { key: 'calculo_carga_horaria', label: 'Cálculo (Carga Horária)', baseSupabasePath: 'carga_horaria', sourceTable: 'tbl_calculos' }, // <-- Erro corrigido aqui
   { key: 'calculo_created_at', label: 'Cálculo (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_calculos' },
 
   // tbl_resposta_calculo fields
@@ -63,7 +63,7 @@ const baseFieldDefinitions: FieldDefinition[] = [
 ];
 
 // Helper to construct the full Supabase path for a field based on the main table
-const getFullSupabasePath = (mainTableName: string, field: FieldDefinition): string => {
+export const getFullSupabasePath = (mainTableName: string, field: FieldDefinition): string => { // Exportado
   if (field.sourceTable === mainTableName) {
     return field.baseSupabasePath;
   }
@@ -122,59 +122,59 @@ export const getFieldsForMainTable = (mainTableName: string): FieldDefinition[] 
   };
 
   // 1. Add direct fields of the main table
-  baseFieldDefinitions
+  allAvailableFieldsDefinition // Usando a lista exportada
     .filter(f => f.sourceTable === mainTableName)
     .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
 
   // 2. Add fields from related tables, adjusting their supabasePath
   if (mainTableName === 'tbl_clientes') {
     // Fields from tbl_calculos related to tbl_clientes
-    baseFieldDefinitions
+    allAvailableFieldsDefinition
       .filter(f => f.sourceTable === 'tbl_calculos')
       .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
 
     // Fields from tbl_sindicatos related via tbl_calculos
-    baseFieldDefinitions
+    allAvailableFieldsDefinition
       .filter(f => f.sourceTable === 'tbl_sindicatos')
       .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
 
     // Fields from tbl_resposta_calculo related via tbl_calculos
-    baseFieldDefinitions
+    allAvailableFieldsDefinition
       .filter(f => f.sourceTable === 'tbl_resposta_calculo')
       .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
 
   } else if (mainTableName === 'tbl_calculos') {
     // Fields from tbl_clientes related to tbl_calculos
-    baseFieldDefinitions
+    allAvailableFieldsDefinition
       .filter(f => f.sourceTable === 'tbl_clientes')
       .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
 
     // Fields from tbl_sindicatos related to tbl_calculos
-    baseFieldDefinitions
+    allAvailableFieldsDefinition
       .filter(f => f.sourceTable === 'tbl_sindicatos')
       .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
 
     // Fields from tbl_resposta_calculo related to tbl_calculos
-    baseFieldDefinitions
+    allAvailableFieldsDefinition
       .filter(f => f.sourceTable === 'tbl_resposta_calculo')
       .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
 
   } else if (mainTableName === 'tbl_sindicatos') {
-    // Fields from tbl_dissidios related to tbl_sindicatos (already handled by baseFieldDefinitions filter for sourceTable === 'tbl_sindicatos')
+    // Fields from tbl_dissidios related to tbl_sindicatos (already handled by allAvailableFieldsDefinition filter for sourceTable === 'tbl_sindicatos')
     // No other forward relations are typically shown for sindicatos in this context.
   } else if (mainTableName === 'tbl_resposta_calculo') {
     // Fields from tbl_calculos related to tbl_resposta_calculo
-    baseFieldDefinitions
+    allAvailableFieldsDefinition
       .filter(f => f.sourceTable === 'tbl_calculos')
       .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
 
     // Fields from tbl_clientes related via tbl_calculos
-    baseFieldDefinitions
+    allAvailableFieldsDefinition
       .filter(f => f.sourceTable === 'tbl_clientes')
       .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
 
     // Fields from tbl_sindicatos related via tbl_calculos
-    baseFieldDefinitions
+    allAvailableFieldsDefinition
       .filter(f => f.sourceTable === 'tbl_sindicatos')
       .forEach(f => addField({ ...f, supabasePath: getFullSupabasePath(mainTableName, f) }));
   }

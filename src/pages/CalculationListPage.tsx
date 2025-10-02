@@ -145,18 +145,10 @@ const CalculationListPage = () => {
         // Construct the payload using the generic extractValueFromPath
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach(fieldKey => {
-          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey && f.sourceTable === 'tbl_calculos' || f.sourceTable === 'tbl_clientes' || f.sourceTable === 'tbl_sindicatos' || f.sourceTable === 'tbl_dissidios');
-          if (fieldDef) {
-            let pathForExtraction = fieldDef.supabasePath;
-            // Adjust path for extraction based on how it was fetched
-            if (fieldDef.sourceTable === 'tbl_clientes') {
-              pathForExtraction = `tbl_clientes(${fieldDef.supabasePath})`;
-            } else if (fieldDef.sourceTable === 'tbl_sindicatos' || fieldDef.sourceTable === 'tbl_dissidios') {
-              pathForExtraction = `tbl_sindicatos(${fieldDef.supabasePath})`;
-            }
-            // For tbl_calculos fields, the path is direct
-            
-            payload[fieldDef.key] = extractValueFromPath(specificCalculationData, pathForExtraction);
+          // Use fieldsForCalculos to find the field definition, which already has the correct supabasePath
+          const fieldDef = fieldsForCalculos.find(f => f.key === fieldKey);
+          if (fieldDef && fieldDef.supabasePath) {
+            payload[fieldDef.key] = extractValueFromPath(specificCalculationData, fieldDef.supabasePath);
           }
         });
 
