@@ -450,27 +450,25 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                 <Button type="submit" disabled={loading || isSendingWebhook} className="bg-orange-500 hover:bg-orange-600 text-white">
                   {loading ? 'Salvando...' : (isEditingDissidio ? 'Atualizar Dissídio' : 'Criar Dissídio')}
                 </Button>
+                {currentDissidio?.id && (currentDissidio.url_documento || selectedFile) && (
+                  <Button
+                    onClick={() => handleOpenWebhookSelection(currentDissidio as Dissidio)}
+                    disabled={isSendingWebhook || loading}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {isSendingWebhook ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" /> Processar com Webhook
+                      </>
+                    )}
+                  </Button>
+                )}
               </DialogFooter>
             </form>
-            {currentDissidio?.id && (currentDissidio.url_documento || selectedFile) && (
-              <div className="mt-4 pt-4 border-t border-gray-700 flex justify-end">
-                <Button
-                  onClick={() => handleOpenWebhookSelection(currentDissidio as Dissidio)}
-                  disabled={isSendingWebhook || loading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {isSendingWebhook ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" /> Processar com Webhook
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
           </DialogContent>
         </Dialog>
       </div>
