@@ -14,6 +14,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import DissidioWebhookSender from '@/components/dissidios/DissidioWebhookSender';
+import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webhookFields'; // Importar
+import { extractValueFromPath } from '@/utils/supabaseDataExtraction'; // Importar
 
 interface Dissidio {
   id: string;
@@ -27,6 +29,7 @@ interface Dissidio {
   texto_extraido: string | null;
   resumo_ai: string | null;
   created_at: string;
+  [key: string]: any; // Permitir propriedades arbitrárias para payload do webhook
 }
 
 interface DissidioManagerProps {
@@ -201,18 +204,6 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
     showSuccess('Iniciando envio para webhooks selecionados...');
 
     try {
-      const { data: dissidioData, error: fetchError } = await supabase
-        .from('tbl_dissidios')
-        .select('*')
-        .eq('id', dissidioId)
-        .single();
-
-      if (fetchError || !dissidioData) {
-        showError('Erro ao buscar dados do dissídio para webhook: ' + (fetchError?.message || 'Dados não encontrados.'));
-        setIsSendingWebhook(false);
-        return;
-      }
-
       const { data: webhookConfigs, error: webhookError } = await supabase
         .from('tbl_webhook_configs')
         .select('*')
@@ -233,40 +224,65 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
 
       let sentCount = 0;
       for (const config of webhookConfigs) {
-        const payload: { [key: string]: any } = {};
-        
+        const selectParts: Set<string> = new Set();
+        selectParts.add('id'); // Always include the ID of the main record
+
         config.selected_fields.forEach(fieldKey => {
-          const actualColumnName = fieldKey.replace('dissidio_', '');
-          if (dissidioData.hasOwnProperty(actualColumnName)) {
-            payload[fieldKey] = dissidioData[actualColumnName];
-          } else {
-            payload[fieldKey] = dissidioData[fieldKey];
+          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
+          if (fieldDef) {
+            const supabasePath = getFullSupabasePath('tbl_dissidios', fieldDef); // mainTableName is 'tbl_dissidios'
+            selectParts.add(supabasePath);
           }
         });
 
-        payload.dissidio_id = dissidioData.id;
-        payload.sindicato_id = dissidioData.sindicato_id;
-        payload.url_documento = pdfUrl || dissidioData.url_documento;
+        const finalSelectString = Array.from(selectParts).join(', ');
 
-        let requestBody: FormData | string;
-        let headers: HeadersInit = {};
+        const { data: specificDissidioData, error: fetchError } = await supabase
+          .from('tbl_dissidios')
+          .select(finalSelectString)
+          .eq('id', dissidioId)
+          .single();
 
-        if (pdfFile) {
-          const formData = new FormData();
-          formData.append('pdfFile', pdfFile);
-          Object.keys(payload).forEach(key => {
-            formData.append(key, payload[key]);
-          });
-          requestBody = formData;
-        } else {
-          requestBody = JSON.stringify(payload);
-          headers['Content-Type'] = 'application/json';
+        if (fetchError) {
+          showError(`Erro ao buscar dados do dissídio para webhook: ${fetchError.message}`);
+          console.error('Error fetching specific dissidio data:', fetchError);
+          continue; // Skip to next webhook config
         }
+
+        if (!specificDissidioData) {
+          showError('Dados do dissídio não encontrados para o webhook.');
+          continue; // Skip to next webhook config
+        }
+
+        // Explicitly cast specificDissidioData to Dissidio after null check
+        const dissidioRecord: Dissidio = specificDissidioData as Dissidio;
+
+        const payload: { [key: string]: any } = {};
+        config.selected_fields.forEach(fieldKey => {
+          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
+          if (fieldDef) {
+            // Use extractValueFromPath to correctly get nested values
+            const extractionPath = getFullSupabasePath('tbl_dissidios', fieldDef);
+            payload[fieldDef.key] = extractValueFromPath(dissidioRecord, extractionPath);
+          }
+        });
+
+        // Add PDF file/URL to payload if available
+        if (pdfUrl) { // Priorize o URL já existente ou o recém-upload
+          payload.pdf_document_url = pdfUrl;
+        } else if (dissidioRecord.url_documento) { // Use dissidioRecord here
+          payload.pdf_document_url = dissidioRecord.url_documento; // Use dissidioRecord here
+        }
+        // Note: Sending binary 'pdfFile' directly in JSON is not standard.
+        // If the webhook expects the actual file, it needs to be configured for multipart/form-data.
+        // For now, we send the URL.
 
         const response = await fetch(config.webhook_url, {
           method: 'POST',
-          headers: headers,
-          body: requestBody,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
@@ -458,7 +474,7 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                   >
                     {isSendingWebhook ? (
                       <>
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Enviando...
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Processando...
                       </>
                     ) : (
                       <>

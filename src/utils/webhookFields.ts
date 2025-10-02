@@ -34,16 +34,16 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo Manual)', baseSupabasePath: 'tbl_dissidios(resumo_dissidio)', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_data_vigencia_inicial', label: 'Dissídio (Início Vigência)', baseSupabasePath: 'tbl_dissidios(data_vigencia_inicial)', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_data_vigencia_final', label: 'Dissídio (Fim Vigência)', baseSupabasePath: 'tbl_dissidios(data_vigencia_final)', sourceTable: 'tbl_sindicatos' },
-  { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', baseSupabasePath: 'mes_convencao', sourceTable: 'tbl_sindicatos' },
-  { key: 'dissidio_texto_extraido', label: 'Dissídio (Texto Extraído PDF)', baseSupabasePath: 'tbl_dissidios(texto_extraido)', sourceTable: 'tbl_sindicatos' }, // Novo
-  { key: 'dissidio_resumo_ai', label: 'Dissídio (Resumo IA)', baseSupabasePath: 'tbl_dissidios(resumo_ai)', sourceTable: 'tbl_sindicatos' }, // Novo
-  { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_sindicatos' },
+  { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', baseSupabasePath: 'tbl_dissidios(mes_convencao)', sourceTable: 'tbl_sindicatos' },
+  { key: 'dissidio_texto_extraido', label: 'Dissídio (Texto Extraído PDF)', baseSupabasePath: 'tbl_dissidios(texto_extraido)', sourceTable: 'tbl_sindicatos' },
+  { key: 'dissidio_resumo_ai', label: 'Dissídio (Resumo IA)', baseSupabasePath: 'tbl_dissidios(resumo_ai)', sourceTable: 'tbl_sindicatos' },
+  { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', baseSupabasePath: 'tbl_dissidios(created_at)', sourceTable: 'tbl_sindicatos' },
 
   // tbl_calculos fields
   { key: 'calculo_id', label: 'Cálculo (ID)', baseSupabasePath: 'id', sourceTable: 'tbl_calculos' },
   { key: 'calculo_nome_funcionario', label: 'Cálculo (Nome Funcionário)', baseSupabasePath: 'nome_funcionario', sourceTable: 'tbl_calculos' },
   { key: 'calculo_cpf_funcionario', label: 'Cálculo (CPF Funcionário)', baseSupabasePath: 'cpf_funcionario', sourceTable: 'tbl_calculos' },
-  { key: 'calculo_funcao_funcionario', label: 'Cálculo (Função Funcionário)', baseSupabasePath: 'funcao_calculo', sourceTable: 'tbl_calculos' },
+  { key: 'calculo_funcao_funcionario', label: 'Cálculo (Função Funcionário)', baseSupabasePath: 'funcao_funcionario', sourceTable: 'tbl_calculos' }, // Corrigido: funcao_calculo -> funcao_funcionario
   { key: 'calculo_inicio_contrato', label: 'Cálculo (Início Contrato)', baseSupabasePath: 'inicio_contrato', sourceTable: 'tbl_calculos' },
   { key: 'calculo_fim_contrato', label: 'Cálculo (Fim Contrato)', baseSupabasePath: 'fim_contrato', sourceTable: 'tbl_calculos' },
   { key: 'calculo_tipo_aviso', label: 'Cálculo (Tipo de Aviso)', baseSupabasePath: 'tipo_aviso', sourceTable: 'tbl_calculos' },
@@ -86,6 +86,10 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
       return `tbl_clientes(${field.baseSupabasePath})`;
     }
     if (field.sourceTable === 'tbl_sindicatos') {
+      // If sindicato field is already nested (like dissidio fields), use its base path directly
+      if (field.baseSupabasePath.includes('(')) {
+        return `tbl_sindicatos(${field.baseSupabasePath})`;
+      }
       return `tbl_sindicatos(${field.baseSupabasePath})`;
     }
     if (field.sourceTable === 'tbl_resposta_calculo') {
@@ -93,6 +97,7 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
     }
   } else if (mainTableName === 'tbl_sindicatos') {
     // For sindicatos, we only show its own fields and its dissidios
+    // The baseSupabasePath for dissidio fields already includes tbl_dissidios(...)
     return field.baseSupabasePath;
   } else if (mainTableName === 'tbl_resposta_calculo') {
     if (field.sourceTable === 'tbl_calculos') {
@@ -111,18 +116,48 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
 // New function to get fields for UI display based on selected table
 export const getDisplayFieldsForTable = (selectedTable: string): FieldDefinition[] => {
   if (selectedTable === 'all_tables') {
-    // For 'TODOS', return all fields from allAvailableFieldsDefinition
     return allAvailableFieldsDefinition
-      .map(f => ({ ...f, supabasePath: f.baseSupabasePath })) // Ensure supabasePath is set for display
-      .sort((a, b) => a.label.localeCompare(b.label));
-  } else {
-    // For specific tables, include only fields directly from that table.
-    // Filter out fields that represent relations to other tables (i.e., baseSupabasePath contains '(')
-    return allAvailableFieldsDefinition
-      .filter(f => f.sourceTable === selectedTable && !f.baseSupabasePath.includes('('))
-      .map(f => ({ ...f, supabasePath: f.baseSupabasePath })) // Ensure supabasePath is set for display
+      .map(f => ({ ...f, supabasePath: f.baseSupabasePath }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }
+
+  const relevantFields: FieldDefinition[] = [];
+
+  // 1. Always include fields directly from the selected table
+  allAvailableFieldsDefinition.forEach(field => {
+    if (field.sourceTable === selectedTable) {
+      relevantFields.push({ ...field, supabasePath: field.baseSupabasePath });
+    }
+  });
+
+  // 2. Include fields from related tables based on the selected main table
+  if (selectedTable === 'tbl_calculos') {
+    allAvailableFieldsDefinition.forEach(field => {
+      if (field.sourceTable === 'tbl_clientes' || field.sourceTable === 'tbl_sindicatos' || field.sourceTable === 'tbl_dissidios') {
+        relevantFields.push({ ...field, supabasePath: getFullSupabasePath(selectedTable, field) });
+      }
+    });
+  } else if (selectedTable === 'tbl_resposta_calculo') {
+    allAvailableFieldsDefinition.forEach(field => {
+      if (field.sourceTable === 'tbl_calculos' || field.sourceTable === 'tbl_clientes' || field.sourceTable === 'tbl_sindicatos' || field.sourceTable === 'tbl_dissidios') {
+        relevantFields.push({ ...field, supabasePath: getFullSupabasePath(selectedTable, field) });
+      }
+    });
+  } else if (selectedTable === 'tbl_sindicatos') {
+    allAvailableFieldsDefinition.forEach(field => {
+      if (field.sourceTable === 'tbl_dissidios') {
+        relevantFields.push({ ...field, supabasePath: getFullSupabasePath(selectedTable, field) });
+      }
+    });
+  }
+  // For tbl_clientes, only its own fields are directly relevant for selection in the UI.
+  // If a user wants calculation fields, they should select tbl_calculos as the main table.
+
+  // Remove duplicates and sort
+  const uniqueFields = Array.from(new Set(relevantFields.map(f => f.key)))
+    .map(key => relevantFields.find(f => f.key === key)!);
+
+  return uniqueFields.sort((a, b) => a.label.localeCompare(b.label));
 };
 
 // Keep getFieldsForMainTable for backward compatibility if needed elsewhere,
