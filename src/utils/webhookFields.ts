@@ -62,6 +62,8 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'resposta_calculo_id', label: 'Resposta Cálculo (ID do Cálculo)', baseSupabasePath: 'calculo_id', sourceTable: 'tbl_resposta_calculo' },
   { key: 'resposta_ai', label: 'Resposta Cálculo (Resposta AI)', baseSupabasePath: 'resposta_ai', sourceTable: 'tbl_resposta_calculo' },
   { key: 'resposta_data_hora', label: 'Resposta Cálculo (Data/Hora)', baseSupabasePath: 'data_hora', sourceTable: 'tbl_resposta_calculo' },
+  { key: 'resposta_url_documento_calculo', label: 'Resposta Cálculo (URL Documento PDF)', baseSupabasePath: 'url_documento_calculo', sourceTable: 'tbl_resposta_calculo' }, // NOVO
+  { key: 'resposta_texto_extraido', label: 'Resposta Cálculo (Texto Extraído PDF)', baseSupabasePath: 'texto_extraido', sourceTable: 'tbl_resposta_calculo' }, // NOVO
   { key: 'resposta_created_at', label: 'Resposta Cálculo (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_resposta_calculo' },
 ];
 
@@ -144,7 +146,7 @@ export const getDisplayFieldsForTable = (selectedTable: string): FieldDefinition
   // 2. Include fields from related tables based on the selected main table
   if (selectedTable === 'tbl_calculos') {
     allAvailableFieldsDefinition.forEach(field => {
-      if (field.sourceTable === 'tbl_clientes' || field.sourceTable === 'tbl_sindicatos' || field.sourceTable === 'tbl_dissidios') {
+      if (field.sourceTable === 'tbl_clientes' || field.sourceTable === 'tbl_sindicatos' || field.sourceTable === 'tbl_dissidios' || field.sourceTable === 'tbl_resposta_calculo') { // Adicionado tbl_resposta_calculo
         relevantFields.push({ ...field, supabasePath: getFullSupabasePath(selectedTable, field) });
       }
     });
