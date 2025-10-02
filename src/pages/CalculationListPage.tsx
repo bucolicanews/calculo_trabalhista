@@ -9,8 +9,9 @@ import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webhookFields'; // Importar allAvailableFieldsDefinition e getFullSupabasePath
+import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webhookFields';
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
+import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender'; // Novo import
 
 interface Calculation {
   id: string;
@@ -34,6 +35,8 @@ const CalculationListPage = () => {
   const [calculations, setCalculations] = useState<Calculation[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingWebhook, setSendingWebhook] = useState<string | null>(null);
+  const [isWebhookSelectionOpen, setIsWebhookSelectionOpen] = useState(false); // Novo estado
+  const [currentCalculationIdForWebhook, setCurrentCalculationIdForWebhook] = useState<string | null>(null); // Novo estado
 
   useEffect(() => {
     if (user) {
@@ -43,7 +46,6 @@ const CalculationListPage = () => {
 
   const fetchCalculations = async () => {
     setLoading(true);
-    // For the list display, we only need basic info and client name
     const { data, error } = await supabase
       .from('tbl_calculos')
       .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, tbl_clientes(nome)')
@@ -77,21 +79,28 @@ const CalculationListPage = () => {
     }
   };
 
-  const handleSendToWebhook = async (calculationId: string) => {
+  // Nova função para abrir o modal de seleção de webhook
+  const handleOpenWebhookSelection = (calculationId: string) => {
+    setCurrentCalculationIdForWebhook(calculationId);
+    setIsWebhookSelectionOpen(true);
+  };
+
+  // Função de envio de webhook atualizada para aceitar IDs de configuração
+  const handleSendToWebhook = async (calculationId: string, webhookConfigIds: string[]) => {
     if (!user) {
       showError('Usuário não autenticado.');
       return;
     }
 
     setSendingWebhook(calculationId);
-    showSuccess('Verificando webhooks e enviando cálculo...');
+    showSuccess('Iniciando envio para webhooks selecionados...');
 
     try {
+      // Buscar apenas as configurações de webhook selecionadas
       const { data: webhookConfigs, error: webhookError } = await supabase
         .from('tbl_webhook_configs')
         .select('*')
-        .eq('user_id', user.id)
-        .eq('table_name', 'tbl_calculos'); // Only fetch webhooks configured for tbl_calculos
+        .in('id', webhookConfigIds); // Filtrar pelos IDs selecionados
 
       if (webhookError) {
         showError('Erro ao buscar configurações de webhook: ' + webhookError.message);
@@ -100,19 +109,15 @@ const CalculationListPage = () => {
       }
 
       if (!webhookConfigs || webhookConfigs.length === 0) {
-        showError('Nenhum webhook configurado para cálculos. Configure um na página de Webhooks.');
+        showError('Nenhum webhook selecionado ou configurado encontrado.');
         return;
       }
 
       let sentCount = 0;
       for (const config of webhookConfigs) {
-        const selectParts: Set<string> = new Set(); // Use Set to avoid duplicate select paths
-
-        // Always include 'id' of the main table for filtering
+        const selectParts: Set<string> = new Set();
         selectParts.add('id');
 
-        // Map selected field keys to their Supabase paths using allAvailableFieldsDefinition
-        // and getFullSupabasePath for the 'tbl_calculos' context.
         config.selected_fields.forEach(fieldKey => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
@@ -123,7 +128,6 @@ const CalculationListPage = () => {
 
         const finalSelectString = Array.from(selectParts).join(', ');
 
-        // Fetch the specific calculation data with the dynamically constructed select
         const { data: specificCalculationData, error: fetchError } = await supabase
           .from('tbl_calculos')
           .select(finalSelectString)
@@ -133,7 +137,7 @@ const CalculationListPage = () => {
         if (fetchError) {
           showError(`Erro ao buscar dados do cálculo para webhook: ${fetchError.message}`);
           console.error('Error fetching specific calculation data:', fetchError);
-          continue; // Try next webhook config
+          continue;
         }
 
         if (!specificCalculationData) {
@@ -141,18 +145,15 @@ const CalculationListPage = () => {
           continue;
         }
 
-        // Construct the payload using the generic extractValueFromPath
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach(fieldKey => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            // Use getFullSupabasePath again to ensure the correct path for extraction
             const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
             payload[fieldDef.key] = extractValueFromPath(specificCalculationData, extractionPath);
           }
         });
 
-        // Send the data to the webhook URL
         const response = await fetch(config.webhook_url, {
           method: 'POST',
           headers: {
@@ -173,7 +174,7 @@ const CalculationListPage = () => {
       if (sentCount > 0) {
         showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso!`);
       } else {
-        showError('Nenhum cálculo foi enviado para os webhooks configurados.');
+        showError('Nenhum cálculo foi enviado para os webhooks selecionados.');
       }
 
     } catch (error: any) {
@@ -228,7 +229,7 @@ const CalculationListPage = () => {
                       variant="outline"
                       size="sm"
                       className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-                      onClick={() => handleSendToWebhook(calculation.id)}
+                      onClick={() => handleOpenWebhookSelection(calculation.id)} // Abre o modal de seleção
                       disabled={sendingWebhook === calculation.id}
                     >
                       {sendingWebhook === calculation.id ? (
@@ -265,6 +266,16 @@ const CalculationListPage = () => {
           </div>
         )}
       </div>
+
+      {currentCalculationIdForWebhook && (
+        <CalculationWebhookSender
+          calculationId={currentCalculationIdForWebhook}
+          isOpen={isWebhookSelectionOpen}
+          onOpenChange={setIsWebhookSelectionOpen}
+          onSend={handleSendToWebhook}
+          isSending={!!sendingWebhook}
+        />
+      )}
     </MainLayout>
   );
 };

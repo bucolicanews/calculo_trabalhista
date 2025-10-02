@@ -52,6 +52,18 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="title" className="text-right text-gray-300">Título do Webhook</Label>
+            <Input
+              id="title"
+              name="title"
+              value={currentWebhook.title}
+              onChange={handleChange}
+              required
+              className="col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+              disabled={loading}
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="table_name" className="text-right text-gray-300">Tabela</Label>
             <Select
               value={currentWebhook.table_name}

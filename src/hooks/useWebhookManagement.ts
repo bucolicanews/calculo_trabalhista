@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
-import { FieldDefinition, getDisplayFieldsForTable, allAvailableFieldsDefinition } from '@/utils/webhookFields'; // Importar getDisplayFieldsForTable e allAvailableFieldsDefinition
+import { FieldDefinition, getDisplayFieldsForTable, allAvailableFieldsDefinition } from '@/utils/webhookFields';
 
 export interface WebhookConfig {
   id: string;
@@ -10,6 +10,7 @@ export interface WebhookConfig {
   table_name: string;
   selected_fields: string[];
   webhook_url: string;
+  title: string | null; // Adicionado
   created_at: string;
 }
 
@@ -18,6 +19,7 @@ export interface WebhookFormState {
   table_name: string;
   selected_fields: string[];
   webhook_url: string;
+  title: string; // Adicionado, tornando-o obrigatório para o formulário
 }
 
 export const useWebhookManagement = () => {
@@ -29,6 +31,7 @@ export const useWebhookManagement = () => {
     table_name: '',
     selected_fields: [],
     webhook_url: '',
+    title: '', // Inicializado
   });
   const [isEditing, setIsEditing] = useState(false);
   const [fieldPopoverOpen, setFieldPopoverOpen] = useState(false);
@@ -57,7 +60,7 @@ export const useWebhookManagement = () => {
 
   const handleNewWebhook = () => {
     setIsEditing(false);
-    setCurrentWebhook({ table_name: '', selected_fields: [], webhook_url: '' });
+    setCurrentWebhook({ table_name: '', selected_fields: [], webhook_url: '', title: '' });
     setIsDialogOpen(true);
   };
 
@@ -68,6 +71,7 @@ export const useWebhookManagement = () => {
       table_name: webhook.table_name,
       selected_fields: webhook.selected_fields,
       webhook_url: webhook.webhook_url,
+      title: webhook.title || '', // Usar título existente ou string vazia
     });
     setIsDialogOpen(true);
   };
@@ -98,7 +102,7 @@ export const useWebhookManagement = () => {
   };
 
   const currentTableAvailableFields: FieldDefinition[] = currentWebhook.table_name
-    ? getDisplayFieldsForTable(currentWebhook.table_name) // Usar getDisplayFieldsForTable
+    ? getDisplayFieldsForTable(currentWebhook.table_name)
     : [];
 
   const areAllFieldsSelected = currentTableAvailableFields.length > 0 &&
@@ -125,6 +129,7 @@ export const useWebhookManagement = () => {
       table_name: currentWebhook.table_name,
       selected_fields: currentWebhook.selected_fields,
       webhook_url: currentWebhook.webhook_url,
+      title: currentWebhook.title, // Adicionado ao payload
     };
 
     let response;
@@ -168,7 +173,6 @@ export const useWebhookManagement = () => {
   };
 
   const getFieldLabel = (table: string, fieldKey: string) => {
-    // Usar allAvailableFieldsDefinition para encontrar o rótulo, pois ele contém todos os campos
     const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
     return fieldDef?.label || fieldKey;
   };
@@ -183,7 +187,7 @@ export const useWebhookManagement = () => {
     fieldPopoverOpen,
     setFieldPopoverOpen,
     currentTableAvailableFields,
-    areAllFieldsSelected,
+        areAllFieldsSelected,
     handleNewWebhook,
     handleEditWebhook,
     handleChange,

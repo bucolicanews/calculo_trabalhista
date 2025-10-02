@@ -6,7 +6,7 @@ import { Edit, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { WebhookConfig } from '@/hooks/useWebhookManagement';
 import { availableTables } from '@/utils/webhookFields';
-import { Label } from '@/components/ui/label'; // Importação adicionada
+import { Label } from '@/components/ui/label';
 
 interface WebhookCardProps {
   webhook: WebhookConfig;
@@ -24,8 +24,9 @@ const WebhookCard: React.FC<WebhookCardProps> = ({ webhook, onEdit, onDelete, ge
     <Card className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
       <CardHeader>
         <CardTitle className="text-xl text-orange-500">
-          Webhook para {getTableLabel(webhook.table_name)}
+          {webhook.title || `Webhook para ${getTableLabel(webhook.table_name)}`}
         </CardTitle>
+        <p className="text-sm text-gray-400 truncate">Tabela: {getTableLabel(webhook.table_name)}</p>
         <p className="text-sm text-gray-400 truncate">URL: {webhook.webhook_url}</p>
       </CardHeader>
       <CardContent className="flex flex-col space-y-3">
@@ -62,7 +63,7 @@ const WebhookCard: React.FC<WebhookCardProps> = ({ webhook, onEdit, onDelete, ge
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-red-500">Tem certeza?</AlertDialogTitle>
                 <AlertDialogDescription className="text-gray-300">
-                  Esta ação não pode ser desfeita. Isso excluirá permanentemente a configuração do webhook para "{getTableLabel(webhook.table_name)}".
+                  Esta ação não pode ser desfeita. Isso excluirá permanentemente a configuração do webhook "{webhook.title || getTableLabel(webhook.table_name)}".
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
