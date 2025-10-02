@@ -116,15 +116,40 @@ const CalculationListPage = () => {
       let sentCount = 0;
       for (const config of webhookConfigs) {
         const selectParts: Set<string> = new Set();
-        selectParts.add('id');
+        selectParts.add('id'); // Always include the ID of the main record
+
+        const relatedTableSelections: { [tableName: string]: Set<string> } = {};
 
         config.selected_fields.forEach(fieldKey => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            const supabasePath = getFullSupabasePath('tbl_calculos', fieldDef);
-            selectParts.add(supabasePath);
+            if (fieldDef.sourceTable === 'tbl_calculos') {
+              selectParts.add(fieldDef.baseSupabasePath);
+            } else {
+              // Handle related tables
+              if (!relatedTableSelections[fieldDef.sourceTable]) {
+                relatedTableSelections[fieldDef.sourceTable] = new Set();
+              }
+              relatedTableSelections[fieldDef.sourceTable].add(fieldDef.baseSupabasePath);
+            }
           }
         });
+
+        // Combine related table selections into the main select string
+        for (const tableName in relatedTableSelections) {
+          if (relatedTableSelections[tableName].size > 0) {
+            // Special handling for tbl_dissidios nested under tbl_sindicatos
+            if (tableName === 'tbl_dissidios' && relatedTableSelections['tbl_sindicatos']) {
+              // If sindicatos are also selected, nest dissidios under sindicatos
+              const sindicatoFields = Array.from(relatedTableSelections['tbl_sindicatos']).join(',');
+              const dissidioFields = Array.from(relatedTableSelections['tbl_dissidios']).join(',');
+              selectParts.add(`tbl_sindicatos(${sindicatoFields},tbl_dissidios(${dissidioFields}))`);
+              delete relatedTableSelections['tbl_sindicatos']; // Prevent duplicate join
+            } else {
+              selectParts.add(`${tableName}(${Array.from(relatedTableSelections[tableName]).join(',')})`);
+            }
+          }
+        }
 
         const finalSelectString = Array.from(selectParts).join(', ');
 
@@ -145,12 +170,14 @@ const CalculationListPage = () => {
           continue;
         }
 
+        const calculationRecord: Calculation = specificCalculationData as unknown as Calculation;
+
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach(fieldKey => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
             const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
-            payload[fieldDef.key] = extractValueFromPath(specificCalculationData, extractionPath);
+            payload[fieldDef.key] = extractValueFromPath(calculationRecord, extractionPath);
           }
         });
 
