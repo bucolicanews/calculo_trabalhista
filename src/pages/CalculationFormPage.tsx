@@ -219,7 +219,7 @@ const CalculationFormPage = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 text-white">
                     {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id} className="hover:bg-gray-700 focus:bg-gray-700">
+                      <SelectItem key={client.id} value={client.id} className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white">
                         {client.nome}
                       </SelectItem>
                     ))}
@@ -240,7 +240,7 @@ const CalculationFormPage = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 text-white">
                     {sindicatos.map((sindicato) => (
-                      <SelectItem key={sindicato.id} value={sindicato.id} className="hover:bg-gray-700 focus:bg-gray-700">
+                      <SelectItem key={sindicato.id} value={sindicato.id} className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white">
                         {sindicato.nome}
                       </SelectItem>
                     ))}
@@ -363,7 +363,7 @@ const CalculationFormPage = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 text-white">
                     {noticeTypes.map((type) => (
-                      <SelectItem key={type} value={type} className="hover:bg-gray-700 focus:bg-gray-700">
+                      <SelectItem key={type} value={type} className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white">
                         {type}
                       </SelectItem>
                     ))}
