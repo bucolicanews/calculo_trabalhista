@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { allAvailableFieldsDefinition, FieldDefinition } from '@/utils/webhookFields';
+import { allAvailableFieldsDefinition, getFieldsForMainTable } from '@/utils/webhookFields'; // Importação corrigida
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 
 interface Calculation {
@@ -111,20 +111,14 @@ const CalculationListPage = () => {
         // Always include 'id' of the main table for filtering
         selectParts.add('id');
 
+        // Get the full list of available fields for 'tbl_calculos' context
+        const fieldsForCalculos = getFieldsForMainTable('tbl_calculos');
+
         // Map selected field keys to their Supabase paths
         config.selected_fields.forEach(fieldKey => {
-          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey && f.appliesToTables.includes('tbl_calculos'));
-          if (fieldDef) {
-            // For fields related to tbl_calculos, we need to prepend the relation path
-            if (fieldDef.sourceTable === 'tbl_clientes') {
-              selectParts.add(`tbl_clientes(${fieldDef.supabasePath})`);
-            } else if (fieldDef.sourceTable === 'tbl_sindicatos' || fieldDef.sourceTable === 'tbl_dissidios') {
-              // For sindicato fields, including nested dissidios
-              selectParts.add(`tbl_sindicatos(${fieldDef.supabasePath})`);
-            } else if (fieldDef.sourceTable === 'tbl_calculos') {
-              selectParts.add(fieldDef.supabasePath);
-            }
-            // Add other mainTable cases if needed for other webhook types
+          const fieldDef = fieldsForCalculos.find(f => f.key === fieldKey);
+          if (fieldDef && fieldDef.supabasePath) {
+            selectParts.add(fieldDef.supabasePath);
           }
         });
 
@@ -151,7 +145,7 @@ const CalculationListPage = () => {
         // Construct the payload using the generic extractValueFromPath
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach(fieldKey => {
-          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey && f.appliesToTables.includes('tbl_calculos'));
+          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey && f.sourceTable === 'tbl_calculos' || f.sourceTable === 'tbl_clientes' || f.sourceTable === 'tbl_sindicatos' || f.sourceTable === 'tbl_dissidios');
           if (fieldDef) {
             let pathForExtraction = fieldDef.supabasePath;
             // Adjust path for extraction based on how it was fetched
