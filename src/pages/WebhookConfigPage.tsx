@@ -125,13 +125,23 @@ const allAvailableFields: Record<string, Array<{ key: string; label: string; sup
     { key: 'sindicato_created_at', label: 'Sindicato (Criado Em)', supabasePath: 'tbl_sindicatos(created_at)', isRelation: true, relationTable: 'tbl_sindicatos', relationField: 'created_at' },
   ],
   tbl_sindicatos: [
-    { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
+    { key: 'id', label: 'ID do Sindicato', supabasePath: 'id', isRelation: false },
     { key: 'nome', label: 'Nome do Sindicato', supabasePath: 'nome', isRelation: false },
-    { key: 'data_inicial', label: 'Data Inicial', supabasePath: 'data_inicial', isRelation: false },
-    { key: 'data_final', label: 'Data Final', supabasePath: 'data_final', isRelation: false },
-    { key: 'mes_convencao', label: 'Mês Convenção', supabasePath: 'mes_convencao', isRelation: false },
+    { key: 'data_inicial', label: 'Data Inicial do Acordo', supabasePath: 'data_inicial', isRelation: false },
+    { key: 'data_final', label: 'Data Final do Acordo', supabasePath: 'data_final', isRelation: false },
+    { key: 'mes_convencao', label: 'Mês da Convenção', supabasePath: 'mes_convencao', isRelation: false },
     { key: 'url_documento_sindicato', label: 'URL Documento Sindicato', supabasePath: 'url_documento_sindicato', isRelation: false },
-    { key: 'created_at', label: 'Criado Em', supabasePath: 'created_at', isRelation: false },
+    { key: 'created_at', label: 'Sindicato (Criado Em)', supabasePath: 'created_at', isRelation: false },
+
+    // Fields from tbl_dissidios (related via sindicato_id)
+    { key: 'dissidio_id', label: 'Dissídio (ID)', supabasePath: 'tbl_dissidios(id)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'id' },
+    { key: 'dissidio_nome_dissidio', label: 'Dissídio (Nome)', supabasePath: 'tbl_dissidios(nome_dissidio)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'nome_dissidio' },
+    { key: 'dissidio_url_documento', label: 'Dissídio (URL Documento)', supabasePath: 'tbl_dissidios(url_documento)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'url_documento' },
+    { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo)', supabasePath: 'tbl_dissidios(resumo_dissidio)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'resumo_dissidio' },
+    { key: 'dissidio_data_vigencia_inicial', label: 'Dissídio (Início Vigência)', supabasePath: 'tbl_dissidios(data_vigencia_inicial)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'data_vigencia_inicial' },
+    { key: 'dissidio_data_vigencia_final', label: 'Dissídio (Fim Vigência)', supabasePath: 'tbl_dissidios(data_vigencia_final)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'data_vigencia_final' },
+    { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', supabasePath: 'tbl_dissidios(mes_convencao)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'mes_convencao' },
+    { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', supabasePath: 'tbl_dissidios(created_at)', isRelation: true, relationTable: 'tbl_dissidios', relationField: 'created_at' },
   ],
   tbl_resposta_calculo: [
     { key: 'id', label: 'ID', supabasePath: 'id', isRelation: false },
