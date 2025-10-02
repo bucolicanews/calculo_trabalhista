@@ -28,7 +28,9 @@ interface CalculationDetails {
 
 const CalculationResultPage = () => {
   const { user } = useAuth();
-  const { calculationId } = useParams<{ calculationId: string }>();
+  // Corrigido: Lendo o parâmetro 'id' da URL
+  const { id } = useParams<{ id: string }>(); 
+  const calculationId = id; // Usando 'calculationId' para manter o resto do código consistente
   const navigate = useNavigate();
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [calculationDetails, setCalculationDetails] = useState<CalculationDetails | null>(null);
@@ -36,7 +38,7 @@ const CalculationResultPage = () => {
 
   useEffect(() => {
     console.log('CalculationResultPage: useEffect triggered.');
-    console.log('Current calculationId from URL params:', calculationId);
+    console.log('Current calculationId from URL params (now "id"):', calculationId);
     console.log('Current authenticated user:', user?.id);
 
     if (calculationId && user) {
