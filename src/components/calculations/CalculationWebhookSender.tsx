@@ -43,7 +43,7 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
       .from('tbl_webhook_configs')
       .select('*')
       .eq('user_id', user?.id)
-      .eq('table_name', 'tbl_calculos'); // Apenas webhooks configurados para tbl_calculos
+      .or('table_name.eq.tbl_calculos,table_name.eq.all_tables'); // Modificado para incluir 'all_tables'
 
     if (error) {
       showError('Erro ao carregar webhooks disponíveis: ' + error.message);
