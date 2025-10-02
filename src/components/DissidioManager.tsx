@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload, RefreshCw, FileSearch } from 'lucide-react'; // Adicionado FileSearch
+import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload, RefreshCw } from 'lucide-react'; // Removido FileSearch
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -39,7 +39,7 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentDissidio, setCurrentDissidio] = useState<Partial<Dissidio> | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isExtractingText, setIsExtractingText] = useState(false);
+  const [isProcessingN8n, setIsProcessingN8n] = useState(false); // Novo estado para processamento no n8n
   const isEditingDissidio = !!currentDissidio?.id;
 
   useEffect(() => {
@@ -63,37 +63,6 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       setDissidios(data || []);
     }
     setLoading(false);
-  };
-
-  const triggerPdfTextExtraction = async (dissidioId: string, pdfUrl: string) => {
-    setIsExtractingText(true);
-    try {
-      const extractResponse = await fetch(
-        `https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/extract-pdf-text`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ dissidioId: dissidioId, pdfUrl: pdfUrl }),
-        }
-      );
-
-      if (!extractResponse.ok) {
-        const errorData = await extractResponse.json();
-        showError('Erro ao extrair texto do PDF: ' + (errorData.error || 'Erro desconhecido'));
-        console.error('PDF extraction failed:', errorData);
-      } else {
-        showSuccess('Extração de texto do PDF iniciada (simulada).');
-        fetchDissidios(); // Refresh to show extracted text
-      }
-    } catch (extractError: any) {
-      showError('Erro de rede ao iniciar extração de texto: ' + extractError.message);
-      console.error('Network error during PDF extraction:', extractError);
-    } finally {
-      setIsExtractingText(false);
-    }
   };
 
   const handleAddDissidioClick = () => {
@@ -136,78 +105,93 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
     }
 
     setLoading(true);
-    let fileUrl: string | null = currentDissidio.url_documento || null;
-    let dissidioIdToUpdate = currentDissidio.id;
-    let shouldTriggerExtraction = false;
 
     if (selectedFile) {
-      const fileExtension = selectedFile.name.split('.').pop();
-      const sanitizedName = currentDissidio.nome_dissidio.replace(/[^a-zA-Z0-9_.-]/g, '_');
-      const fileName = `${sindicatoId}/${sanitizedName}_${Date.now()}.${fileExtension}`;
+      // Se um arquivo foi selecionado, enviar para o n8n para processamento completo
+      const n8nWebhookUrl = "YOUR_N8N_WEBHOOK_URL_HERE"; // <<< SUBSTITUA PELA SUA URL DO WEBHOOK DO N8N
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('dissidios_documents')
-        .upload(fileName, selectedFile, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) {
-        showError('Erro ao fazer upload do documento: ' + uploadError.message);
+      if (n8nWebhookUrl === "YOUR_N8N_WEBHOOK_URL_HERE") {
+        showError("Por favor, configure a URL do webhook do n8n no DissidioManager.tsx");
         setLoading(false);
         return;
       }
 
-      const { data: publicUrlData } = supabase.storage
-        .from('dissidios_documents')
-        .getPublicUrl(fileName);
-      
-      fileUrl = publicUrlData.publicUrl;
-      showSuccess('Documento enviado com sucesso!');
-      shouldTriggerExtraction = true; // Trigger extraction if a new file was uploaded
-    } else if (isEditingDissidio && currentDissidio.url_documento !== fileUrl) {
-      // This case handles if the URL was manually changed without a new file upload
-      shouldTriggerExtraction = true;
-    }
+      const formData = new FormData();
+      formData.append('pdfFile', selectedFile);
+      formData.append('sindicato_id', sindicatoId);
+      if (isEditingDissidio && currentDissidio?.id) {
+        formData.append('dissidio_id', currentDissidio.id);
+      }
+      formData.append('nome_dissidio', currentDissidio.nome_dissidio);
+      formData.append('resumo_dissidio', currentDissidio.resumo_dissidio || '');
+      formData.append('data_vigencia_inicial', currentDissidio.data_vigencia_inicial || '');
+      formData.append('data_vigencia_final', currentDissidio.data_vigencia_final || '');
+      formData.append('mes_convencao', currentDissidio.mes_convencao || '');
+      // Não enviar texto_extraido ou resumo_ai, pois o n8n irá gerá-los/atualizá-los
 
-    const dissidioToSave = {
-      ...currentDissidio,
-      url_documento: fileUrl,
-    };
+      setIsProcessingN8n(true);
+      try {
+        const n8nResponse = await fetch(n8nWebhookUrl, {
+          method: 'POST',
+          body: formData, // FormData automaticamente define Content-Type: multipart/form-data
+        });
 
-    let response;
-    if (isEditingDissidio) {
-      response = await supabase
-        .from('tbl_dissidios')
-        .update(dissidioToSave)
-        .eq('id', currentDissidio.id)
-        .select('id')
-        .single();
+        if (!n8nResponse.ok) {
+          const errorText = await n8nResponse.text();
+          showError('Erro ao enviar PDF para n8n: ' + errorText);
+          console.error('n8n webhook failed:', errorText);
+        } else {
+          showSuccess('PDF enviado para n8n para processamento! O resumo e texto extraído serão atualizados em breve.');
+          // O n8n é responsável por atualizar o Supabase com a URL do documento, texto extraído e resumo AI.
+          // Apenas fechamos o diálogo e atualizamos a lista.
+          setIsDialogOpen(false);
+          setCurrentDissidio(null);
+          setSelectedFile(null);
+          fetchDissidios(); // Atualiza a lista para refletir as mudanças quando o n8n terminar
+        }
+      } catch (error: any) {
+        showError('Erro de rede ao enviar PDF para n8n: ' + error.message);
+        console.error('Network error sending to n8n:', error);
+      } finally {
+        setIsProcessingN8n(false);
+        setLoading(false);
+      }
+      return; // Sair da função, pois o n8n está lidando com a atualização completa
     } else {
-      response = await supabase
-        .from('tbl_dissidios')
-        .insert(dissidioToSave)
-        .select('id')
-        .single();
-    }
+      // Se nenhum arquivo foi selecionado, proceder com a atualização normal do Supabase
+      const dissidioToSave = {
+        ...currentDissidio,
+        url_documento: currentDissidio?.url_documento || null, // Manter URL existente se não houver novo upload
+        // Não tocar em texto_extraido ou resumo_ai aqui, eles são atualizados pelo n8n/Edge Function
+      };
 
-    if (response.error) {
-      showError('Erro ao salvar dissídio: ' + response.error.message);
-      console.error('Error saving dissídio:', response.error);
-    } else {
-      showSuccess(`Dissídio ${isEditingDissidio ? 'atualizado' : 'criado'} com sucesso!`);
-      dissidioIdToUpdate = response.data.id;
-
-      if (shouldTriggerExtraction && fileUrl && dissidioIdToUpdate) {
-        await triggerPdfTextExtraction(dissidioIdToUpdate, fileUrl);
+      let response;
+      if (isEditingDissidio) {
+        response = await supabase
+          .from('tbl_dissidios')
+          .update(dissidioToSave)
+          .eq('id', currentDissidio.id)
+          .select('id')
+          .single();
+      } else {
+        // Não deve acontecer se o nome do dissídio for obrigatório e não houver arquivo
+        showError('Nenhum arquivo selecionado e não é uma edição. Por favor, selecione um arquivo.');
+        setLoading(false);
+        return;
       }
 
-      setIsDialogOpen(false);
-      setCurrentDissidio(null);
-      setSelectedFile(null);
-      fetchDissidios();
+      if (response.error) {
+        showError('Erro ao salvar dissídio: ' + response.error.message);
+        console.error('Error saving dissídio:', response.error);
+      } else {
+        showSuccess(`Dissídio ${isEditingDissidio ? 'atualizado' : 'criado'} com sucesso!`);
+        setIsDialogOpen(false);
+        setCurrentDissidio(null);
+        setSelectedFile(null);
+        fetchDissidios();
+      }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleDeleteDissidio = async (dissidioId: string) => {
@@ -280,26 +264,9 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                     <span className="text-sm text-gray-400">{selectedFile.name}</span>
                   )}
                   {!selectedFile && currentDissidio?.url_documento && (
-                    <div className="flex items-center space-x-2 mt-2">
-                      <a href={currentDissidio.url_documento} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline flex items-center">
-                        <FileText className="h-4 w-4 mr-1" /> Ver Atual
-                      </a>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => currentDissidio.id && currentDissidio.url_documento && triggerPdfTextExtraction(currentDissidio.id, currentDissidio.url_documento)}
-                        disabled={isExtractingText || loading}
-                        className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white"
-                      >
-                        {isExtractingText ? (
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <FileSearch className="mr-2 h-4 w-4" />
-                        )}
-                        Extrair Texto
-                      </Button>
-                    </div>
+                    <a href={currentDissidio.url_documento} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline flex items-center">
+                      <FileText className="h-4 w-4 mr-1" /> Ver Atual
+                    </a>
                   )}
                 </div>
               </div>
@@ -403,10 +370,10 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                 <DialogClose asChild>
                   <Button type="button" variant="ghost" className="bg-gray-700 text-white hover:bg-gray-600">Cancelar</Button>
                 </DialogClose>
-                <Button type="submit" disabled={loading || isExtractingText} className="bg-orange-500 hover:bg-orange-600 text-white">
-                  {loading || isExtractingText ? (
+                <Button type="submit" disabled={loading || isProcessingN8n} className="bg-orange-500 hover:bg-orange-600 text-white">
+                  {loading || isProcessingN8n ? (
                     <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> {isExtractingText ? 'Extraindo Texto...' : 'Salvando...'}
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> {isProcessingN8n ? 'Enviando para n8n...' : 'Salvando...'}
                     </>
                   ) : (isEditingDissidio ? 'Atualizar Dissídio' : 'Criar Dissídio')}
                 </Button>
