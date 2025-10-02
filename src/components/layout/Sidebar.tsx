@@ -22,6 +22,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
     }
   };
 
+  // URL da função Edge para receber o resumo da IA
+  const aiSummaryWebhookUrl = "https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/store-ai-summary";
+
   const navItems = [
     { name: 'Dashboard', icon: Home, path: '/dashboard' },
     { name: 'Clientes', icon: Users, path: '/clients' },
@@ -56,6 +59,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
         </ul>
       </nav>
       <div className="mt-auto pt-4 border-t border-gray-700">
+        <div className="mb-4 p-2 bg-gray-800 rounded-md text-sm text-gray-400 break-all">
+          <p className="font-semibold text-orange-400 mb-1">Webhook Resumo IA:</p>
+          <span className="text-xs">{aiSummaryWebhookUrl}</span>
+        </div>
         <Button
           variant="ghost"
           onClick={handleLogout}
