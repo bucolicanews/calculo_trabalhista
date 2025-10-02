@@ -27,11 +27,18 @@ interface Sindicato {
   nome: string;
 }
 
+// Nova lista de Tipos de Rescisão de Contrato de Trabalho
 const noticeTypes = [
-  'Trabalhado pelo Empregado',
-  'Trabalhado pelo Empregador',
-  'Indenizado pelo Empregador',
-  'Indenizado pelo Empregado',
+  'Rescisão com Justa Causa',
+  'Rescisão sem Justa Causa',
+  'Pedido de Demissão',
+  'Rescisão Antecipada do Contrato a Termo (Empregador)',
+  'Rescisão Antecipada do Contrato a Termo (Empregado)',
+  'Término do Contrato a Termo',
+  'Rescisão por Culpa Recíproca',
+  'Rescisão Indireta',
+  'Rescisão por Falecimento do Empregado',
+  'Encerramento da Empresa',
 ];
 
 const CalculationFormPage = () => {
@@ -46,7 +53,7 @@ const CalculationFormPage = () => {
     funcao_funcionario: '',
     inicio_contrato: '',
     fim_contrato: '',
-    tipo_aviso: '',
+    tipo_aviso: '', // Este campo agora representa o tipo de rescisão
     salario_sindicato: 0,
     obs_sindicato: '',
     historia: '',
@@ -342,9 +349,9 @@ const CalculationFormPage = () => {
                 </div>
               </div>
 
-              {/* Tipo de Aviso */}
+              {/* Tipo de Aviso / Rescisão */}
               <div>
-                <Label htmlFor="tipo_aviso" className="text-gray-300">Tipo de Aviso</Label>
+                <Label htmlFor="tipo_aviso" className="text-gray-300">Tipo de Rescisão</Label>
                 <Select
                   name="tipo_aviso"
                   value={calculation.tipo_aviso}
@@ -352,7 +359,7 @@ const CalculationFormPage = () => {
                   required
                 >
                   <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus:ring-orange-500">
-                    <SelectValue placeholder="Selecione o tipo de aviso" />
+                    <SelectValue placeholder="Selecione o tipo de rescisão" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 text-white">
                     {noticeTypes.map((type) => (
