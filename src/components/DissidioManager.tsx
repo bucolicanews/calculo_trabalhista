@@ -227,13 +227,38 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
         const selectParts: Set<string> = new Set();
         selectParts.add('id'); // Always include the ID of the main record
 
+        const relatedTableSelections: { [tableName: string]: Set<string> } = {};
+        let hasSindicatoJoin = false; // Flag para verificar se tbl_sindicatos está sendo unida
+
         config.selected_fields.forEach(fieldKey => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            const supabasePath = getFullSupabasePath('tbl_dissidios', fieldDef); // mainTableName is 'tbl_dissidios'
-            selectParts.add(supabasePath);
+            if (fieldDef.sourceTable === 'tbl_dissidios') {
+              // Campos diretos de tbl_dissidios
+              selectParts.add(fieldDef.baseSupabasePath);
+            } else if (fieldDef.sourceTable === 'tbl_sindicatos') {
+              // Campos de tbl_sindicatos, relacionados a tbl_dissidios
+              hasSindicatoJoin = true;
+              if (!relatedTableSelections['tbl_sindicatos']) {
+                relatedTableSelections['tbl_sindicatos'] = new Set();
+              }
+              relatedTableSelections['tbl_sindicatos'].add(fieldDef.baseSupabasePath);
+            }
+            // Adicionar outras tabelas relacionadas se necessário
           }
         });
+
+        // Se tbl_sindicatos está sendo unida, remover o 'sindicato_id' direto de selectParts
+        if (hasSindicatoJoin) {
+          selectParts.delete('sindicato_id'); // Remover FK direta se a junção estiver presente
+        }
+
+        // Combinar seleções de tabelas relacionadas na string de seleção principal
+        for (const tableName in relatedTableSelections) {
+          if (relatedTableSelections[tableName].size > 0) {
+            selectParts.add(`${tableName}(${Array.from(relatedTableSelections[tableName]).join(',')})`);
+          }
+        }
 
         const finalSelectString = Array.from(selectParts).join(', ');
 
@@ -254,28 +279,22 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
           continue; // Skip to next webhook config
         }
 
-        // Explicitly cast specificDissidioData to unknown first, then to Dissidio
         const dissidioRecord: Dissidio = specificDissidioData as unknown as Dissidio;
 
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach(fieldKey => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            // Use extractValueFromPath to correctly get nested values
             const extractionPath = getFullSupabasePath('tbl_dissidios', fieldDef);
             payload[fieldDef.key] = extractValueFromPath(dissidioRecord, extractionPath);
           }
         });
 
-        // Add PDF file/URL to payload if available
-        if (pdfUrl) { // Priorize o URL já existente ou o recém-upload
+        if (pdfUrl) {
           payload.pdf_document_url = pdfUrl;
-        } else if (dissidioRecord.url_documento) { // Use dissidioRecord here
-          payload.pdf_document_url = dissidioRecord.url_documento; // Use dissidioRecord here
+        } else if (dissidioRecord.url_documento) {
+          payload.pdf_document_url = dissidioRecord.url_documento;
         }
-        // Note: Sending binary 'pdfFile' directly in JSON is not standard.
-        // If the webhook expects the actual file, it needs to be configured for multipart/form-data.
-        // For now, we send the URL.
 
         const response = await fetch(config.webhook_url, {
           method: 'POST',
