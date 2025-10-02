@@ -36,14 +36,18 @@ const CalculationResultPage = () => {
   const [calculating, setCalculating] = useState(false);
 
   useEffect(() => {
+    console.log('CalculationResultPage: useEffect triggered. calculationId:', calculationId, 'user:', user);
     if (calculationId && user) {
       fetchCalculationResult();
       fetchCalculationDetails();
+    } else {
+      setLoading(false); // Ensure loading is false if conditions are not met
     }
   }, [calculationId, user]);
 
   const fetchCalculationResult = async () => {
     setLoading(true);
+    console.log('fetchCalculationResult: Starting fetch for calculationId:', calculationId);
     const { data, error } = await supabase
       .from('tbl_resposta_calculo')
       .select('*')
@@ -52,18 +56,25 @@ const CalculationResultPage = () => {
 
     if (error && error.code !== 'PGRST116') { // PGRST116 means "no rows found"
       showError('Erro ao carregar resultado do cálculo: ' + error.message);
-      console.error('Error fetching calculation result:', error);
+      console.error('fetchCalculationResult: Error fetching calculation result:', error);
       setResult(null);
     } else if (data) {
+      console.log('fetchCalculationResult: Data received:', data);
       setResult(data);
     } else {
+      console.log('fetchCalculationResult: No data found for calculationId:', calculationId);
       setResult(null);
     }
     setLoading(false);
+    console.log('fetchCalculationResult: Finished. Loading set to false.');
   };
 
   const fetchCalculationDetails = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('fetchCalculationDetails: User not authenticated, skipping fetch.');
+      return;
+    }
+    console.log('fetchCalculationDetails: Starting fetch for calculation details for calculationId:', calculationId);
 
     const { data, error } = await supabase
       .from('tbl_calculos')
@@ -74,13 +85,16 @@ const CalculationResultPage = () => {
 
     if (error) {
       showError('Erro ao carregar detalhes do cálculo: ' + error.message);
-      console.error('Error fetching calculation details:', error);
+      console.error('fetchCalculationDetails: Error fetching calculation details:', error);
       navigate('/dashboard');
     } else if (data) {
+      console.log('fetchCalculationDetails: Details received:', data);
       setCalculationDetails({
         ...data,
         tbl_clientes: data.tbl_clientes ? (Array.isArray(data.tbl_clientes) ? data.tbl_clientes : [data.tbl_clientes]) : null
       } as CalculationDetails);
+    } else {
+      console.log('fetchCalculationDetails: No details found for calculationId:', calculationId);
     }
   };
 
