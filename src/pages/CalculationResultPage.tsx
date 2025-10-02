@@ -4,16 +4,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RefreshCw, Calculator, FileText } from 'lucide-react';
-import { showError, showSuccess } from '@/utils/toast';
+import { ArrowLeft, FileText } from 'lucide-react'; // Removido RefreshCw e Calculator
+import { showError } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
 
 interface CalculationResult {
   id: string;
   calculo_id: string;
   resposta_ai: string | null;
-  url_documento_calculo: string | null; // Novo campo
-  texto_extraido: string | null; // Novo campo
+  url_documento_calculo: string | null;
+  texto_extraido: string | null;
   data_hora: string;
 }
 
@@ -33,7 +33,6 @@ const CalculationResultPage = () => {
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [calculationDetails, setCalculationDetails] = useState<CalculationDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [calculating, setCalculating] = useState(false);
 
   useEffect(() => {
     console.log('CalculationResultPage: useEffect triggered. calculationId:', calculationId, 'user:', user);
@@ -41,7 +40,7 @@ const CalculationResultPage = () => {
       fetchCalculationResult();
       fetchCalculationDetails();
     } else {
-      setLoading(false); // Ensure loading is false if conditions are not met
+      setLoading(false);
     }
   }, [calculationId, user]);
 
@@ -98,56 +97,7 @@ const CalculationResultPage = () => {
     }
   };
 
-  const handleCalculateRescisao = async () => {
-    if (!calculationId || !user) {
-      showError('Usuário não autenticado ou ID do cálculo ausente.');
-      return;
-    }
-
-    setCalculating(true);
-    showSuccess('Iniciando cálculo preliminar...');
-
-    const { data: calcData, error: calcError } = await supabase
-      .from('tbl_calculos')
-      .select('inicio_contrato, fim_contrato, cliente_id')
-      .eq('id', calculationId)
-      .single(); // Removed .eq('tbl_clientes.user_id', user.id) as it's already handled by RLS
-
-    if (calcError || !calcData) {
-      showError('Erro ao obter dados para o cálculo: ' + (calcError?.message || 'Dados não encontrados ou você não tem permissão para acessá-los.'));
-      setCalculating(false);
-      return;
-    }
-
-    const startDate = new Date(calcData.inicio_contrato);
-    const endDate = new Date(calcData.fim_contrato);
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    const placeholderResponse = `Cálculo preliminar realizado.
-    Tempo de contrato: ${diffDays} dias.
-    Verbas simuladas: Férias Proporcionais, 13º Salário Proporcional, Aviso Prévio Indenizado.
-    Este é um resultado simulado e não substitui um cálculo completo.`;
-
-    const { error: insertError } = await supabase
-      .from('tbl_resposta_calculo')
-      .upsert({
-        calculo_id: calculationId,
-        resposta_ai: placeholderResponse,
-        data_hora: new Date().toISOString(),
-        url_documento_calculo: null, // Placeholder for now
-        texto_extraido: null, // Placeholder for now
-      }, { onConflict: 'calculo_id' });
-
-    if (insertError) {
-      showError('Erro ao salvar resultado do cálculo: ' + insertError.message);
-      console.error('Error saving calculation result:', insertError);
-    } else {
-      showSuccess('Cálculo preliminar gerado e salvo!');
-      fetchCalculationResult();
-    }
-    setCalculating(false);
-  };
+  // A função handleCalculateRescisao foi removida, pois o cálculo preliminar não será mais acionado pela UI.
 
   return (
     <MainLayout>
@@ -214,21 +164,7 @@ const CalculationResultPage = () => {
             ) : (
               <div className="text-center space-y-4">
                 <p className="text-gray-400">Nenhum resultado de cálculo encontrado para este ID.</p>
-                <Button
-                  onClick={handleCalculateRescisao}
-                  disabled={calculating}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  {calculating ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Calculando...
-                    </>
-                  ) : (
-                    <>
-                      <Calculator className="mr-2 h-4 w-4" /> Gerar Cálculo Preliminar
-                    </>
-                  )}
-                </Button>
+                {/* O botão "Gerar Cálculo Preliminar" foi removido */}
               </div>
             )}
           </CardContent>
