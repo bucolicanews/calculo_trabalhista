@@ -6,14 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload, RefreshCw, Send } from 'lucide-react'; // Adicionado Send
+import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload, RefreshCw, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import DissidioWebhookSender from './dissidios/DissidioWebhookSender'; // Caminho corrigido para relativo
+import DissidioWebhookSender from '@/components/dissidios/DissidioWebhookSender';
 
 interface Dissidio {
   id: string;
@@ -39,9 +39,9 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentDissidio, setCurrentDissidio] = useState<Partial<Dissidio> | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isSendingWebhook, setIsSendingWebhook] = useState(false); // Estado para o envio de webhook
-  const [isDissidioWebhookSenderOpen, setIsDissidioWebhookSenderOpen] = useState(false); // Estado para o modal de seleção de webhook
-  const [currentDissidioForWebhook, setCurrentDissidioForWebhook] = useState<Dissidio | null>(null); // Dissídio a ser enviado
+  const [isSendingWebhook, setIsSendingWebhook] = useState(false);
+  const [isDissidioWebhookSenderOpen, setIsDissidioWebhookSenderOpen] = useState(false);
+  const [currentDissidioForWebhook, setCurrentDissidioForWebhook] = useState<Dissidio | null>(null);
   const isEditingDissidio = !!currentDissidio?.id;
 
   useEffect(() => {
@@ -108,7 +108,6 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
 
     setLoading(true);
     let fileUrl: string | null = currentDissidio.url_documento || null;
-    let dissidioIdToUpdate = currentDissidio.id;
 
     if (selectedFile) {
       const fileExtension = selectedFile.name.split('.').pop();
@@ -148,13 +147,13 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
         .from('tbl_dissidios')
         .update(dissidioToSave)
         .eq('id', currentDissidio.id)
-        .select('*') // Select all to get updated data for webhook sender
+        .select('*')
         .single();
     } else {
       response = await supabase
         .from('tbl_dissidios')
         .insert(dissidioToSave)
-        .select('*') // Select all to get newly created data for webhook sender
+        .select('*')
         .single();
     }
 
@@ -163,9 +162,9 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       console.error('Error saving dissídio:', response.error);
     } else {
       showSuccess(`Dissídio ${isEditingDissidio ? 'atualizado' : 'criado'} com sucesso!`);
-      setCurrentDissidio(response.data); // Update currentDissidio with fresh data
-      setSelectedFile(null); // Clear selected file after successful save/upload
-      fetchDissidios(); // Refresh the list
+      setCurrentDissidio(response.data);
+      setSelectedFile(null);
+      fetchDissidios();
     }
     setLoading(false);
   };
@@ -204,7 +203,7 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
     try {
       const { data: dissidioData, error: fetchError } = await supabase
         .from('tbl_dissidios')
-        .select('*') // Fetch all fields for the payload
+        .select('*')
         .eq('id', dissidioId)
         .single();
 
@@ -236,41 +235,30 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       for (const config of webhookConfigs) {
         const payload: { [key: string]: any } = {};
         
-        // Populate payload with selected fields from dissidioData
         config.selected_fields.forEach(fieldKey => {
-          // For dissidios, the fields are direct or nested under tbl_dissidios
-          // We need to map fieldKey (e.g., 'dissidio_nome_dissidio') to actual column name (e.g., 'nome_dissidio')
-          // Or handle nested paths if 'all_tables' is selected and it's a complex path
-          const actualColumnName = fieldKey.replace('dissidio_', ''); // Simple mapping for direct fields
+          const actualColumnName = fieldKey.replace('dissidio_', '');
           if (dissidioData.hasOwnProperty(actualColumnName)) {
             payload[fieldKey] = dissidioData[actualColumnName];
           } else {
-            // Fallback for more complex paths or if fieldKey doesn't match directly
-            // This part would need more sophisticated logic if 'all_tables' fields are selected
-            // and they refer to related tables for dissidios. For now, focusing on direct fields.
-            payload[fieldKey] = dissidioData[fieldKey]; // Try direct access
+            payload[fieldKey] = dissidioData[fieldKey];
           }
         });
 
-        // Always include dissidio ID and URL for n8n processing
         payload.dissidio_id = dissidioData.id;
         payload.sindicato_id = dissidioData.sindicato_id;
-        payload.url_documento = pdfUrl || dissidioData.url_documento; // Use new URL if available, else existing
+        payload.url_documento = pdfUrl || dissidioData.url_documento;
 
         let requestBody: FormData | string;
         let headers: HeadersInit = {};
 
         if (pdfFile) {
-          // If a new binary file is selected, send it as FormData
           const formData = new FormData();
           formData.append('pdfFile', pdfFile);
           Object.keys(payload).forEach(key => {
             formData.append(key, payload[key]);
           });
           requestBody = formData;
-          // Content-Type will be set automatically by fetch for FormData
         } else {
-          // If no new binary file, send as JSON
           requestBody = JSON.stringify(payload);
           headers['Content-Type'] = 'application/json';
         }
@@ -302,7 +290,7 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       console.error('Unexpected error sending webhook:', error);
     } finally {
       setIsSendingWebhook(false);
-      fetchDissidios(); // Refresh list in case n8n updated something
+      fetchDissidios();
     }
   };
 
@@ -316,152 +304,146 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
               <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Dissídio
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-gray-900 border-orange-500 text-white sm:max-w-[600px]">
+          <DialogContent className="max-w-full sm:max-w-[600px] md:max-w-[700px] lg:max-w-[800px] bg-gray-900 border-orange-500 text-white">
             <DialogHeader>
               <DialogTitle className="text-orange-500">{isEditingDissidio ? 'Editar Dissídio' : 'Novo Dissídio'}</DialogTitle>
               <DialogDescription className="text-gray-400">
                 Preencha os detalhes do dissídio. Clique em salvar quando terminar.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSaveDissidio} className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="nome_dissidio" className="text-right text-gray-300">Nome</Label>
-                <Input
-                  id="nome_dissidio"
-                  name="nome_dissidio"
-                  value={currentDissidio?.nome_dissidio || ''}
-                  onChange={handleDissidioFormChange}
-                  className="col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="document_upload" className="text-right text-gray-300">Documento PDF</Label>
-                <div className="col-span-3 flex flex-col items-center space-y-2">
-                  <div className="relative w-full">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 flex items-center justify-center"
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      {selectedFile ? "Arquivo Selecionado" : "Selecionar PDF"}
-                    </Button>
-                    <Input
-                      id="document_upload"
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                  </div>
-                  {selectedFile && (
-                    <span className="text-sm text-gray-400">{selectedFile.name}</span>
-                  )}
-                  {!selectedFile && currentDissidio?.url_documento && (
-                    <a href={currentDissidio.url_documento} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline flex items-center">
-                      <FileText className="h-4 w-4 mr-1" /> Ver Atual
-                    </a>
-                  )}
+            <form onSubmit={handleSaveDissidio} className="grid grid-cols-1 md:grid-cols-4 items-center gap-4 py-4">
+              <Label htmlFor="nome_dissidio" className="md:text-right text-gray-300">Nome</Label>
+              <Input
+                id="nome_dissidio"
+                name="nome_dissidio"
+                value={currentDissidio?.nome_dissidio || ''}
+                onChange={handleDissidioFormChange}
+                className="col-span-full md:col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+                required
+              />
+              
+              <Label htmlFor="document_upload" className="md:text-right text-gray-300">Documento PDF</Label>
+              <div className="col-span-full md:col-span-3 flex flex-col items-start space-y-2">
+                <div className="relative w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 flex items-center justify-center"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {selectedFile ? "Arquivo Selecionado" : "Selecionar PDF"}
+                  </Button>
+                  <Input
+                    id="document_upload"
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
                 </div>
+                {selectedFile && (
+                  <span className="text-sm text-gray-400">{selectedFile.name}</span>
+                )}
+                {!selectedFile && currentDissidio?.url_documento && (
+                  <a href={currentDissidio.url_documento} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline flex items-center">
+                    <FileText className="h-4 w-4 mr-1" /> Ver Atual
+                  </a>
+                )}
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="resumo_dissidio" className="text-right text-gray-300">Resumo Manual</Label>
-                <Textarea
-                  id="resumo_dissidio"
-                  name="resumo_dissidio"
-                  value={currentDissidio?.resumo_dissidio || ''}
-                  onChange={handleDissidioFormChange}
-                  rows={3}
-                  className="col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
-              </div>
+              
+              <Label htmlFor="resumo_dissidio" className="md:text-right text-gray-300">Resumo Manual</Label>
+              <Textarea
+                id="resumo_dissidio"
+                name="resumo_dissidio"
+                value={currentDissidio?.resumo_dissidio || ''}
+                onChange={handleDissidioFormChange}
+                rows={3}
+                className="col-span-full md:col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+              />
+              
               {currentDissidio?.texto_extraido && (
-                <div className="grid grid-cols-4 items-start gap-4">
-                  <Label className="text-right text-gray-300">Texto Extraído do PDF</Label>
+                <>
+                  <Label className="md:text-right text-gray-300">Texto Extraído do PDF</Label>
                   <Textarea
                     value={currentDissidio.texto_extraido}
                     readOnly
                     rows={5}
-                    className="col-span-3 bg-gray-800 border-gray-700 text-gray-400 resize-none"
+                    className="col-span-full md:col-span-3 bg-gray-800 border-gray-700 text-gray-400 resize-none"
                   />
-                </div>
+                </>
               )}
               {currentDissidio?.resumo_ai && (
-                <div className="grid grid-cols-4 items-start gap-4">
-                  <Label className="text-right text-gray-300">Resumo IA</Label>
+                <>
+                  <Label className="md:text-right text-gray-300">Resumo IA</Label>
                   <Textarea
                     value={currentDissidio.resumo_ai}
                     readOnly
                     rows={5}
-                    className="col-span-3 bg-gray-800 border-gray-700 text-gray-400 resize-none"
+                    className="col-span-full md:col-span-3 bg-gray-800 border-gray-700 text-gray-400 resize-none"
                   />
-                </div>
+                </>
               )}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="data_vigencia_inicial" className="text-right text-gray-300">Início Vigência</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "col-span-3 justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700",
-                        !currentDissidio?.data_vigencia_inicial && "text-gray-500"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {currentDissidio?.data_vigencia_inicial ? format(new Date(currentDissidio.data_vigencia_inicial), 'PPP') : <span>Selecione a data</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
-                    <Calendar
-                      mode="single"
-                      selected={currentDissidio?.data_vigencia_inicial ? new Date(currentDissidio.data_vigencia_inicial) : undefined}
-                      onSelect={(date) => handleDissidioDateChange('data_vigencia_inicial', date)}
-                      initialFocus
-                      className="bg-gray-900 text-white"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="data_vigencia_final" className="text-right text-gray-300">Fim Vigência</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "col-span-3 justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700",
-                        !currentDissidio?.data_vigencia_final && "text-gray-500"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {currentDissidio?.data_vigencia_final ? format(new Date(currentDissidio.data_vigencia_final), 'PPP') : <span>Selecione a data</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
-                    <Calendar
-                      mode="single"
-                      selected={currentDissidio?.data_vigencia_final ? new Date(currentDissidio.data_vigencia_final) : undefined}
-                      onSelect={(date) => handleDissidioDateChange('data_vigencia_final', date)}
-                      initialFocus
-                      className="bg-gray-900 text-white"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="mes_convencao" className="text-right text-gray-300">Mês Convenção</Label>
-                <Input
-                  id="mes_convencao"
-                  name="mes_convencao"
-                  value={currentDissidio?.mes_convencao || ''}
-                  onChange={handleDissidioFormChange}
-                  className="col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  placeholder="Ex: Janeiro ou 01/2024"
-                />
-              </div>
-              <DialogFooter>
+              
+              <Label htmlFor="data_vigencia_inicial" className="md:text-right text-gray-300">Início Vigência</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "col-span-full md:col-span-3 justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700",
+                      !currentDissidio?.data_vigencia_inicial && "text-gray-500"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {currentDissidio?.data_vigencia_inicial ? format(new Date(currentDissidio.data_vigencia_inicial), 'PPP') : <span>Selecione a data</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
+                  <Calendar
+                    mode="single"
+                    selected={currentDissidio?.data_vigencia_inicial ? new Date(currentDissidio.data_vigencia_inicial) : undefined}
+                    onSelect={(date) => handleDissidioDateChange('data_vigencia_inicial', date)}
+                    initialFocus
+                    className="bg-gray-900 text-white"
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <Label htmlFor="data_vigencia_final" className="md:text-right text-gray-300">Fim Vigência</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "col-span-full md:col-span-3 justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700",
+                      !currentDissidio?.data_vigencia_final && "text-gray-500"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {currentDissidio?.data_vigencia_final ? format(new Date(currentDissidio.data_vigencia_final), 'PPP') : <span>Selecione a data</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
+                  <Calendar
+                    mode="single"
+                    selected={currentDissidio?.data_vigencia_final ? new Date(currentDissidio.data_vigencia_final) : undefined}
+                    onSelect={(date) => handleDissidioDateChange('data_vigencia_final', date)}
+                    initialFocus
+                    className="bg-gray-900 text-white"
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <Label htmlFor="mes_convencao" className="md:text-right text-gray-300">Mês Convenção</Label>
+              <Input
+                id="mes_convencao"
+                name="mes_convencao"
+                value={currentDissidio?.mes_convencao || ''}
+                onChange={handleDissidioFormChange}
+                className="col-span-full md:col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+                placeholder="Ex: Janeiro ou 01/2024"
+              />
+              <DialogFooter className="col-span-full flex justify-end gap-2 mt-4">
                 <DialogClose asChild>
                   <Button type="button" variant="ghost" className="bg-gray-700 text-white hover:bg-gray-600">Cancelar</Button>
                 </DialogClose>
@@ -560,8 +542,8 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       {currentDissidioForWebhook && (
         <DissidioWebhookSender
           dissidioId={currentDissidioForWebhook.id}
-          pdfFile={selectedFile} // Pass the currently selected file
-          pdfUrl={currentDissidioForWebhook.url_documento} // Pass the saved URL
+          pdfFile={selectedFile}
+          pdfUrl={currentDissidioForWebhook.url_documento}
           isOpen={isDissidioWebhookSenderOpen}
           onOpenChange={setIsDissidioWebhookSenderOpen}
           onSend={handleSendDissidioToWebhook}
