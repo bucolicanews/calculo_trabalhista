@@ -9,6 +9,8 @@ import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
+import { allAvailableFieldsDefinition, FieldDefinition } from '@/utils/webhookFields';
+import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 
 interface Calculation {
   id: string;
@@ -26,107 +28,6 @@ interface WebhookConfig {
   selected_fields: string[];
   webhook_url: string;
 }
-
-// Define ALL possible fields and their Supabase paths (same as in WebhookConfigPage.tsx)
-const allAvailableFieldsDefinition = [
-  // tbl_clientes fields
-  { key: 'cliente_id', label: 'Cliente (ID)', supabasePath: 'id', mainTable: 'tbl_clientes' },
-  { key: 'cliente_user_id', label: 'Cliente (ID do Usuário)', supabasePath: 'user_id', mainTable: 'tbl_clientes' },
-  { key: 'cliente_nome', label: 'Cliente (Nome/Razão Social)', supabasePath: 'nome', mainTable: 'tbl_clientes' },
-  { key: 'cliente_cpf', label: 'Cliente (CPF)', supabasePath: 'cpf', mainTable: 'tbl_clientes' },
-  { key: 'cliente_cnpj', label: 'Cliente (CNPJ)', supabasePath: 'cnpj', mainTable: 'tbl_clientes' },
-  { key: 'cliente_tipo_empregador', label: 'Cliente (Tipo de Empregador)', supabasePath: 'tipo_empregador', mainTable: 'tbl_clientes' },
-  { key: 'cliente_responsavel', label: 'Cliente (Responsável)', supabasePath: 'responsavel', mainTable: 'tbl_clientes' },
-  { key: 'cliente_cpf_responsavel', label: 'Cliente (CPF do Responsável)', supabasePath: 'cpf_responsavel', mainTable: 'tbl_clientes' },
-  { key: 'cliente_created_at', label: 'Cliente (Criado Em)', supabasePath: 'created_at', mainTable: 'tbl_clientes' },
-
-  // tbl_sindicatos fields
-  { key: 'sindicato_id', label: 'Sindicato (ID)', supabasePath: 'id', mainTable: 'tbl_sindicatos' },
-  { key: 'sindicato_nome', label: 'Sindicato (Nome)', supabasePath: 'nome', mainTable: 'tbl_sindicatos' },
-  { key: 'sindicato_data_inicial', label: 'Sindicato (Data Inicial)', supabasePath: 'data_inicial', mainTable: 'tbl_sindicatos' },
-  { key: 'sindicato_data_final', label: 'Sindicato (Data Final)', supabasePath: 'data_final', mainTable: 'tbl_sindicatos' },
-  { key: 'sindicato_mes_convencao', label: 'Sindicato (Mês Convenção)', supabasePath: 'mes_convencao', mainTable: 'tbl_sindicatos' },
-  { key: 'sindicato_url_documento_sindicato', label: 'Sindicato (URL Documento)', supabasePath: 'url_documento_sindicato', mainTable: 'tbl_sindicatos' },
-  { key: 'sindicato_created_at', label: 'Sindicato (Criado Em)', supabasePath: 'created_at', mainTable: 'tbl_sindicatos' },
-
-  // tbl_dissidios fields (related to tbl_sindicatos)
-  { key: 'dissidio_id', label: 'Dissídio (ID)', supabasePath: 'tbl_dissidios(id)', mainTable: 'tbl_sindicatos' },
-  { key: 'dissidio_nome_dissidio', label: 'Dissídio (Nome)', supabasePath: 'tbl_dissidios(nome_dissidio)', mainTable: 'tbl_sindicatos' },
-  { key: 'dissidio_url_documento', label: 'Dissídio (URL Documento)', supabasePath: 'tbl_dissidios(url_documento)', mainTable: 'tbl_sindicatos' },
-  { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo)', supabasePath: 'tbl_dissidios(resumo_dissidio)', mainTable: 'tbl_sindicatos' },
-  { key: 'dissidio_data_vigencia_inicial', label: 'Dissídio (Início Vigência)', supabasePath: 'tbl_dissidios(data_vigencia_inicial)', mainTable: 'tbl_sindicatos' },
-  { key: 'dissidio_data_vigencia_final', label: 'Dissídio (Fim Vigência)', supabasePath: 'tbl_dissidios(data_vigencia_final)', mainTable: 'tbl_sindicatos' },
-  { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', supabasePath: 'tbl_dissidios(mes_convencao)', mainTable: 'tbl_sindicatos' },
-  { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', supabasePath: 'tbl_dissidios(created_at)', mainTable: 'tbl_sindicatos' },
-
-  // tbl_calculos fields
-  { key: 'calculo_id', label: 'Cálculo (ID)', supabasePath: 'id', mainTable: 'tbl_calculos' },
-  { key: 'calculo_nome_funcionario', label: 'Cálculo (Nome Funcionário)', supabasePath: 'nome_funcionario', mainTable: 'tbl_calculos' },
-  { key: 'calculo_cpf_funcionario', label: 'Cálculo (CPF Funcionário)', supabasePath: 'cpf_funcionario', mainTable: 'tbl_calculos' },
-  { key: 'calculo_funcao_funcionario', label: 'Cálculo (Função Funcionário)', supabasePath: 'funcao_funcionario', mainTable: 'tbl_calculos' },
-  { key: 'calculo_inicio_contrato', label: 'Cálculo (Início Contrato)', supabasePath: 'inicio_contrato', mainTable: 'tbl_calculos' },
-  { key: 'calculo_fim_contrato', label: 'Cálculo (Fim Contrato)', supabasePath: 'fim_contrato', mainTable: 'tbl_calculos' },
-  { key: 'calculo_tipo_aviso', label: 'Cálculo (Tipo de Aviso)', supabasePath: 'tipo_aviso', mainTable: 'tbl_calculos' },
-  { key: 'calculo_salario_sindicato', label: 'Cálculo (Piso Salarial Sindicato)', supabasePath: 'salario_sindicato', mainTable: 'tbl_calculos' },
-  { key: 'calculo_obs_sindicato', label: 'Cálculo (Obs. Sindicato)', supabasePath: 'obs_sindicato', mainTable: 'tbl_calculos' },
-  { key: 'calculo_historia', label: 'Cálculo (História do Contrato)', supabasePath: 'historia', mainTable: 'tbl_calculos' },
-  { key: 'calculo_ctps_assinada', label: 'Cálculo (CTPS Assinada)', supabasePath: 'ctps_assinada', mainTable: 'tbl_calculos' },
-  { key: 'calculo_media_descontos', label: 'Cálculo (Média Descontos)', supabasePath: 'media_descontos', mainTable: 'tbl_calculos' },
-  { key: 'calculo_media_remuneracoes', label: 'Cálculo (Média Remunerações)', supabasePath: 'media_remuneracoes', mainTable: 'tbl_calculos' },
-  { key: 'calculo_carga_horaria', label: 'Cálculo (Carga Horária)', supabasePath: 'carga_horaria', mainTable: 'tbl_calculos' },
-  { key: 'calculo_created_at', label: 'Cálculo (Criado Em)', supabasePath: 'created_at', mainTable: 'tbl_calculos' },
-
-  // tbl_resposta_calculo fields
-  { key: 'resposta_id', label: 'Resposta Cálculo (ID)', supabasePath: 'id', mainTable: 'tbl_resposta_calculo' },
-  { key: 'resposta_calculo_id', label: 'Resposta Cálculo (ID do Cálculo)', supabasePath: 'calculo_id', mainTable: 'tbl_resposta_calculo' },
-  { key: 'resposta_ai', label: 'Resposta Cálculo (Resposta AI)', supabasePath: 'resposta_ai', mainTable: 'tbl_resposta_calculo' },
-  { key: 'resposta_data_hora', label: 'Resposta Cálculo (Data/Hora)', supabasePath: 'data_hora', mainTable: 'tbl_resposta_calculo' },
-  { key: 'resposta_created_at', label: 'Resposta Cálculo (Criado Em)', supabasePath: 'created_at', mainTable: 'tbl_resposta_calculo' },
-];
-
-// Helper to extract value from nested Supabase data structure based on a path string
-const extractValueFromPath = (data: any, path: string) => {
-  // Example path: 'tbl_sindicatos(tbl_dissidios(nome_dissidio))'
-  // Example path: 'tbl_clientes(nome)'
-  // Example path: 'nome_funcionario'
-
-  const parts = path.match(/(\w+)(?:\((.*)\))?/); // Matches 'table' and 'field(nested_path)'
-
-  if (!parts) { // Direct field
-    return data[path];
-  }
-
-  const [_, currentKey, nestedPath] = parts;
-
-  let currentData = data[currentKey];
-
-  if (!currentData) return null;
-
-  if (nestedPath) {
-    // If currentData is an array, process each item
-    if (Array.isArray(currentData)) {
-      const results: any[] = [];
-      currentData.forEach(item => {
-        const nestedValue = extractValueFromPath(item, nestedPath);
-        if (nestedValue !== undefined && nestedValue !== null) {
-          if (Array.isArray(nestedValue)) { // If nested path also returns an array
-            results.push(...nestedValue);
-          } else {
-            results.push(nestedValue);
-          }
-        }
-      });
-      return results.length > 0 ? results : null;
-    } else {
-      // Single object, recurse
-      return extractValueFromPath(currentData, nestedPath);
-    }
-  } else {
-    // No nested path, return the value directly from currentKey
-    return currentData;
-  }
-};
-
 
 const CalculationListPage = () => {
   const { user } = useAuth();
@@ -212,15 +113,15 @@ const CalculationListPage = () => {
 
         // Map selected field keys to their Supabase paths
         config.selected_fields.forEach(fieldKey => {
-          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
+          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey && f.appliesToTables.includes('tbl_calculos'));
           if (fieldDef) {
             // For fields related to tbl_calculos, we need to prepend the relation path
-            if (fieldDef.mainTable === 'tbl_clientes') {
+            if (fieldDef.sourceTable === 'tbl_clientes') {
               selectParts.add(`tbl_clientes(${fieldDef.supabasePath})`);
-            } else if (fieldDef.mainTable === 'tbl_sindicatos') {
+            } else if (fieldDef.sourceTable === 'tbl_sindicatos' || fieldDef.sourceTable === 'tbl_dissidios') {
               // For sindicato fields, including nested dissidios
               selectParts.add(`tbl_sindicatos(${fieldDef.supabasePath})`);
-            } else if (fieldDef.mainTable === 'tbl_calculos') {
+            } else if (fieldDef.sourceTable === 'tbl_calculos') {
               selectParts.add(fieldDef.supabasePath);
             }
             // Add other mainTable cases if needed for other webhook types
@@ -250,13 +151,13 @@ const CalculationListPage = () => {
         // Construct the payload using the generic extractValueFromPath
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach(fieldKey => {
-          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
+          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey && f.appliesToTables.includes('tbl_calculos'));
           if (fieldDef) {
             let pathForExtraction = fieldDef.supabasePath;
             // Adjust path for extraction based on how it was fetched
-            if (fieldDef.mainTable === 'tbl_clientes') {
+            if (fieldDef.sourceTable === 'tbl_clientes') {
               pathForExtraction = `tbl_clientes(${fieldDef.supabasePath})`;
-            } else if (fieldDef.mainTable === 'tbl_sindicatos') {
+            } else if (fieldDef.sourceTable === 'tbl_sindicatos' || fieldDef.sourceTable === 'tbl_dissidios') {
               pathForExtraction = `tbl_sindicatos(${fieldDef.supabasePath})`;
             }
             // For tbl_calculos fields, the path is direct
