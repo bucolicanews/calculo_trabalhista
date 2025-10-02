@@ -31,10 +31,12 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'dissidio_id', label: 'Dissídio (ID)', baseSupabasePath: 'tbl_dissidios(id)', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_nome_dissidio', label: 'Dissídio (Nome)', baseSupabasePath: 'tbl_dissidios(nome_dissidio)', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_url_documento', label: 'Dissídio (URL Documento)', baseSupabasePath: 'tbl_dissidios(url_documento)', sourceTable: 'tbl_sindicatos' },
-  { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo)', baseSupabasePath: 'tbl_dissidios(resumo_dissidio)', sourceTable: 'tbl_sindicatos' },
+  { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo Manual)', baseSupabasePath: 'tbl_dissidios(resumo_dissidio)', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_data_vigencia_inicial', label: 'Dissídio (Início Vigência)', baseSupabasePath: 'tbl_dissidios(data_vigencia_inicial)', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_data_vigencia_final', label: 'Dissídio (Fim Vigência)', baseSupabasePath: 'tbl_dissidios(data_vigencia_final)', sourceTable: 'tbl_sindicatos' },
   { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', baseSupabasePath: 'mes_convencao', sourceTable: 'tbl_sindicatos' },
+  { key: 'dissidio_texto_extraido', label: 'Dissídio (Texto Extraído PDF)', baseSupabasePath: 'tbl_dissidios(texto_extraido)', sourceTable: 'tbl_sindicatos' }, // Novo
+  { key: 'dissidio_resumo_ai', label: 'Dissídio (Resumo IA)', baseSupabasePath: 'tbl_dissidios(resumo_ai)', sourceTable: 'tbl_sindicatos' }, // Novo
   { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_sindicatos' },
 
   // tbl_calculos fields

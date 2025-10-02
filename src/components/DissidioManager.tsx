@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -24,6 +24,8 @@ interface Dissidio {
   data_vigencia_inicial: string | null;
   data_vigencia_final: string | null;
   mes_convencao: string | null;
+  texto_extraido: string | null; // Novo campo
+  resumo_ai: string | null; // Novo campo
   created_at: string;
 }
 
@@ -36,7 +38,8 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentDissidio, setCurrentDissidio] = useState<Partial<Dissidio> | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null); // Estado para o arquivo selecionado
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isExtractingText, setIsExtractingText] = useState(false); // Novo estado para extração
   const isEditingDissidio = !!currentDissidio?.id;
 
   useEffect(() => {
@@ -64,13 +67,13 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
 
   const handleAddDissidioClick = () => {
     setCurrentDissidio({ sindicato_id: sindicatoId });
-    setSelectedFile(null); // Limpa o arquivo selecionado ao adicionar novo
+    setSelectedFile(null);
     setIsDialogOpen(true);
   };
 
   const handleEditDissidioClick = (dissidio: Dissidio) => {
     setCurrentDissidio(dissidio);
-    setSelectedFile(null); // Limpa o arquivo selecionado ao editar
+    setSelectedFile(null);
     setIsDialogOpen(true);
   };
 
@@ -103,12 +106,12 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
 
     setLoading(true);
     let fileUrl: string | null = currentDissidio.url_documento || null;
+    let dissidioIdToUpdate = currentDissidio.id;
 
     if (selectedFile) {
       const fileExtension = selectedFile.name.split('.').pop();
-      // Sanitiza o nome do dissídio para o nome do arquivo
       const sanitizedName = currentDissidio.nome_dissidio.replace(/[^a-zA-Z0-9_.-]/g, '_');
-      const fileName = `${sindicatoId}/${sanitizedName}_${Date.now()}.${fileExtension}`; // Usa sindicatoId como pasta
+      const fileName = `${sindicatoId}/${sanitizedName}_${Date.now()}.${fileExtension}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('dissidios_documents')
@@ -123,7 +126,6 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
         return;
       }
 
-      // Obter a URL pública do arquivo
       const { data: publicUrlData } = supabase.storage
         .from('dissidios_documents')
         .getPublicUrl(fileName);
@@ -142,11 +144,15 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       response = await supabase
         .from('tbl_dissidios')
         .update(dissidioToSave)
-        .eq('id', currentDissidio.id);
+        .eq('id', currentDissidio.id)
+        .select('id') // Select id to ensure we have it for extraction
+        .single();
     } else {
       response = await supabase
         .from('tbl_dissidios')
-        .insert(dissidioToSave);
+        .insert(dissidioToSave)
+        .select('id') // Select id to ensure we have it for extraction
+        .single();
     }
 
     if (response.error) {
@@ -154,9 +160,42 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       console.error('Error saving dissídio:', response.error);
     } else {
       showSuccess(`Dissídio ${isEditingDissidio ? 'atualizado' : 'criado'} com sucesso!`);
+      dissidioIdToUpdate = response.data.id; // Get the ID of the newly created/updated dissidio
+
+      // Trigger PDF text extraction if a new file was uploaded or URL changed
+      if (fileUrl && dissidioIdToUpdate && (selectedFile || (isEditingDissidio && currentDissidio.url_documento !== fileUrl))) {
+        setIsExtractingText(true);
+        try {
+          const extractResponse = await fetch(
+            `https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/extract-pdf-text`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, // Use anon key for client-side call
+              },
+              body: JSON.stringify({ dissidioId: dissidioIdToUpdate, pdfUrl: fileUrl }),
+            }
+          );
+
+          if (!extractResponse.ok) {
+            const errorData = await extractResponse.json();
+            showError('Erro ao extrair texto do PDF: ' + (errorData.error || 'Erro desconhecido'));
+            console.error('PDF extraction failed:', errorData);
+          } else {
+            showSuccess('Extração de texto do PDF iniciada (simulada).');
+          }
+        } catch (extractError: any) {
+          showError('Erro de rede ao iniciar extração de texto: ' + extractError.message);
+          console.error('Network error during PDF extraction:', extractError);
+        } finally {
+          setIsExtractingText(false);
+        }
+      }
+
       setIsDialogOpen(false);
       setCurrentDissidio(null);
-      setSelectedFile(null); // Limpa o arquivo após salvar
+      setSelectedFile(null);
       fetchDissidios();
     }
     setLoading(false);
@@ -164,10 +203,6 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
 
   const handleDeleteDissidio = async (dissidioId: string) => {
     setLoading(true);
-    // Opcional: Deletar o arquivo do storage antes de deletar o registro do banco de dados
-    // Isso exigiria buscar o url_documento primeiro para saber qual arquivo deletar.
-    // Por simplicidade, vamos apenas deletar o registro do banco de dados por enquanto.
-
     const { error } = await supabase
       .from('tbl_dissidios')
       .delete()
@@ -243,7 +278,7 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="resumo_dissidio" className="text-right text-gray-300">Resumo</Label>
+                <Label htmlFor="resumo_dissidio" className="text-right text-gray-300">Resumo Manual</Label>
                 <Textarea
                   id="resumo_dissidio"
                   name="resumo_dissidio"
@@ -253,6 +288,28 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                   className="col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
                 />
               </div>
+              {currentDissidio?.texto_extraido && (
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right text-gray-300">Texto Extraído do PDF</Label>
+                  <Textarea
+                    value={currentDissidio.texto_extraido}
+                    readOnly
+                    rows={5}
+                    className="col-span-3 bg-gray-800 border-gray-700 text-gray-400 resize-none"
+                  />
+                </div>
+              )}
+              {currentDissidio?.resumo_ai && (
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right text-gray-300">Resumo IA</Label>
+                  <Textarea
+                    value={currentDissidio.resumo_ai}
+                    readOnly
+                    rows={5}
+                    className="col-span-3 bg-gray-800 border-gray-700 text-gray-400 resize-none"
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="data_vigencia_inicial" className="text-right text-gray-300">Início Vigência</Label>
                 <Popover>
@@ -320,8 +377,12 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                 <DialogClose asChild>
                   <Button type="button" variant="ghost" className="bg-gray-700 text-white hover:bg-gray-600">Cancelar</Button>
                 </DialogClose>
-                <Button type="submit" disabled={loading} className="bg-orange-500 hover:bg-orange-600 text-white">
-                  {loading ? 'Salvando...' : (isEditingDissidio ? 'Atualizar Dissídio' : 'Criar Dissídio')}
+                <Button type="submit" disabled={loading || isExtractingText} className="bg-orange-500 hover:bg-orange-600 text-white">
+                  {loading || isExtractingText ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> {isExtractingText ? 'Extraindo Texto...' : 'Salvando...'}
+                    </>
+                  ) : (isEditingDissidio ? 'Atualizar Dissídio' : 'Criar Dissídio')}
                 </Button>
               </DialogFooter>
             </form>
@@ -340,7 +401,13 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
               <CardContent className="p-4 flex justify-between items-center">
                 <div className="flex-grow">
                   <h4 className="font-semibold text-orange-400">{dissidio.nome_dissidio}</h4>
-                  {dissidio.resumo_dissidio && <p className="text-sm text-gray-300 line-clamp-1">{dissidio.resumo_dissidio}</p>}
+                  {dissidio.resumo_ai ? (
+                    <p className="text-sm text-gray-300 line-clamp-1">Resumo IA: {dissidio.resumo_ai}</p>
+                  ) : dissidio.resumo_dissidio ? (
+                    <p className="text-sm text-gray-300 line-clamp-1">Resumo Manual: {dissidio.resumo_dissidio}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500">Nenhum resumo disponível.</p>
+                  )}
                   <div className="text-xs text-gray-500 mt-1 space-y-0.5">
                     {dissidio.data_vigencia_inicial && dissidio.data_vigencia_final && (
                       <p>Vigência: {format(new Date(dissidio.data_vigencia_inicial), 'dd/MM/yyyy')} a {format(new Date(dissidio.data_vigencia_final), 'dd/MM/yyyy')}</p>
