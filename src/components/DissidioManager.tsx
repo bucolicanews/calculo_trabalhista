@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload, RefreshCw } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, FileText, CalendarIcon, Upload, RefreshCw, FileSearch } from 'lucide-react'; // Adicionado FileSearch
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -24,8 +24,8 @@ interface Dissidio {
   data_vigencia_inicial: string | null;
   data_vigencia_final: string | null;
   mes_convencao: string | null;
-  texto_extraido: string | null; // Novo campo
-  resumo_ai: string | null; // Novo campo
+  texto_extraido: string | null;
+  resumo_ai: string | null;
   created_at: string;
 }
 
@@ -39,7 +39,7 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentDissidio, setCurrentDissidio] = useState<Partial<Dissidio> | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isExtractingText, setIsExtractingText] = useState(false); // Novo estado para extração
+  const [isExtractingText, setIsExtractingText] = useState(false);
   const isEditingDissidio = !!currentDissidio?.id;
 
   useEffect(() => {
@@ -63,6 +63,37 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       setDissidios(data || []);
     }
     setLoading(false);
+  };
+
+  const triggerPdfTextExtraction = async (dissidioId: string, pdfUrl: string) => {
+    setIsExtractingText(true);
+    try {
+      const extractResponse = await fetch(
+        `https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/extract-pdf-text`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ dissidioId: dissidioId, pdfUrl: pdfUrl }),
+        }
+      );
+
+      if (!extractResponse.ok) {
+        const errorData = await extractResponse.json();
+        showError('Erro ao extrair texto do PDF: ' + (errorData.error || 'Erro desconhecido'));
+        console.error('PDF extraction failed:', errorData);
+      } else {
+        showSuccess('Extração de texto do PDF iniciada (simulada).');
+        fetchDissidios(); // Refresh to show extracted text
+      }
+    } catch (extractError: any) {
+      showError('Erro de rede ao iniciar extração de texto: ' + extractError.message);
+      console.error('Network error during PDF extraction:', extractError);
+    } finally {
+      setIsExtractingText(false);
+    }
   };
 
   const handleAddDissidioClick = () => {
@@ -107,6 +138,7 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
     setLoading(true);
     let fileUrl: string | null = currentDissidio.url_documento || null;
     let dissidioIdToUpdate = currentDissidio.id;
+    let shouldTriggerExtraction = false;
 
     if (selectedFile) {
       const fileExtension = selectedFile.name.split('.').pop();
@@ -132,6 +164,10 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       
       fileUrl = publicUrlData.publicUrl;
       showSuccess('Documento enviado com sucesso!');
+      shouldTriggerExtraction = true; // Trigger extraction if a new file was uploaded
+    } else if (isEditingDissidio && currentDissidio.url_documento !== fileUrl) {
+      // This case handles if the URL was manually changed without a new file upload
+      shouldTriggerExtraction = true;
     }
 
     const dissidioToSave = {
@@ -145,13 +181,13 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
         .from('tbl_dissidios')
         .update(dissidioToSave)
         .eq('id', currentDissidio.id)
-        .select('id') // Select id to ensure we have it for extraction
+        .select('id')
         .single();
     } else {
       response = await supabase
         .from('tbl_dissidios')
         .insert(dissidioToSave)
-        .select('id') // Select id to ensure we have it for extraction
+        .select('id')
         .single();
     }
 
@@ -160,37 +196,10 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
       console.error('Error saving dissídio:', response.error);
     } else {
       showSuccess(`Dissídio ${isEditingDissidio ? 'atualizado' : 'criado'} com sucesso!`);
-      dissidioIdToUpdate = response.data.id; // Get the ID of the newly created/updated dissidio
+      dissidioIdToUpdate = response.data.id;
 
-      // Trigger PDF text extraction if a new file was uploaded or URL changed
-      if (fileUrl && dissidioIdToUpdate && (selectedFile || (isEditingDissidio && currentDissidio.url_documento !== fileUrl))) {
-        setIsExtractingText(true);
-        try {
-          const extractResponse = await fetch(
-            `https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/extract-pdf-text`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`, // Use anon key for client-side call
-              },
-              body: JSON.stringify({ dissidioId: dissidioIdToUpdate, pdfUrl: fileUrl }),
-            }
-          );
-
-          if (!extractResponse.ok) {
-            const errorData = await extractResponse.json();
-            showError('Erro ao extrair texto do PDF: ' + (errorData.error || 'Erro desconhecido'));
-            console.error('PDF extraction failed:', errorData);
-          } else {
-            showSuccess('Extração de texto do PDF iniciada (simulada).');
-          }
-        } catch (extractError: any) {
-          showError('Erro de rede ao iniciar extração de texto: ' + extractError.message);
-          console.error('Network error during PDF extraction:', extractError);
-        } finally {
-          setIsExtractingText(false);
-        }
+      if (shouldTriggerExtraction && fileUrl && dissidioIdToUpdate) {
+        await triggerPdfTextExtraction(dissidioIdToUpdate, fileUrl);
       }
 
       setIsDialogOpen(false);
@@ -271,9 +280,26 @@ const DissidioManager: React.FC<DissidioManagerProps> = ({ sindicatoId }) => {
                     <span className="text-sm text-gray-400">{selectedFile.name}</span>
                   )}
                   {!selectedFile && currentDissidio?.url_documento && (
-                    <a href={currentDissidio.url_documento} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline flex items-center">
-                      <FileText className="h-4 w-4 mr-1" /> Ver Atual
-                    </a>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <a href={currentDissidio.url_documento} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline flex items-center">
+                        <FileText className="h-4 w-4 mr-1" /> Ver Atual
+                      </a>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => currentDissidio.id && currentDissidio.url_documento && triggerPdfTextExtraction(currentDissidio.id, currentDissidio.url_documento)}
+                        disabled={isExtractingText || loading}
+                        className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white"
+                      >
+                        {isExtractingText ? (
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileSearch className="mr-2 h-4 w-4" />
+                        )}
+                        Extrair Texto
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
