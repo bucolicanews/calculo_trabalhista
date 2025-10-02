@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText } from 'lucide-react'; // Removido RefreshCw e Calculator
+import { ArrowLeft, FileText } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
 
@@ -35,33 +35,41 @@ const CalculationResultPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('CalculationResultPage: useEffect triggered. calculationId:', calculationId, 'user:', user);
+    console.log('CalculationResultPage: useEffect triggered.');
+    console.log('Current calculationId from URL params:', calculationId);
+    console.log('Current authenticated user:', user?.id);
+
     if (calculationId && user) {
       fetchCalculationResult();
       fetchCalculationDetails();
     } else {
+      console.log('CalculationResultPage: Not fetching results. Missing calculationId or user.');
       setLoading(false);
     }
   }, [calculationId, user]);
 
   const fetchCalculationResult = async () => {
     setLoading(true);
-    console.log('fetchCalculationResult: Starting fetch for calculationId:', calculationId);
+    console.log('fetchCalculationResult: Attempting to fetch result for calculo_id:', calculationId);
     const { data, error } = await supabase
       .from('tbl_resposta_calculo')
       .select('*')
       .eq('calculo_id', calculationId)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 means "no rows found"
-      showError('Erro ao carregar resultado do cálculo: ' + error.message);
-      console.error('fetchCalculationResult: Error fetching calculation result:', error);
+    if (error) {
+      if (error.code === 'PGRST116') { // No rows found
+        console.log('fetchCalculationResult: No result found for this calculationId (PGRST116).');
+      } else {
+        showError('Erro ao carregar resultado do cálculo: ' + error.message);
+        console.error('fetchCalculationResult: Error fetching calculation result:', error);
+      }
       setResult(null);
     } else if (data) {
-      console.log('fetchCalculationResult: Data received:', data);
+      console.log('fetchCalculationResult: Data received successfully:', data);
       setResult(data);
     } else {
-      console.log('fetchCalculationResult: No data found for calculationId:', calculationId);
+      console.log('fetchCalculationResult: Data was null/undefined, but no error. This should not happen with .single().');
       setResult(null);
     }
     setLoading(false);
@@ -79,7 +87,7 @@ const CalculationResultPage = () => {
       .from('tbl_calculos')
       .select('id, nome_funcionario, cliente_id, tbl_clientes(nome)')
       .eq('id', calculationId)
-      .eq('tbl_clientes.user_id', user.id)
+      .eq('tbl_clientes.user_id', user.id) // This join condition is crucial for RLS
       .single();
 
     if (error) {
@@ -96,8 +104,6 @@ const CalculationResultPage = () => {
       console.log('fetchCalculationDetails: No details found for calculationId:', calculationId);
     }
   };
-
-  // A função handleCalculateRescisao foi removida, pois o cálculo preliminar não será mais acionado pela UI.
 
   return (
     <MainLayout>
@@ -164,7 +170,6 @@ const CalculationResultPage = () => {
             ) : (
               <div className="text-center space-y-4">
                 <p className="text-gray-400">Nenhum resultado de cálculo encontrado para este ID.</p>
-                {/* O botão "Gerar Cálculo Preliminar" foi removido */}
               </div>
             )}
           </CardContent>
