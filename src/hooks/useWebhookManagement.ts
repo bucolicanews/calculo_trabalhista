@@ -78,11 +78,14 @@ export const useWebhookManagement = () => {
   };
 
   const handleTableChange = (value: string) => {
-    setCurrentWebhook((prev) => ({
-      ...prev,
-      table_name: value,
-      selected_fields: [], // Reset fields when table changes
-    }));
+    setCurrentWebhook((prev) => {
+      console.log(`[useWebhookManagement] Table changed to: ${value}, resetting selected_fields.`); // Log para depuração
+      return {
+        ...prev,
+        table_name: value,
+        selected_fields: [], // Reset fields when table changes
+      };
+    });
   };
 
   const handleFieldToggle = (fieldKey: string) => {

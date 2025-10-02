@@ -27,6 +27,8 @@ const WebhookFieldSelector: React.FC<WebhookFieldSelectorProps> = ({
 }) => {
   const areAllFieldsSelected = availableFields.length > 0 && selectedFields.length === availableFields.length;
 
+  console.log("WebhookFieldSelector - selectedFields:", selectedFields); // Log para depuração
+
   return (
     <Popover open={fieldPopoverOpen} onOpenChange={setFieldPopoverOpen}>
       <PopoverTrigger asChild>
@@ -49,18 +51,21 @@ const WebhookFieldSelector: React.FC<WebhookFieldSelectorProps> = ({
           <CommandEmpty className="text-white p-2">Nenhum campo encontrado.</CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
             {availableFields.length > 0 && (
-              <CommandItem
-                onSelect={onToggleSelectAll}
-                className="flex items-center justify-between cursor-pointer hover:bg-gray-700 text-orange-400 font-semibold"
-              >
-                {areAllFieldsSelected ? 'Limpar Seleção' : 'Selecionar Todos'}
-                <Check
-                  className={cn(
-                    "ml-auto h-4 w-4",
-                    areAllFieldsSelected ? "opacity-100 text-orange-500" : "opacity-0"
-                  )}
-                />
-              </CommandItem>
+              <>
+                <CommandItem
+                  onSelect={onToggleSelectAll}
+                  className="flex items-center justify-between cursor-pointer hover:bg-gray-700 text-orange-400 font-semibold"
+                >
+                  {areAllFieldsSelected ? 'Limpar Seleção' : 'Selecionar Todos'}
+                  <Check
+                    className={cn(
+                      "ml-auto h-4 w-4",
+                      areAllFieldsSelected ? "opacity-100 text-orange-500" : "opacity-0"
+                    )}
+                  />
+                </CommandItem>
+                <div className="my-1 h-px bg-gray-700" /> {/* Separador adicionado */}
+              </>
             )}
             {availableFields.map((field) => (
               <CommandItem
