@@ -54,6 +54,7 @@ const DissidioWebhookSender: React.FC<DissidioWebhookSenderProps> = ({
       console.error('Error fetching available webhooks:', error);
       setAvailableWebhooks([]);
     } else {
+      console.log('Webhooks disponíveis para dissídios:', data); // Adicionado log aqui
       setAvailableWebhooks(data || []);
     }
     setLoadingWebhooks(false);
