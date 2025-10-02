@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RefreshCw, Calculator } from 'lucide-react'; // Added Calculator import
+import { ArrowLeft, RefreshCw, Calculator } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
+import { useAuth } from '@/context/AuthContext'; // Importar useAuth
 
 interface CalculationResult {
   id: string;
@@ -20,10 +21,11 @@ interface CalculationDetails {
   cliente_id: string;
   tbl_clientes: Array<{
     nome: string;
-  }> | null; // Adjusted to be an array or null based on TS error
+  }> | null;
 }
 
 const CalculationResultPage = () => {
+  const { user } = useAuth(); // Obter o usuário autenticado
   const { calculationId } = useParams<{ calculationId: string }>();
   const navigate = useNavigate();
   const [result, setResult] = useState<CalculationResult | null>(null);
@@ -32,11 +34,11 @@ const CalculationResultPage = () => {
   const [calculating, setCalculating] = useState(false);
 
   useEffect(() => {
-    if (calculationId) {
+    if (calculationId && user) { // Adicionar user como dependência
       fetchCalculationResult();
       fetchCalculationDetails();
     }
-  }, [calculationId]);
+  }, [calculationId, user]); // Adicionar user às dependências
 
   const fetchCalculationResult = async () => {
     setLoading(true);
@@ -46,7 +48,7 @@ const CalculationResultPage = () => {
       .eq('calculo_id', calculationId)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+    if (error && error.code !== 'PGRST116') {
       showError('Erro ao carregar resultado do cálculo: ' + error.message);
       console.error('Error fetching calculation result:', error);
       setResult(null);
@@ -59,10 +61,14 @@ const CalculationResultPage = () => {
   };
 
   const fetchCalculationDetails = async () => {
+    if (!user) return; // Garantir que o usuário esteja logado
+
     const { data, error } = await supabase
       .from('tbl_calculos')
       .select('id, nome_funcionario, cliente_id, tbl_clientes(nome)')
       .eq('id', calculationId)
+      // Adicionar filtro para garantir que o cálculo pertence a um cliente do usuário logado
+      .eq('tbl_clientes.user_id', user.id) 
       .single();
 
     if (error) {
@@ -70,8 +76,6 @@ const CalculationResultPage = () => {
       console.error('Error fetching calculation details:', error);
       navigate('/dashboard');
     } else if (data) {
-      // Explicitly cast data to CalculationDetails to help TypeScript
-      // Access tbl_clientes as an array and get the first element's name
       setCalculationDetails({
         ...data,
         tbl_clientes: data.tbl_clientes ? (Array.isArray(data.tbl_clientes) ? data.tbl_clientes : [data.tbl_clientes]) : null
@@ -80,20 +84,24 @@ const CalculationResultPage = () => {
   };
 
   const handleCalculateRescisao = async () => {
-    if (!calculationId) return;
+    if (!calculationId || !user) { // Garantir que o usuário esteja logado
+      showError('Usuário não autenticado ou ID do cálculo ausente.');
+      return;
+    }
 
     setCalculating(true);
     showSuccess('Iniciando cálculo preliminar...');
 
-    // Placeholder logic for calculation
     const { data: calcData, error: calcError } = await supabase
       .from('tbl_calculos')
-      .select('inicio_contrato, fim_contrato')
+      .select('inicio_contrato, fim_contrato, cliente_id') // Adicionar cliente_id para o upsert
       .eq('id', calculationId)
+      // Adicionar filtro para garantir que o cálculo pertence a um cliente do usuário logado
+      .eq('tbl_clientes.user_id', user.id) 
       .single();
 
     if (calcError || !calcData) {
-      showError('Erro ao obter dados para o cálculo: ' + (calcError?.message || 'Dados não encontrados.'));
+      showError('Erro ao obter dados para o cálculo: ' + (calcError?.message || 'Dados não encontrados ou você não tem permissão para acessá-los.'));
       setCalculating(false);
       return;
     }
@@ -114,14 +122,14 @@ const CalculationResultPage = () => {
         calculo_id: calculationId,
         resposta_ai: placeholderResponse,
         data_hora: new Date().toISOString(),
-      }, { onConflict: 'calculo_id' }); // Upsert based on calculo_id
+      }, { onConflict: 'calculo_id' });
 
     if (insertError) {
       showError('Erro ao salvar resultado do cálculo: ' + insertError.message);
-      console.error('Error saving calculation result:', insertError); // Log mais detalhado
+      console.error('Error saving calculation result:', insertError);
     } else {
       showSuccess('Cálculo preliminar gerado e salvo!');
-      fetchCalculationResult(); // Refresh the displayed result
+      fetchCalculationResult();
     }
     setCalculating(false);
   };
@@ -136,7 +144,7 @@ const CalculationResultPage = () => {
           <h1 className="text-4xl font-bold text-orange-500 text-center flex-grow">
             Resultado do Cálculo
           </h1>
-          <div className="w-24"></div> {/* Placeholder for alignment */}
+          <div className="w-24"></div>
         </div>
 
         {calculationDetails && (
