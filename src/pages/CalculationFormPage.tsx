@@ -55,6 +55,7 @@ const CalculationFormPage = () => {
     fim_contrato: '',
     tipo_aviso: '', // Este campo agora representa o tipo de rescisão
     salario_sindicato: 0,
+    salario_trabalhador: 0, // NOVO CAMPO
     obs_sindicato: '',
     historia: '',
     ctps_assinada: false,
@@ -120,6 +121,7 @@ const CalculationFormPage = () => {
         ...data,
         inicio_contrato: data.inicio_contrato || '',
         fim_contrato: data.fim_contrato || '',
+        salario_trabalhador: data.salario_trabalhador || 0, // Carregar o novo campo
       });
     }
     setLoading(false);
@@ -159,6 +161,7 @@ const CalculationFormPage = () => {
     const calculationData = {
       ...calculation,
       salario_sindicato: calculation.salario_sindicato || 0,
+      salario_trabalhador: calculation.salario_trabalhador || 0, // Incluir o novo campo
       media_descontos: calculation.media_descontos || 0,
       media_remuneracoes: calculation.media_remuneracoes || 0,
     };
@@ -219,7 +222,7 @@ const CalculationFormPage = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 text-white">
                     {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id} className="hover:bg-gray-700 focus:bg-gray-700">
+                      <SelectItem key={client.id} value={client.id} className="text-white hover:bg-gray-700 focus:bg-gray-700">
                         {client.nome}
                       </SelectItem>
                     ))}
@@ -240,7 +243,7 @@ const CalculationFormPage = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 text-white">
                     {sindicatos.map((sindicato) => (
-                      <SelectItem key={sindicato.id} value={sindicato.id} className="hover:bg-gray-700 focus:bg-gray-700">
+                      <SelectItem key={sindicato.id} value={sindicato.id} className="text-white hover:bg-gray-700 focus:bg-gray-700">
                         {sindicato.nome}
                       </SelectItem>
                     ))}
@@ -288,8 +291,7 @@ const CalculationFormPage = () => {
                     name="carga_horaria"
                     value={calculation.carga_horaria}
                     onChange={handleChange}
-                    // Definindo 3 linhas como altura padrão
-                    rows={3} 
+                    rows={3}
                     className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
                   />
                 </div>
@@ -373,7 +375,7 @@ const CalculationFormPage = () => {
                 </Select>
               </div>
 
-              {/* Salário Sindicato e Observações */}
+              {/* Salário Sindicato, Salário Trabalhador e Observações */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="salario_sindicato" className="text-gray-300">Piso Salarial Sindicato (R$)</Label>
@@ -387,15 +389,27 @@ const CalculationFormPage = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="obs_sindicato" className="text-gray-300">Observações Sindicato</Label>
+                  <Label htmlFor="salario_trabalhador" className="text-gray-300">Salário do Trabalhador (R$)</Label>
                   <Input
-                    id="obs_sindicato"
-                    name="obs_sindicato"
-                    value={calculation.obs_sindicato}
+                    id="salario_trabalhador"
+                    name="salario_trabalhador"
+                    type="number"
+                    value={calculation.salario_trabalhador}
                     onChange={handleChange}
                     className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
                   />
                 </div>
+              </div>
+              <div>
+                <Label htmlFor="obs_sindicato" className="text-gray-300">Observações Sindicato</Label>
+                <Textarea
+                  id="obs_sindicato"
+                  name="obs_sindicato"
+                  value={calculation.obs_sindicato}
+                  onChange={handleChange}
+                  rows={3}
+                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+                />
               </div>
 
               {/* Médias */}
