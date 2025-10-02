@@ -219,7 +219,7 @@ const CalculationFormPage = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 text-white">
                     {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id} className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white">
+                      <SelectItem key={client.id} value={client.id} className="hover:bg-gray-700 focus:bg-gray-700">
                         {client.nome}
                       </SelectItem>
                     ))}
@@ -240,7 +240,7 @@ const CalculationFormPage = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 text-white">
                     {sindicatos.map((sindicato) => (
-                      <SelectItem key={sindicato.id} value={sindicato.id} className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white">
+                      <SelectItem key={sindicato.id} value={sindicato.id} className="hover:bg-gray-700 focus:bg-gray-700">
                         {sindicato.nome}
                       </SelectItem>
                     ))}
@@ -283,11 +283,13 @@ const CalculationFormPage = () => {
                 </div>
                 <div>
                   <Label htmlFor="carga_horaria" className="text-gray-300">Carga Horária</Label>
-                  <Input
+                  <Textarea
                     id="carga_horaria"
                     name="carga_horaria"
                     value={calculation.carga_horaria}
                     onChange={handleChange}
+                    // Definindo 3 linhas como altura padrão
+                    rows={3} 
                     className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
                   />
                 </div>
@@ -363,7 +365,7 @@ const CalculationFormPage = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 text-white">
                     {noticeTypes.map((type) => (
-                      <SelectItem key={type} value={type} className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white">
+                      <SelectItem key={type} value={type} className="text-white hover:bg-gray-700 focus:bg-gray-700">
                         {type}
                       </SelectItem>
                     ))}
