@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -12,21 +12,28 @@ import { format } from 'date-fns';
 import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webhookFields';
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender';
+import { Badge } from '@/components/ui/badge';
+
+// Definindo os possíveis status de um cálculo
+type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'timed_out' | 'error';
 
 interface Calculation {
   id: string;
   nome_funcionario: string;
   inicio_contrato: string;
   fim_contrato: string;
-  resposta_ai: string | null; // Agora diretamente em tbl_calculos
+  resposta_ai: string | null;
   tbl_clientes: { nome: string } | null;
-  tbl_resposta_calculo: { // Esta tabela ainda mantém outros detalhes do resultado
+  tbl_resposta_calculo: {
     url_documento_calculo: string | null;
     texto_extraido: string | null;
   } | null;
   created_at: string;
+  status?: CalculationStatus; // Adicionando o status ao tipo Calculation
   [key: string]: any;
 }
+
+const TIMEOUT_DURATION = 20 * 60 * 1000; // 20 minutos em milissegundos
 
 const CalculationListPage = () => {
   const { user } = useAuth();
@@ -36,24 +43,55 @@ const CalculationListPage = () => {
   const [isWebhookSelectionOpen, setIsWebhookSelectionOpen] = useState(false);
   const [currentCalculationIdForWebhook, setCurrentCalculationIdForWebhook] = useState<string | null>(null);
 
+  // Usar um ref para armazenar os timeouts, para que possamos limpá-los
+  const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  // Função para atualizar o status de um cálculo específico
+  const updateCalculationStatus = (id: string, newStatus: CalculationStatus) => {
+    setCalculations(prevCalculations =>
+      prevCalculations.map(calc =>
+        calc.id === id ? { ...calc, status: newStatus } : calc
+      )
+    );
+  };
+
+  // Limpa um timeout específico
+  const clearTimeoutById = (id: string) => {
+    const timeout = timeoutsRef.current.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      timeoutsRef.current.delete(id);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchCalculations();
 
       const channel = supabase
-        .channel('calculation_responses')
+        .channel('calculation_responses_channel') // Nome do canal para evitar conflitos
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'tbl_resposta_calculo' },
           (payload) => {
-            console.log('Realtime update received:', payload);
-            fetchCalculations(); // Refetch all calculations on any change
+            const changedCalculationId = (payload.new as any)?.calculo_id || (payload.old as any)?.calculo_id;
+            if (changedCalculationId) {
+              console.log('Realtime update received for calculation:', changedCalculationId);
+              // Quando uma resposta é recebida, atualiza o status para 'completed' e limpa o timeout
+              updateCalculationStatus(changedCalculationId, 'completed');
+              clearTimeoutById(changedCalculationId);
+              // Opcional: refetch o cálculo específico para obter os dados atualizados
+              // fetchCalculations(); // Pode ser pesado, melhor atualizar o estado localmente ou refetch apenas o item
+            }
           }
         )
         .subscribe();
 
       return () => {
         supabase.removeChannel(channel);
+        // Limpa todos os timeouts ao desmontar o componente
+        timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+        timeoutsRef.current.clear();
       };
     }
   }, [user]);
@@ -69,7 +107,15 @@ const CalculationListPage = () => {
       showError('Erro ao carregar cálculos: ' + error.message);
       console.error('Error fetching calculations:', error);
     } else {
-      setCalculations(data as unknown as Calculation[] || []);
+      const initialCalculations: Calculation[] = (data as unknown as Calculation[] || []).map(calc => {
+        // Determina o status inicial
+        const hasResult = calc.resposta_ai || calc.tbl_resposta_calculo?.url_documento_calculo || calc.tbl_resposta_calculo?.texto_extraido;
+        return {
+          ...calc,
+          status: hasResult ? 'completed' : 'idle',
+        };
+      });
+      setCalculations(initialCalculations);
     }
     setLoading(false);
   };
@@ -80,6 +126,7 @@ const CalculationListPage = () => {
       showError('Erro ao deletar cálculo: ' + error.message);
     } else {
       showSuccess('Cálculo deletado com sucesso!');
+      clearTimeoutById(id); // Limpa o timeout se o cálculo for deletado
       fetchCalculations();
     }
   };
@@ -96,6 +143,7 @@ const CalculationListPage = () => {
     }
 
     setIsSendingWebhook(calculationId);
+    updateCalculationStatus(calculationId, 'sending');
     showSuccess('Iniciando envio para webhooks selecionados...');
 
     try {
@@ -106,12 +154,14 @@ const CalculationListPage = () => {
 
       if (webhookError) {
         showError('Erro ao buscar configurações de webhook: ' + webhookError.message);
+        updateCalculationStatus(calculationId, 'error');
         setIsSendingWebhook(null);
         return;
       }
 
       if (!webhookConfigs || webhookConfigs.length === 0) {
         showError('Nenhum webhook selecionado ou configurado encontrado.');
+        updateCalculationStatus(calculationId, 'error');
         setIsSendingWebhook(null);
         return;
       }
@@ -121,7 +171,6 @@ const CalculationListPage = () => {
         const selectParts: Set<string> = new Set(['id']);
         const relatedTableSelections: { [tableName: string]: Set<string> } = {};
 
-        // Sempre inclui 'resposta_ai' de tbl_calculos se for um campo selecionado
         if (config.selected_fields.includes('calculo_resposta_ai')) {
             selectParts.add('resposta_ai');
         }
@@ -129,7 +178,7 @@ const CalculationListPage = () => {
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            if (fieldDef.sourceTable === 'tbl_calculos' && fieldDef.key !== 'calculo_resposta_ai') { // Exclui se já adicionado
+            if (fieldDef.sourceTable === 'tbl_calculos' && fieldDef.key !== 'calculo_resposta_ai') {
               selectParts.add(fieldDef.baseSupabasePath);
             } else if (fieldDef.sourceTable !== 'tbl_calculos') {
               if (!relatedTableSelections[fieldDef.sourceTable]) {
@@ -168,7 +217,6 @@ const CalculationListPage = () => {
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            // Tratamento especial para 'calculo_resposta_ai' que agora é direto
             if (fieldDef.key === 'calculo_resposta_ai') {
                 payload[fieldDef.key] = (specificCalculationData as any).resposta_ai;
             } else {
@@ -193,10 +241,20 @@ const CalculationListPage = () => {
 
       if (sentCount > 0) {
         showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso!`);
+        updateCalculationStatus(calculationId, 'pending_response');
+        // Inicia o timeout para 'timed_out'
+        const timeoutId = setTimeout(() => {
+          updateCalculationStatus(calculationId, 'timed_out');
+          timeoutsRef.current.delete(calculationId);
+        }, TIMEOUT_DURATION);
+        timeoutsRef.current.set(calculationId, timeoutId);
+      } else {
+        updateCalculationStatus(calculationId, 'error');
       }
 
     } catch (error: any) {
       showError('Erro inesperado ao enviar cálculo para webhook: ' + error.message);
+      updateCalculationStatus(calculationId, 'error');
     } finally {
       setIsSendingWebhook(null);
     }
@@ -221,11 +279,35 @@ const CalculationListPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {calculations.map((calculation) => {
+              const currentStatus = calculation.status || 'idle';
               const hasResult = calculation.resposta_ai || calculation.tbl_resposta_calculo?.url_documento_calculo || calculation.tbl_resposta_calculo?.texto_extraido;
+
               return (
                 <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
                   <CardHeader>
-                    <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
+                    <div className="flex items-center justify-between mb-2">
+                      <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
+                      {currentStatus === 'pending_response' && (
+                        <Badge variant="secondary" className="bg-blue-600 text-white flex items-center">
+                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Aguardando Resposta...
+                        </Badge>
+                      )}
+                      {currentStatus === 'completed' && (
+                        <Badge variant="secondary" className="bg-green-600 text-white flex items-center">
+                          <CheckCircle2 className="h-3 w-3 mr-1" /> Concluído
+                        </Badge>
+                      )}
+                      {currentStatus === 'timed_out' && (
+                        <Badge variant="destructive" className="bg-red-600 text-white flex items-center">
+                          <Clock className="h-3 w-3 mr-1" /> Tempo Excedido
+                        </Badge>
+                      )}
+                      {currentStatus === 'error' && (
+                        <Badge variant="destructive" className="bg-red-600 text-white flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" /> Erro
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.nome || 'N/A'}</p>
                     <div className="text-xs text-gray-500 mt-2 space-y-1">
                       <p>Início Contrato: {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy')}</p>
@@ -252,7 +334,7 @@ const CalculationListPage = () => {
                       size="sm"
                       className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
                       onClick={() => handleOpenWebhookSelection(calculation.id)}
-                      disabled={isSendingWebhook === calculation.id}
+                      disabled={isSendingWebhook === calculation.id || currentStatus === 'pending_response'}
                     >
                       {isSendingWebhook === calculation.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
