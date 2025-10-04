@@ -39,7 +39,7 @@ interface CalculationDetails {
   resposta_ai: string | null;
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
-  tbl_ai_prompt_templates: {
+  tbl_ai_prompt_templates: { 
     id: string;
     title: string;
     identificacao: string;
@@ -104,13 +104,13 @@ const CalculationResultPage: React.FC = () => {
     const { data, error } = await supabase
       .from('tbl_calculos')
       .select(`
-        *,
-        resposta_ai,
-        tbl_clientes(nome),
-        tbl_sindicatos(nome),
-        tbl_ai_prompt_templates(id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, formatacao_texto_cabecalho, formatacao_texto_corpo, formatacao_texto_rodape, created_at),
-        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
-      `)
+        *,
+        resposta_ai,
+        tbl_clientes(nome),
+        tbl_sindicatos(nome),
+        tbl_ai_prompt_templates(id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, formatacao_texto_cabecalho, formatacao_texto_corpo, formatacao_texto_rodape, created_at),
+        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
+      `)
       .eq('id', id)
       .single();
 
@@ -120,6 +120,9 @@ const CalculationResultPage: React.FC = () => {
       navigate('/calculations');
     } else if (data) {
       setCalculation(data as CalculationDetails);
+    } else {
+      // Se 'data' for null e não houver erro, significa que nenhum registro foi encontrado.
+      setCalculation(null);
     }
     setLoading(false);
   };
@@ -143,9 +146,6 @@ const CalculationResultPage: React.FC = () => {
     }
   };
 
-  // ----------------------------------------------------------------
-  // FUNÇÃO CORRIGIDA UTILIZANDO CLONE DO DOM E HTML2PDF.JS
-  // ----------------------------------------------------------------
   const handleDownloadAiResponseAsPdf = async () => {
     const element = markdownRef.current;
     if (!element || !calculation?.resposta_ai) {
@@ -156,72 +156,60 @@ const CalculationResultPage: React.FC = () => {
     showSuccess('Gerando PDF, aguarde...');
     const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
 
-    // --- 1. CLONAGEM E PREPARAÇÃO DO CONTEÚDO PARA PDF ---
-
-    // 1a. Clonar o elemento e aplicar estilos de impressão
-    const pdfContentClone = element.cloneNode(true) as HTMLElement;
-
-    // Aplicar estilos de impressão (tema claro) ao clone
-    pdfContentClone.classList.remove('prose-invert');
-    pdfContentClone.classList.add('prose');
-    pdfContentClone.style.backgroundColor = 'white';
-    pdfContentClone.style.color = 'black';
-
-    // 1b. Ocultar botões no clone
-    const buttonsContainerClone = pdfContentClone.querySelector('.flex.flex-wrap.gap-2.mt-4') as HTMLElement;
-    if (buttonsContainerClone) {
-      buttonsContainerClone.style.display = 'none';
+    // Ocultar botões e ajustar estilos para captura
+    const buttonsContainer = element.querySelector('.flex.flex-wrap.gap-2.mt-4') as HTMLElement;
+    const originalButtonsDisplay = buttonsContainer ? buttonsContainer.style.display : '';
+    if (buttonsContainer) {
+      buttonsContainer.style.display = 'none';
     }
 
-    // 1c. Adicionar o cabeçalho no topo do clone
-    const headerHtml = `
-        <div id="pdf-header-temp" style="text-align: center; color: black; margin-bottom: 25px; padding-top: 5px;">
-          <h1 style="font-size: 16px; margin: 0; font-weight: bold;">Relatório de Cálculo de Rescisão</h1>
-          <p style="font-size: 10px; margin: 0;">ID Cálculo: ${calculation.id}</p>
-          <p style="font-size: 10px; margin: 0;">Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
-        </div>
-    `;
-    const headerElement = document.createElement('div');
-    headerElement.innerHTML = headerHtml;
+    const originalClassList = element.classList.value;
+    const originalBackgroundColor = element.style.backgroundColor;
+    const originalColor = element.style.color;
 
-    // Adicionar o cabeçalho como o primeiro filho do clone
-    pdfContentClone.insertBefore(headerElement, pdfContentClone.firstChild);
+    // Aplicar estilos temporários para captura do PDF (texto preto, fundo branco)
+    element.classList.remove('prose-invert');
+    element.classList.add('prose'); // Assume que 'prose' fornece estilos de tema claro
+    element.style.backgroundColor = 'white'; // Garante fundo branco para a captura
+    element.style.color = 'black'; // Garante texto preto para a captura
 
-    // 1d. Anexar o clone ao DOM temporariamente para que html2canvas funcione corretamente
-    // Isso é importante para que o Tailwind/CSS aplicado ao clone seja processado.
-    pdfContentClone.style.position = 'absolute';
-    pdfContentClone.style.left = '-9999px'; // Fora da tela
-    document.body.appendChild(pdfContentClone);
-
-
-    // --- 2. GERAÇÃO DO PDF COM HTML2PDF.JS ---
-
+    // Define as opções para html2pdf
     const opt = {
-      margin: [10, 10, 10, 10] as [number, number, number, number],
-      filename,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: 'white' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+      margin: [35, 10, 10, 10] as [number, number, number, number], // Top, Right, Bottom, Left - Aumenta a margem superior para o cabeçalho
+      filename: filename,
+      image: { type: 'jpeg' as const, quality: 0.98 }, 
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: 'white' }, // Garante fundo branco para o canvas
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }, 
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
-    try {
-      // Gera e salva o PDF a partir do clone
-      await html2pdf().set(opt).from(pdfContentClone).save();
+    // Gera o PDF e obtém a instância do jsPDF para adicionar o cabeçalho
+    const pdf = await html2pdf().set(opt).from(element).toPdf(); // Usando toPdf() para obter a instância do jsPDF
 
-      showSuccess('Download do PDF iniciado!');
-
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      showError('Falha ao gerar o PDF. Verifique o console para mais detalhes.');
-    } finally {
-      // --- 3. LIMPEZA ---
-      // Remove o clone do DOM para limpar a memória e a tela
-      document.body.removeChild(pdfContentClone);
+    // Adicionar cabeçalho a cada página
+    const pageCount = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(16);
+      pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
+      pdf.setFontSize(10);
+      pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
+      pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
     }
-  };
-  // ----------------------------------------------------------------
 
+    // Salva o PDF
+    pdf.save(filename);
+
+    // Restaurar estilos originais e exibição dos botões
+    element.classList.value = originalClassList;
+    element.style.backgroundColor = originalBackgroundColor;
+    element.style.color = originalColor;
+    if (buttonsContainer) {
+      buttonsContainer.style.display = originalButtonsDisplay;
+    }
+
+    showSuccess('Download do PDF iniciado!');
+  };
 
   const handleDownloadAiResponseAsTxt = (aiResponse: string) => {
     if (aiResponse) {
@@ -258,11 +246,16 @@ const CalculationResultPage: React.FC = () => {
         );
       }
       if (text.includes('VALOR LÍQUIDO A RECEBER')) {
-        return null; // Removido, será renderizado dentro de <p>
+        // Alinhado à direita e laranja
+        return (
+          <h2 className="text-2xl font-bold text-orange-500 mt-6 mb-4 text-right p-4 border border-orange-500 rounded-md">
+            {children}
+          </h2>
+        );
       }
       if (text.includes('OBSERVAÇÕES E BASE LEGAL')) {
         return (
-          <h2 className="text-2xl font-bold text-orange-500 py-2 mt-8 mb-4 text-center rounded-md border-b-2 border-orange-500">
+          <h2 className="text-2xl font-bold text-white bg-black py-2 mt-8 mb-4 text-center rounded-md">
             {children}
           </h2>
         );
@@ -275,7 +268,7 @@ const CalculationResultPage: React.FC = () => {
       if (text.includes('PROVENTOS') || text.includes('DESCONTOS')) {
         // Centralizado e laranja
         return (
-          <h3 className="text-xl font-bold text-orange-500 py-2 my-4 text-center rounded-md border-b border-gray-700">
+          <h3 className="text-xl font-bold text-orange-500 bg-black py-2 my-2 text-center rounded-md">
             {children}
           </h3>
         );
@@ -284,37 +277,28 @@ const CalculationResultPage: React.FC = () => {
     },
     p: ({ children }: { children?: React.ReactNode }) => {
       const text = getTextFromChildren(children);
-      // Regex para detectar a estrutura "VALOR LÍQUIDO A RECEBER\n---\nR$ X.XXX,XX"
-      // O \n---+ é o <hr>
-      const liquidoRegex = /VALOR LÍQUIDO A RECEBER\n---+\nR\$\s([\d.,]+)/s;
-      const match = text.match(liquidoRegex);
-
-      if (match) {
-        const valor = match[1];
-      // Alinhado à direita e laranja, formatado em uma div
+      // Regex para detectar valores monetários no formato R$ X.XXX,XX
+      const monetaryRegex = /R\$\s\d{1,3}(?:\.\d{3})*,\d{2}/;
+      if (monetaryRegex.test(text)) {
+        // Alinhado à direita e laranja
         return (
-          <div className="flex justify-end items-center border-t-2 border-orange-500 pt-4 mt-4">
-            <span className="text-xl font-bold text-gray-300 mr-4">VALOR LÍQUIDO A RECEBER</span>
-            <span className="text-3xl font-extrabold text-orange-500">R$ {valor}</span>
-          </div>
+          <p className="text-4xl font-extrabold text-orange-500 text-right my-4 p-2 bg-gray-800 rounded-md">
+            {children}
+          </p>
         );
       }
-
       return <p className="mb-4">{children}</p>; // Default paragraph styling
     },
     table: ({ children }: { children?: React.ReactNode }) => (
-      // Adiciona margem vertical de 2 (my-2, que corresponde a 0.5rem ou 8px) para separar as tabelas do texto.
-      <table className="my-2 border-collapse w-full">{children}</table>
+      // Adiciona margem vertical às tabelas
+      <table className="my-4">{children}</table>
     ),
-    thead: ({ children }: { children?: React.ReactNode }) => (
-      <thead className="bg-gray-700 text-white border border-gray-700">{children}</thead>
-    ),
-    td: ({ children, align }: { children?: React.ReactNode, align?: 'left' | 'center' | 'right' }) => (
+    td: ({ children, align }: { children?: React.ReactNode, align?: string }) => ( // Tipo de 'align' expandido
       <td className={`p-2 border border-gray-700 text-${align || 'left'}`}>
         {children}
       </td>
     ),
-    th: ({ children, align }: { children?: React.ReactNode, align?: 'left' | 'center' | 'right' }) => (
+    th: ({ children, align }: { children?: React.ReactNode, align?: string }) => ( // Tipo de 'align' expandido
       <th className={`p-2 border border-gray-700 bg-gray-700 text-white text-${align || 'left'}`}>
         {children}
       </th>
