@@ -207,34 +207,47 @@ const CalculationListPage = () => {
           }
         });
 
+        // NOVO: Encapsular o payload dentro de uma chave 'body' para compatibilidade com n8n
+        const finalPayload = {
+          body: payload
+        };
+
+        console.log(`[Webhook Sender] Enviando para URL: ${config.webhook_url}`);
+        console.log(`[Webhook Sender] Payload:`, finalPayload);
+
         const response = await fetch(config.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(finalPayload), // Envia o payload encapsulado
         });
 
         if (!response.ok) {
-          showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}`);
+          const errorText = await response.text();
+          showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
+          console.error(`[Webhook Sender] Erro ao enviar para ${config.webhook_url}:`, response.status, errorText);
         } else {
           sentCount++;
+          console.log(`[Webhook Sender] Sucesso ao enviar para ${config.webhook_url}`);
         }
       }
 
       if (sentCount > 0) {
-        showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso! A página será atualizada em 1 minuto.`);
+        showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso! A página será atualizada em ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
         updateCalculationStatus(calculationId, 'pending_response'); // Define como pendente até o refresh
         // Inicia o timeout para o refresh da página
         const timeoutId = setTimeout(() => {
-          console.log(`Atualizando a página para verificar o cálculo ${calculationId} após 1 minuto.`);
+          console.log(`Atualizando a página para verificar o cálculo ${calculationId} após ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
           window.location.reload(); // Recarrega a página
         }, AUTO_REFRESH_DURATION);
         timeoutsRef.current.set(calculationId, timeoutId);
       } else {
+        showError('Nenhum webhook foi enviado com sucesso.');
         updateCalculationStatus(calculationId, 'idle'); // Volta para idle se nada foi enviado
       }
 
     } catch (error: any) {
       showError('Erro inesperado ao enviar cálculo para webhook: ' + error.message);
+      console.error('[Webhook Sender] Erro inesperado:', error);
       updateCalculationStatus(calculationId, 'idle'); // Volta para idle em caso de erro
     } finally {
       setIsSendingWebhook(null);
