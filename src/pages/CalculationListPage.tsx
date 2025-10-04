@@ -261,6 +261,25 @@ const CalculationListPage = () => {
     }
   };
 
+  // Função para lidar com o download da resposta da IA
+  const handleDownloadAiResponse = (calculation: Calculation) => {
+    if (calculation.resposta_ai) {
+      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.txt`;
+      const blob = new Blob([calculation.resposta_ai], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess('Download da resposta da IA iniciado!');
+    } else {
+      showError('Nenhuma resposta da IA disponível para download.');
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
@@ -282,7 +301,8 @@ const CalculationListPage = () => {
             {calculations.map((calculation) => {
               const currentStatus = calculation.status || 'idle';
               const hasResult = calculation.resposta_ai || calculation.tbl_resposta_calculo?.url_documento_calculo || calculation.tbl_resposta_calculo?.texto_extraido;
-              const hasDocument = calculation.tbl_resposta_calculo?.url_documento_calculo;
+              // O download da resposta da IA será verificado diretamente em calculation.resposta_ai
+              // const hasPdfDocument = calculation.tbl_resposta_calculo?.url_documento_calculo; // Removido
 
               return (
                 <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
@@ -336,11 +356,15 @@ const CalculationListPage = () => {
                       </Button>
                     )}
 
-                    {hasDocument && (
-                      <Button asChild variant="outline" size="sm" className="border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white">
-                        <a href={calculation.tbl_resposta_calculo?.url_documento_calculo || '#'} download>
-                          <Download className="h-4 w-4" />
-                        </a>
+                    {/* Botão de download para a resposta da IA */}
+                    {calculation.resposta_ai && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white"
+                        onClick={() => handleDownloadAiResponse(calculation)}
+                      >
+                        <Download className="h-4 w-4" />
                       </Button>
                     )}
 
