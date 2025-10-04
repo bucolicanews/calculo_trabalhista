@@ -20,7 +20,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user || null);
+        // Adicionado para depuração
+        console.log(`Auth event: ${event}`, session);
+
+        // Se o token foi atualizado mas a sessão é nula, significa que o refresh token era inválido.
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          showError('Sua sessão expirou. Por favor, faça login novamente.');
+          setUser(null);
+        } else {
+          setUser(session?.user ?? null);
+        }
+        
         setLoading(false);
       }
     );
@@ -28,6 +38,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Fetch initial user session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      setLoading(false);
+    }).catch(() => {
+      // Em caso de erro ao buscar a sessão inicial, garante que o usuário seja nulo.
+      setUser(null);
       setLoading(false);
     });
 
