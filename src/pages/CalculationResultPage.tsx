@@ -33,7 +33,22 @@ interface CalculationDetails {
   resposta_ai: string | null;
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
-  tbl_ai_prompt_templates: { title: string } | null; // NOVO
+  tbl_ai_prompt_templates: { 
+    id: string;
+    title: string;
+    identificacao: string;
+    comportamento: string;
+    restricoes: string;
+    atribuicoes: string;
+    leis: string;
+    proventos: string;
+    descontos: string;
+    observacoes_base_legal: string;
+    formatacao_texto_cabecalho: string;
+    formatacao_texto_corpo: string;
+    formatacao_texto_rodape: string;
+    created_at: string;
+  } | null; // NOVO: Adicionado todos os campos do modelo IA
   tbl_resposta_calculo: {
     url_documento_calculo: string | null;
     texto_extraido: string | null;
@@ -63,9 +78,9 @@ const CalculationResultPage: React.FC = () => {
         resposta_ai,
         tbl_clientes(nome),
         tbl_sindicatos(nome),
-        tbl_ai_prompt_templates(title),
+        tbl_ai_prompt_templates(id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, formatacao_texto_cabecalho, formatacao_texto_corpo, formatacao_texto_rodape, created_at),
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
-      `)
+      `) // NOVO: Adicionado todos os campos do modelo IA
       .eq('id', id)
       .single();
 
