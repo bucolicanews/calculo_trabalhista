@@ -163,7 +163,7 @@ const SindicatoFormPage = () => {
                       {sindicato.data_inicial ? format(new Date(sindicato.data_inicial), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="dark w-auto p-0 bg-background border-border">
+                  <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
                     <Calendar
                       mode="single"
                       selected={sindicato.data_inicial ? new Date(sindicato.data_inicial) : undefined}
@@ -194,7 +194,7 @@ const SindicatoFormPage = () => {
                       {sindicato.data_final ? format(new Date(sindicato.data_final), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="dark w-auto p-0 bg-background border-border">
+                  <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
                     <Calendar
                       mode="single"
                       selected={sindicato.data_final ? new Date(sindicato.data_final) : undefined}
