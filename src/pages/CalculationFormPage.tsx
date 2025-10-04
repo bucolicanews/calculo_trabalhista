@@ -214,7 +214,7 @@ const CalculationFormPage = () => {
       ai_template_id: calculation.ai_template_id === '' ? null : calculation.ai_template_id, // Salvar o ID do modelo IA
     };
 
-    console.log('Attempting to save calculation with data:', calculationData);
+    console.log('[CalculationFormPage] Saving calculation with data:', calculationData); // NOVO LOG AQUI
 
     let response;
     if (isEditing) {
