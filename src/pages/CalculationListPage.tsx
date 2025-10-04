@@ -74,16 +74,20 @@ const CalculationListPage = () => {
         .channel('calculation_responses_channel') // Nome do canal para evitar conflitos
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'tbl_resposta_calculo' },
+          { event: 'UPDATE', schema: 'public', table: 'tbl_calculos', filter: 'resposta_ai=neq.null' }, // Escuta por atualizações em tbl_calculos onde resposta_ai não é nula
           (payload) => {
-            const changedCalculationId = (payload.new as any)?.calculo_id || (payload.old as any)?.calculo_id;
-            if (changedCalculationId) {
-              console.log('Realtime update received for calculation:', changedCalculationId);
-              // Quando uma resposta é recebida, atualiza o status para 'completed' e limpa o timeout
-              updateCalculationStatus(changedCalculationId, 'completed');
-              clearTimeoutById(changedCalculationId);
-              // Opcional: refetch o cálculo específico para obter os dados atualizados
-              // fetchCalculations(); // Pode ser pesado, melhor atualizar o estado localmente ou refetch apenas o item
+            const updatedCalculation = payload.new as Calculation;
+            if (updatedCalculation && updatedCalculation.id && updatedCalculation.resposta_ai) {
+              console.log('Realtime update received for calculation:', updatedCalculation.id);
+              // Atualiza o status para 'completed' e limpa o timeout para o cálculo específico
+              updateCalculationStatus(updatedCalculation.id, 'completed');
+              clearTimeoutById(updatedCalculation.id);
+              // Opcional: Atualiza os dados do cálculo no estado para refletir a nova resposta_ai
+              setCalculations(prevCalculations =>
+                prevCalculations.map(calc =>
+                  calc.id === updatedCalculation.id ? { ...calc, resposta_ai: updatedCalculation.resposta_ai } : calc
+                )
+              );
             }
           }
         )
