@@ -159,7 +159,6 @@ const CalculationListPage = () => {
         let selectParts: Set<string> = new Set(['id']); // Always select the main ID of tbl_calculos
         let clientSelectParts: Set<string> = new Set();
         let sindicatoSelectParts: Set<string> = new Set();
-        let dissidioSelectParts: Set<string> = new Set();
 
         // Collect all unique Supabase paths needed for the selected fields
         config.selected_fields.forEach((fieldKey: string) => {
@@ -172,8 +171,6 @@ const CalculationListPage = () => {
               clientSelectParts.add(fieldDef.baseSupabasePath);
             } else if (fieldDef.sourceTable === 'tbl_sindicatos') {
               sindicatoSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_dissidios') {
-              dissidioSelectParts.add(fieldDef.baseSupabasePath);
             }
             // Fields from tbl_ai_prompt_templates are intentionally ignored here
             // as they are not directly related to tbl_calculos for a single SELECT query.
@@ -185,11 +182,7 @@ const CalculationListPage = () => {
         }
 
         if (sindicatoSelectParts.size > 0) {
-          let sindicatoPath = `tbl_sindicatos(${Array.from(sindicatoSelectParts).join(',')}`;
-          if (dissidioSelectParts.size > 0) {
-            sindicatoPath += `,tbl_dissidios(${Array.from(dissidioSelectParts).join(',')})`;
-          }
-          sindicatoPath += `)`;
+          let sindicatoPath = `tbl_sindicatos(${Array.from(sindicatoSelectParts).join(',')})`;
           selectParts.add(sindicatoPath);
         }
 

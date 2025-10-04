@@ -64,19 +64,6 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'ai_template_formatacao_texto_corpo', label: 'Modelo IA (Formatação Corpo)', baseSupabasePath: 'formatacao_texto_corpo', sourceTable: 'tbl_ai_prompt_templates' },
   { key: 'ai_template_formatacao_texto_rodape', label: 'Modelo IA (Formatação Rodapé)', baseSupabasePath: 'formatacao_texto_rodape', sourceTable: 'tbl_ai_prompt_templates' },
   { key: 'ai_template_created_at', label: 'Modelo IA (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_ai_prompt_templates' },
-
-  // tbl_dissidios fields
-  { key: 'dissidio_id', label: 'Dissídio (ID)', baseSupabasePath: 'id', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_sindicato_id', label: 'Dissídio (ID Sindicato)', baseSupabasePath: 'sindicato_id', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_nome_dissidio', label: 'Dissídio (Nome Dissídio)', baseSupabasePath: 'nome_dissidio', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_url_documento', label: 'Dissídio (URL Documento)', baseSupabasePath: 'url_documento', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo Dissídio)', baseSupabasePath: 'resumo_dissidio', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_data_vigencia_inicial', label: 'Dissídio (Vigência Inicial)', baseSupabasePath: 'data_vigencia_inicial', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_data_vigencia_final', label: 'Dissídio (Vigência Final)', baseSupabasePath: 'data_vigencia_final', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', baseSupabasePath: 'mes_convencao', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_texto_extraido', label: 'Dissídio (Texto Extraído)', baseSupabasePath: 'texto_extraido', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_resumo_ai', label: 'Dissídio (Resumo IA)', baseSupabasePath: 'resumo_ai', sourceTable: 'tbl_dissidios' },
-  { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_dissidios' },
 ];
 
 // Helper to construct the full Supabase path for a field based on the main table
@@ -93,11 +80,6 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
     if (field.sourceTable === 'tbl_sindicatos') {
       return `tbl_calculos(tbl_sindicatos(${field.baseSupabasePath}))`;
     }
-    if (field.sourceTable === 'tbl_dissidios') {
-      // tbl_clientes -> tbl_calculos -> tbl_sindicatos -> tbl_dissidios
-      return `tbl_calculos(tbl_sindicatos(tbl_dissidios(${field.baseSupabasePath})))`;
-    }
-    // tbl_ai_prompt_templates não tem relação direta com tbl_clientes para webhooks
   } else if (mainTableName === 'tbl_calculos') {
     if (field.sourceTable === 'tbl_clientes') {
       return `tbl_clientes(${field.baseSupabasePath})`;
@@ -105,25 +87,8 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
     if (field.sourceTable === 'tbl_sindicatos') {
       return `tbl_sindicatos(${field.baseSupabasePath})`;
     }
-    if (field.sourceTable === 'tbl_dissidios') {
-      // tbl_calculos -> tbl_sindicatos -> tbl_dissidios
-      return `tbl_sindicatos(tbl_dissidios(${field.baseSupabasePath}))`;
-    }
-    // tbl_ai_prompt_templates não tem relação direta com tbl_calculos para webhooks
-  } else if (mainTableName === 'tbl_sindicatos') {
-    if (field.sourceTable === 'tbl_dissidios') {
-      // tbl_sindicatos -> tbl_dissidios
-      return `tbl_dissidios(${field.baseSupabasePath})`;
-    }
-    // tbl_ai_prompt_templates não tem relação direta com tbl_sindicatos para webhooks
-  } else if (mainTableName === 'tbl_ai_prompt_templates') {
-    // Se tbl_ai_prompt_templates for a tabela principal, seus campos são diretos
-    return field.baseSupabasePath;
-  } else if (mainTableName === 'tbl_dissidios') {
-    // Se tbl_dissidios for a tabela principal, seus campos são diretos
-    return field.baseSupabasePath;
   }
-  return field.baseSupabasePath; // Fallback
+  return field.baseSupabasePath; // Fallback for direct fields or if no specific relation is found
 };
 
 // Função para obter campos para exibição na UI com base na tabela selecionada
@@ -154,6 +119,5 @@ export const availableTables = [
   { value: 'tbl_clientes', label: 'Clientes' },
   { value: 'tbl_calculos', label: 'Cálculos' },
   { value: 'tbl_sindicatos', label: 'Sindicatos' },
-  { value: 'tbl_dissidios', label: 'Dissídios' },
   { value: 'tbl_ai_prompt_templates', label: 'Modelos de Prompt IA' },
 ];
