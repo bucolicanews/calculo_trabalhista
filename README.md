@@ -85,7 +85,8 @@ CREATE TABLE tbl_sindicatos (
   data_inicial DATE,
   data_final DATE,
   mes_convencao TEXT,
-  url_documento_sindicato TEXT,
+  url_documento_sindicato TEXT, -- NOVO: URL pública do documento do sindicato
+  resumo_dissidio TEXT, -- NOVO: Resumo do dissídio (pode ser gerado por IA)
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -143,12 +144,13 @@ FOR DELETE TO authenticated USING (auth.uid() IS NOT NULL);
 
 ### Tabela: `tbl_calculos`
 Função: Armazenar os dados específicos de um cálculo de rescisão de um funcionário.
+**Nota:** A `resposta_ai` agora é armazenada diretamente nesta tabela para simplificar o acesso à resposta principal.
 ```sql
 -- Create table
 CREATE TABLE tbl_calculos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   cliente_id UUID REFERENCES tbl_clientes(id) ON DELETE CASCADE NOT NULL,
-  sindicato_id UUID REFERENCES tbl_sindicatos(id) ON DELETE SET NULL, -- Changed to SET NULL as per common practice if sindicato is optional
+  sindicato_id UUID REFERENCES tbl_sindicatos(id) ON DELETE SET NULL,
   nome_funcionario TEXT NOT NULL,
   cpf_funcionario TEXT,
   funcao_funcionario TEXT,
@@ -163,7 +165,8 @@ CREATE TABLE tbl_calculos (
   media_descontos NUMERIC DEFAULT 0,
   media_remuneracoes NUMERIC DEFAULT 0,
   carga_horaria TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  resposta_ai TEXT -- NOVO: Resposta da IA para o cálculo, armazenada diretamente aqui
 );
 
 -- Enable RLS (REQUIRED)
@@ -184,17 +187,17 @@ FOR DELETE TO authenticated USING (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((t
 ```
 
 ### Tabela: `tbl_resposta_calculo`
-Função: Armazenar a resposta gerada pela lógica de cálculo ou por um modelo de IA, incluindo documentos PDF e texto extraído.
+Função: Armazenar detalhes adicionais da resposta gerada pela lógica de cálculo ou por um modelo de IA, como documentos PDF e texto extraído. A resposta principal da IA (`resposta_ai`) agora reside em `tbl_calculos`.
 ```sql
 -- Create table
 CREATE TABLE tbl_resposta_calculo (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   calculo_id UUID REFERENCES tbl_calculos(id) ON DELETE CASCADE NOT NULL,
-  resposta_ai TEXT,
+  -- resposta_ai TEXT, -- Removido, agora em tbl_calculos
   data_hora TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  url_documento_calculo TEXT, -- NOVO: URL pública do PDF do cálculo
-  texto_extraido TEXT -- NOVO: Texto extraído do PDF do cálculo
+  url_documento_calculo TEXT, -- URL pública do PDF do cálculo
+  texto_extraido TEXT -- Texto extraído do PDF do cálculo
 );
 
 -- Enable RLS (REQUIRED)
@@ -307,7 +310,7 @@ CREATE TRIGGER on_auth_user_created
     *   Opções para "Adicionar Sindicato", "Editar" e "Excluir" (com confirmação).
 *   **Formulário de Sindicato (`/sindicatos/new` ou `/sindicatos/:id`)**:
     *   Permite criar um novo sindicato ou editar um existente.
-    *   Campos: Nome do Sindicato, Data Inicial do Acordo, Data Final do Acordo, Mês da Convenção.
+    *   Campos: Nome do Sindicato, Data Inicial do Acordo, Data Final do Acordo, Mês da Convenção, URL do Documento do Sindicato, Resumo do Dissídio.
     *   **Gerenciamento de Dissídios**: Dentro do formulário de sindicato (ao editar), há uma seção para gerenciar os dissídios associados a esse sindicato.
         *   Permite adicionar, editar e excluir dissídios.
         *   Campos do Dissídio: Nome, Documento PDF (upload para Supabase Storage), Resumo, Data Início/Fim Vigência, Mês Convenção.
@@ -317,14 +320,16 @@ CREATE TRIGGER on_auth_user_created
     *   Exibe todos os cálculos de rescisão criados pelo usuário.
     *   Opções para "Novo Cálculo", "Editar", "Ver Resultado" e "Excluir" (com confirmação).
     *   **Envio para Webhook**: Um botão "Enviar" que abre um modal para selecionar um ou mais webhooks configurados (para `tbl_calculos` ou `all_tables`) antes de enviar os dados do cálculo.
-    *   **Status do Webhook**: Exibe o status do envio do webhook (enviando, aguardando resposta, resultado disponível).
-    *   **Download do PDF**: Se um `url_documento_calculo` for retornado pelo webhook, um botão de download do PDF é exibido.
+    *   **Status do Webhook**: Exibe o status do envio do webhook (enviando, aguardando resposta, resultado disponível, tempo excedido, erro) com feedback visual (ícones e cores).
+    *   **Download do PDF**: Se um `url_documento_calculo` for retornado pelo webhook, um botão de download do PDF é exibido na página de resultados.
 *   **Formulário de Cálculo (`/calculations/new` ou `/calculations/:id`)**:
     *   Permite criar um novo cálculo ou editar um existente.
     *   Campos: Cliente (dropdown), Sindicato (dropdown), Nome/CPF/Função do Funcionário, Início/Fim do Contrato (seletores de data), Tipo de Aviso (dropdown), Salário Sindicato, **Salário do Trabalhador**, Observações Sindicato, Histórico do Contrato, CTPS Assinada (checkbox), Média de Descontos/Remunerações, Carga Horária.
 *   **Página de Resultado do Cálculo (`/calculations/:id/result`)**:
-    *   Exibe os detalhes do cálculo e a resposta gerada pelo webhook (resposta da IA, texto extraído do PDF e link para download do PDF).
-    *   O botão "Gerar Cálculo Preliminar" foi removido, pois a geração do resultado é esperada via webhook.
+    *   Exibe os detalhes do cálculo e a resposta gerada pelo webhook.
+    *   A `resposta_ai` é buscada diretamente de `tbl_calculos`.
+    *   Outros detalhes como `url_documento_calculo` e `texto_extraido` são buscados de `tbl_resposta_calculo`.
+    *   Botão para download do PDF, se disponível.
 
 ### 4.7. Configurações de Webhooks (`/webhooks`)
 *   **Lista de Webhooks**:
@@ -419,18 +424,16 @@ serve(async (req) => {
 ```
 
 ### Função: `supabase/functions/store-calculation-result/index.ts`
-Função Edge para receber e armazenar os resultados de um cálculo de rescisão, incluindo a resposta da IA, URL do documento PDF e texto extraído.
-
+Função Edge para receber a resposta da IA de um cálculo de rescisão e armazená-la diretamente na coluna `resposta_ai` da tabela `tbl_calculos`.
 **Estrutura JSON esperada para a resposta do webhook de cálculo:**
 ```json
 {
-  "calculationId": "UUID_DO_CALCULO", // O ID do cálculo que foi enviado
-  "aiResponse": "Texto detalhado da resposta do cálculo gerada pela IA.",
-  "pdfUrl": "https://seu-bucket-supabase.supabase.co/storage/v1/object/public/calculos/resultado_calculo_123.pdf", // URL pública do PDF do cálculo, se gerado
-  "extractedText": "Texto extraído do PDF do cálculo, se aplicável." // Opcional: texto extraído do PDF
+  "calculationId": "UUID_DO_CALCULO",
+  "aiResponse": "Texto detalhado da resposta do cálculo gerada pela IA."
 }
 ```
 ```typescript
+/// <reference lib="deno.ns" />
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -439,13 +442,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { calculationId, aiResponse, pdfUrl, extractedText } = await req.json();
+    const { calculationId, aiResponse } = await req.json();
 
     if (!calculationId || !aiResponse) {
       return new Response(JSON.stringify({ error: 'Missing calculationId or aiResponse' }), {
@@ -459,52 +462,36 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for server-side operations
     );
 
-    const updatePayload: {
-      resposta_ai: string;
-      url_documento_calculo?: string;
-      texto_extraido?: string;
-      data_hora: string;
-    } = {
-      resposta_ai: aiResponse,
-      data_hora: new Date().toISOString(),
-    };
-
-    if (pdfUrl) {
-      updatePayload.url_documento_calculo = pdfUrl;
-    }
-    if (extractedText) {
-      updatePayload.texto_extraido = extractedText;
-    }
-
-    // Upsert (insert or update) the calculation result
-    const { data, error } = await supabaseClient
-      .from('tbl_resposta_calculo')
-      .upsert(
-        {
-          calculo_id: calculationId,
-          ...updatePayload,
-        },
-        { onConflict: 'calculo_id' } // If a result for this calculation_id already exists, update it
-      );
+    // Atualiza diretamente a tabela tbl_calculos com a resposta da IA
+    const { data: _data, error } = await supabaseClient
+      .from('tbl_calculos')
+      .update({
+        resposta_ai: aiResponse,
+      })
+      .eq('id', calculationId);
 
     if (error) {
-      console.error('Error updating calculation result with AI response/PDF/extracted text:', error);
-      return new Response(JSON.stringify({ error: 'Failed to update calculation result', details: error.message }), {
+      console.error('Error updating calculation with AI response:', error);
+      return new Response(JSON.stringify({ error: 'Failed to update calculation with AI response', details: error.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
 
-    return new Response(JSON.stringify({ message: 'Calculation result received and updated successfully', calculationId }), {
+    return new Response(JSON.stringify({ message: 'AI response received and updated successfully in tbl_calculos', calculationId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
     console.error('Error in store-calculation-result Edge Function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
   }
 });
+```
+
+## 6. Melhor Commit
+O commit mais relevante que encapsula as funcionalidades e correções mais recentes é o **commit 90**.
