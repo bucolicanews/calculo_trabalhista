@@ -191,6 +191,8 @@ const CalculationFormPage = () => {
       sindicato_id: calculation.sindicato_id === '' ? null : calculation.sindicato_id,
     };
 
+    console.log('Attempting to save calculation with data:', calculationData); // Log dos dados enviados
+
     let response;
     if (isEditing) {
       response = await supabase
@@ -205,7 +207,7 @@ const CalculationFormPage = () => {
 
     if (response.error) {
       showError('Erro ao salvar cálculo: ' + response.error.message);
-      console.error('Error saving calculation:', response.error);
+      console.error('Error saving calculation:', response.error.message, response.error.details); // Log detalhado do erro
     } else {
       showSuccess(`Cálculo ${isEditing ? 'atualizado' : 'criado'} com sucesso!`);
       navigate('/dashboard'); // Or to a calculation detail page
