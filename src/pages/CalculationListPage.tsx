@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Clock, AlertTriangle, Download, FileText } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Clock, AlertTriangle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -13,10 +13,6 @@ import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webho
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender';
 import { Badge } from '@/components/ui/badge';
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
-
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 // Definindo os possíveis status de um cálculo
 type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'timed_out' | 'error';
@@ -284,43 +280,6 @@ const CalculationListPage = () => {
     }
   };
 
-  // Função para lidar com o download da resposta da IA como PDF
-  const handleDownloadAiResponseAsPdf = (calculation: Calculation) => {
-    if (calculation.resposta_ai) {
-      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
-      
-      const docDefinition = {
-        content: [
-          { text: `Cálculo de Rescisão para ${calculation.nome_funcionario}`, style: 'header' },
-          { text: `ID do Cálculo: ${calculation.id}`, style: 'subheader' },
-          { text: '\n' },
-          { text: calculation.resposta_ai, style: 'body' }
-        ],
-        styles: {
-          header: {
-            fontSize: 18,
-            bold: true,
-            margin: [0, 0, 0, 10]
-          },
-          subheader: {
-            fontSize: 14,
-            bold: true,
-            margin: [0, 10, 0, 5]
-          },
-          body: {
-            fontSize: 10,
-            margin: [0, 0, 0, 0]
-          }
-        }
-      };
-
-      pdfMake.createPdf(docDefinition).download(filename);
-      showSuccess('Download da resposta da IA (PDF) iniciado!');
-    } else {
-      showError('Nenhuma resposta da IA disponível para download em PDF.');
-    }
-  };
-
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
@@ -404,18 +363,6 @@ const CalculationListPage = () => {
                         onClick={() => handleDownloadAiResponseAsTxt(calculation)}
                       >
                         <FileText className="h-4 w-4" />
-                      </Button>
-                    )}
-
-                    {/* NOVO: Botão de download para a resposta da IA como PDF */}
-                    {calculation.resposta_ai && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white"
-                        onClick={() => handleDownloadAiResponseAsPdf(calculation)}
-                      >
-                        <Download className="h-4 w-4" />
                       </Button>
                     )}
 
