@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,7 +36,7 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
               disabled={disabled}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {inicio_contrato ? format(new Date(inicio_contrato), 'PPP') : <span>Selecione a data</span>}
+              {inicio_contrato ? format(new Date(inicio_contrato), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
@@ -44,6 +45,10 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
               selected={inicio_contrato ? new Date(inicio_contrato) : undefined}
               onSelect={(date) => onDateChange('inicio_contrato', date)}
               initialFocus
+              locale={ptBR}
+              captionLayout="dropdown-buttons"
+              fromYear={1950}
+              toYear={new Date().getFullYear()}
               className="bg-gray-900 text-white"
             />
           </PopoverContent>
@@ -62,7 +67,7 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
               disabled={disabled}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {fim_contrato ? format(new Date(fim_contrato), 'PPP') : <span>Selecione a data</span>}
+              {fim_contrato ? format(new Date(fim_contrato), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
@@ -71,6 +76,10 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
               selected={fim_contrato ? new Date(fim_contrato) : undefined}
               onSelect={(date) => onDateChange('fim_contrato', date)}
               initialFocus
+              locale={ptBR}
+              captionLayout="dropdown-buttons"
+              fromYear={1950}
+              toYear={new Date().getFullYear()}
               className="bg-gray-900 text-white"
             />
           </PopoverContent>

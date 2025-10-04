@@ -5,12 +5,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
 import { ArrowLeft, CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 interface SindicatoState {
@@ -19,6 +21,7 @@ interface SindicatoState {
   data_inicial: string;
   data_final: string;
   mes_convencao: string;
+  resumo_dissidio: string;
 }
 
 const SindicatoFormPage = () => {
@@ -29,6 +32,7 @@ const SindicatoFormPage = () => {
     data_inicial: '',
     data_final: '',
     mes_convencao: '',
+    resumo_dissidio: '',
   });
   const [loading, setLoading] = useState(false);
   const isEditing = !!id;
@@ -57,6 +61,7 @@ const SindicatoFormPage = () => {
         data_inicial: data.data_inicial || '',
         data_final: data.data_final || '',
         mes_convencao: data.mes_convencao || '',
+        resumo_dissidio: data.resumo_dissidio || '',
       });
     }
     setLoading(false);
@@ -155,7 +160,7 @@ const SindicatoFormPage = () => {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {sindicato.data_inicial ? format(new Date(sindicato.data_inicial), 'PPP') : <span>Selecione a data</span>}
+                      {sindicato.data_inicial ? format(new Date(sindicato.data_inicial), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
@@ -164,6 +169,10 @@ const SindicatoFormPage = () => {
                       selected={sindicato.data_inicial ? new Date(sindicato.data_inicial) : undefined}
                       onSelect={(date) => handleDateChange('data_inicial', date)}
                       initialFocus
+                      locale={ptBR}
+                      captionLayout="dropdown-buttons"
+                      fromYear={1950}
+                      toYear={new Date().getFullYear()}
                       className="bg-gray-900 text-white"
                     />
                   </PopoverContent>
@@ -183,7 +192,7 @@ const SindicatoFormPage = () => {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {sindicato.data_final ? format(new Date(sindicato.data_final), 'PPP') : <span>Selecione a data</span>}
+                      {sindicato.data_final ? format(new Date(sindicato.data_final), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
@@ -192,6 +201,10 @@ const SindicatoFormPage = () => {
                       selected={sindicato.data_final ? new Date(sindicato.data_final) : undefined}
                       onSelect={(date) => handleDateChange('data_final', date)}
                       initialFocus
+                      locale={ptBR}
+                      captionLayout="dropdown-buttons"
+                      fromYear={1950}
+                      toYear={new Date().getFullYear()}
                       className="bg-gray-900 text-white"
                     />
                   </PopoverContent>
@@ -211,7 +224,21 @@ const SindicatoFormPage = () => {
                 />
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+              {/* Resumo do Dissídio */}
+              <div>
+                <Label htmlFor="resumo_dissidio" className="text-gray-300">Resumo do Dissídio</Label>
+                <Textarea
+                  id="resumo_dissidio"
+                  name="resumo_dissidio"
+                  value={sindicato.resumo_dissidio}
+                  onChange={handleChange}
+                  rows={5}
+                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+                  placeholder="Insira o resumo do dissídio aqui..."
+                />
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full bg-gray-800 hover:bg-gray-700 text-white">
                 {loading ? 'Salvando...' : (isEditing ? 'Atualizar Sindicato' : 'Criar Sindicato')}
               </Button>
             </form>
