@@ -9,12 +9,14 @@ import { showError } from '@/utils/toast';
 import { ArrowLeft, FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import ReactMarkdown from 'react-markdown'; // Importar ReactMarkdown
+import remarkGfm from 'remark-gfm'; // Importar remarkGfm para tabelas e outras extensões
 
 interface CalculationDetails {
   id: string;
   cliente_id: string;
   sindicato_id: string | null;
-  ai_template_id: string | null; // NOVO
+  ai_template_id: string | null;
   nome_funcionario: string;
   cpf_funcionario: string | null;
   funcao_funcionario: string | null;
@@ -48,7 +50,7 @@ interface CalculationDetails {
     formatacao_texto_corpo: string;
     formatacao_texto_rodape: string;
     created_at: string;
-  } | null; // NOVO: Adicionado todos os campos do modelo IA
+  } | null;
   tbl_resposta_calculo: {
     url_documento_calculo: string | null;
     texto_extraido: string | null;
@@ -80,7 +82,7 @@ const CalculationResultPage: React.FC = () => {
         tbl_sindicatos(nome),
         tbl_ai_prompt_templates(id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, formatacao_texto_cabecalho, formatacao_texto_corpo, formatacao_texto_rodape, created_at),
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
-      `) // NOVO: Adicionado todos os campos do modelo IA
+      `)
       .eq('id', id)
       .single();
 
@@ -135,7 +137,7 @@ const CalculationResultPage: React.FC = () => {
             <p><strong>Funcionário:</strong> {calculation.nome_funcionario}</p>
             <p><strong>Cliente:</strong> {calculation.tbl_clientes?.nome || 'N/A'}</p>
             <p><strong>Sindicato:</strong> {calculation.tbl_sindicatos?.nome || 'N/A'}</p>
-            {calculation.tbl_ai_prompt_templates?.title && ( // NOVO
+            {calculation.tbl_ai_prompt_templates?.title && (
               <p><strong>Modelo IA:</strong> {calculation.tbl_ai_prompt_templates.title}</p>
             )}
             <p><strong>Início Contrato:</strong> {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy', { locale: ptBR })}</p>
@@ -162,9 +164,11 @@ const CalculationResultPage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4 text-gray-300">
               {calculation.resposta_ai && (
-                <div>
+                <div className="prose prose-invert max-w-none"> {/* Usando classes 'prose' para estilização de markdown */}
                   <h3 className="text-lg font-semibold text-orange-400 mb-2">Resposta da IA:</h3>
-                  <p className="whitespace-pre-wrap">{calculation.resposta_ai}</p>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {calculation.resposta_ai}
+                  </ReactMarkdown>
                 </div>
               )}
               {otherResultDetails?.texto_extraido && (
