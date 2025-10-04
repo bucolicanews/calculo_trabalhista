@@ -75,7 +75,7 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
               </SelectTrigger>
               <SelectContent className="bg-gray-900 border-orange-500 text-white">
                 {availableTables.map((table) => (
-                  <SelectItem key={table.value} value={table.value}>
+                  <SelectItem key={table.value} value={table.value} className="text-white hover:bg-gray-700 focus:bg-gray-700">
                     {table.label}
                   </SelectItem>
                 ))}
