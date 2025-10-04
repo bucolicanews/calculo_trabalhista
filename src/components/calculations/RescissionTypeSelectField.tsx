@@ -2,9 +2,14 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+interface NoticeTypeOption {
+  label: string;
+  value: string;
+}
+
 interface RescissionTypeSelectFieldProps {
   tipo_aviso: string;
-  noticeTypes: string[];
+  noticeTypes: NoticeTypeOption[]; // Agora é um array de objetos
   onValueChange: (value: string) => void;
   disabled: boolean;
 }
@@ -30,8 +35,8 @@ const RescissionTypeSelectField: React.FC<RescissionTypeSelectFieldProps> = ({
         </SelectTrigger>
         <SelectContent className="bg-gray-800 border-gray-700 text-white">
           {noticeTypes.map((type) => (
-            <SelectItem key={type} value={type} className="text-white hover:bg-gray-700 focus:bg-gray-700">
-              {type}
+            <SelectItem key={type.value} value={type.value} className="text-white hover:bg-gray-700 focus:bg-gray-700">
+              {type.label}
             </SelectItem>
           ))}
         </SelectContent>

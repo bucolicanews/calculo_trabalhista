@@ -28,17 +28,18 @@ interface Sindicato {
   nome: string;
 }
 
+// Nova lista de Tipos de Rescisão de Contrato de Trabalho com label e value para o ENUM do DB
 const noticeTypes = [
-  'Rescisão com Justa Causa',
-  'Rescisão sem Justa Causa',
-  'Pedido de Demissão',
-  'Rescisão Antecipada do Contrato a Termo (Empregador)',
-  'Rescisão Antecipada do Contrato a Termo (Empregado)',
-  'Término do Contrato a Termo',
-  'Rescisão por Culpa Recíproca',
-  'Rescisão Indireta',
-  'Rescisão por Falecimento do Empregado',
-  'Encerramento da Empresa',
+  { label: 'Rescisão com Justa Causa', value: 'rescisao_com_justa_causa' },
+  { label: 'Rescisão sem Justa Causa', value: 'rescisao_sem_justa_causa' },
+  { label: 'Pedido de Demissão', value: 'pedido_de_demissao' },
+  { label: 'Rescisão Antecipada do Contrato a Termo (Empregador)', value: 'rescisao_antecipada_empregador' },
+  { label: 'Rescisão Antecipada do Contrato a Termo (Empregado)', value: 'rescisao_antecipada_empregado' },
+  { label: 'Término do Contrato a Termo', value: 'termino_contrato_a_termo' },
+  { label: 'Rescisão por Culpa Recíproca', value: 'rescisao_culpa_reciproca' },
+  { label: 'Rescisão Indireta', value: 'rescisao_indireta' },
+  { label: 'Rescisão por Falecimento do Empregado', value: 'rescisao_falecimento_empregado' },
+  { label: 'Encerramento da Empresa', value: 'encerramento_empresa' },
 ];
 
 const CalculationFormPage = () => {
@@ -53,9 +54,9 @@ const CalculationFormPage = () => {
     funcao_funcionario: '',
     inicio_contrato: '',
     fim_contrato: '',
-    tipo_aviso: '',
+    tipo_aviso: '', // Este campo agora representa o tipo de rescisão
     salario_sindicato: 0,
-    salario_trabalhador: 0,
+    salario_trabalhador: 0, // NOVO CAMPO
     obs_sindicato: '',
     historia: '',
     ctps_assinada: false,
