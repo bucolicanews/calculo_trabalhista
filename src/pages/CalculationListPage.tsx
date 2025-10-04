@@ -25,6 +25,8 @@ interface Calculation {
   fim_contrato: string;
   resposta_ai: string | null;
   tbl_clientes: { nome: string } | null;
+  tbl_sindicatos: { nome: string } | null;
+  tbl_ai_prompt_templates: { title: string } | null; // NOVO
   tbl_resposta_calculo: {
     url_documento_calculo: string | null;
     texto_extraido: string | null;
@@ -84,7 +86,7 @@ const CalculationListPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('tbl_calculos')
-      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, resposta_ai, tbl_clientes(nome), tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)')
+      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, resposta_ai, tbl_clientes(nome), tbl_sindicatos(nome), tbl_ai_prompt_templates(title), tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)') // NOVO: Adicionado tbl_ai_prompt_templates(title)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -159,6 +161,7 @@ const CalculationListPage = () => {
         let selectParts: Set<string> = new Set(['id']); // Always select the main ID of tbl_calculos
         let clientSelectParts: Set<string> = new Set();
         let sindicatoSelectParts: Set<string> = new Set();
+        let aiTemplateSelectParts: Set<string> = new Set(); // NOVO
 
         // Collect all unique Supabase paths needed for the selected fields
         config.selected_fields.forEach((fieldKey: string) => {
@@ -171,9 +174,9 @@ const CalculationListPage = () => {
               clientSelectParts.add(fieldDef.baseSupabasePath);
             } else if (fieldDef.sourceTable === 'tbl_sindicatos') {
               sindicatoSelectParts.add(fieldDef.baseSupabasePath);
+            } else if (fieldDef.sourceTable === 'tbl_ai_prompt_templates') { // NOVO
+              aiTemplateSelectParts.add(fieldDef.baseSupabasePath);
             }
-            // Fields from tbl_ai_prompt_templates are intentionally ignored here
-            // as they are not directly related to tbl_calculos for a single SELECT query.
           }
         });
 
@@ -184,6 +187,11 @@ const CalculationListPage = () => {
         if (sindicatoSelectParts.size > 0) {
           let sindicatoPath = `tbl_sindicatos(${Array.from(sindicatoSelectParts).join(',')})`;
           selectParts.add(sindicatoPath);
+        }
+
+        if (aiTemplateSelectParts.size > 0) { // NOVO
+          let aiTemplatePath = `tbl_ai_prompt_templates(${Array.from(aiTemplateSelectParts).join(',')})`;
+          selectParts.add(aiTemplatePath);
         }
 
         const finalSelectString = Array.from(selectParts).join(', ');
@@ -366,6 +374,9 @@ const CalculationListPage = () => {
                       )}
                     </div>
                     <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.nome || 'N/A'}</p>
+                    {calculation.tbl_ai_prompt_templates?.title && ( // NOVO
+                      <p className="text-sm text-gray-400">Modelo IA: {calculation.tbl_ai_prompt_templates.title}</p>
+                    )}
                     <div className="text-xs text-gray-500 mt-2 space-y-1">
                       <p>Início Contrato: {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy')}</p>
                       <p>Fim Contrato: {format(new Date(calculation.fim_contrato), 'dd/MM/yyyy')}</p>

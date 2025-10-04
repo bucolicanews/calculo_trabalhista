@@ -17,6 +17,7 @@ import RescissionTypeSelectField from '@/components/calculations/RescissionTypeS
 import SalaryAndObservationsSection from '@/components/calculations/SalaryAndObservationsSection';
 import AveragesSection from '@/components/calculations/AveragesSection';
 import ContractHistoryAndCTPS from '@/components/calculations/ContractHistoryAndCTPS';
+import AiPromptTemplateSelectField from '@/components/calculations/AiPromptTemplateSelectField'; // NOVO
 
 interface Client {
   id: string;
@@ -26,6 +27,11 @@ interface Client {
 interface Sindicato {
   id: string;
   nome: string;
+}
+
+interface AiPromptTemplate {
+  id: string;
+  title: string;
 }
 
 // Nova lista de Tipos de Rescisão de Contrato de Trabalho com label e value para o ENUM do DB
@@ -49,6 +55,7 @@ const CalculationFormPage = () => {
   const [calculation, setCalculation] = useState({
     cliente_id: '',
     sindicato_id: '',
+    ai_template_id: '', // NOVO CAMPO
     nome_funcionario: '',
     cpf_funcionario: '',
     funcao_funcionario: '',
@@ -56,7 +63,7 @@ const CalculationFormPage = () => {
     fim_contrato: '',
     tipo_aviso: '', // Este campo agora representa o tipo de rescisão
     salario_sindicato: 0,
-    salario_trabalhador: 0, // NOVO CAMPO
+    salario_trabalhador: 0,
     obs_sindicato: '',
     historia: '',
     ctps_assinada: false,
@@ -66,12 +73,13 @@ const CalculationFormPage = () => {
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [sindicatos, setSindicatos] = useState<Sindicato[]>([]);
+  const [aiTemplates, setAiTemplates] = useState<AiPromptTemplate[]>([]); // NOVO ESTADO
   const [loading, setLoading] = useState(true);
   const isEditing = !!id;
 
   useEffect(() => {
     if (user) {
-      fetchClientsAndSindicatos();
+      fetchClientsSindicatosAndAiTemplates();
       if (isEditing) {
         fetchCalculation();
       } else {
@@ -80,7 +88,7 @@ const CalculationFormPage = () => {
     }
   }, [id, isEditing, user]);
 
-  const fetchClientsAndSindicatos = async () => {
+  const fetchClientsSindicatosAndAiTemplates = async () => {
     const { data: clientsData, error: clientsError } = await supabase
       .from('tbl_clientes')
       .select('id, nome')
@@ -103,6 +111,19 @@ const CalculationFormPage = () => {
     } else {
       setSindicatos(sindicatosData || []);
     }
+
+    // NOVO: Buscar modelos de prompt de IA
+    const { data: aiTemplatesData, error: aiTemplatesError } = await supabase
+      .from('tbl_ai_prompt_templates')
+      .select('id, title')
+      .eq('user_id', user?.id);
+
+    if (aiTemplatesError) {
+      showError('Erro ao carregar modelos de prompt de IA: ' + aiTemplatesError.message);
+      console.error('Error fetching AI prompt templates:', aiTemplatesError);
+    } else {
+      setAiTemplates(aiTemplatesData || []);
+    }
   };
 
   const fetchCalculation = async () => {
@@ -123,6 +144,7 @@ const CalculationFormPage = () => {
         inicio_contrato: data.inicio_contrato || '',
         fim_contrato: data.fim_contrato || '',
         salario_trabalhador: data.salario_trabalhador || 0,
+        ai_template_id: data.ai_template_id || '', // Carregar o ID do modelo IA
       });
     }
     setLoading(false);
@@ -189,6 +211,7 @@ const CalculationFormPage = () => {
       media_descontos: parseFloat(String(calculation.media_descontos)) || 0,
       media_remuneracoes: parseFloat(String(calculation.media_remuneracoes)) || 0,
       sindicato_id: calculation.sindicato_id === '' ? null : calculation.sindicato_id,
+      ai_template_id: calculation.ai_template_id === '' ? null : calculation.ai_template_id, // Salvar o ID do modelo IA
     };
 
     console.log('Attempting to save calculation with data:', calculationData);
@@ -246,6 +269,13 @@ const CalculationFormPage = () => {
                 sindicato_id={calculation.sindicato_id}
                 sindicatos={sindicatos}
                 onValueChange={(value) => handleSelectChange('sindicato_id', value)}
+                disabled={loading}
+              />
+
+              <AiPromptTemplateSelectField // NOVO COMPONENTE
+                ai_template_id={calculation.ai_template_id}
+                aiTemplates={aiTemplates}
+                onValueChange={(value) => handleSelectChange('ai_template_id', value)}
                 disabled={loading}
               />
 

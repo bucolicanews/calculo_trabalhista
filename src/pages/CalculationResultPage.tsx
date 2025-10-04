@@ -14,6 +14,7 @@ interface CalculationDetails {
   id: string;
   cliente_id: string;
   sindicato_id: string | null;
+  ai_template_id: string | null; // NOVO
   nome_funcionario: string;
   cpf_funcionario: string | null;
   funcao_funcionario: string | null;
@@ -32,6 +33,7 @@ interface CalculationDetails {
   resposta_ai: string | null;
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
+  tbl_ai_prompt_templates: { title: string } | null; // NOVO
   tbl_resposta_calculo: {
     url_documento_calculo: string | null;
     texto_extraido: string | null;
@@ -61,6 +63,7 @@ const CalculationResultPage: React.FC = () => {
         resposta_ai,
         tbl_clientes(nome),
         tbl_sindicatos(nome),
+        tbl_ai_prompt_templates(title),
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
       `)
       .eq('id', id)
@@ -117,6 +120,9 @@ const CalculationResultPage: React.FC = () => {
             <p><strong>Funcionário:</strong> {calculation.nome_funcionario}</p>
             <p><strong>Cliente:</strong> {calculation.tbl_clientes?.nome || 'N/A'}</p>
             <p><strong>Sindicato:</strong> {calculation.tbl_sindicatos?.nome || 'N/A'}</p>
+            {calculation.tbl_ai_prompt_templates?.title && ( // NOVO
+              <p><strong>Modelo IA:</strong> {calculation.tbl_ai_prompt_templates.title}</p>
+            )}
             <p><strong>Início Contrato:</strong> {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy', { locale: ptBR })}</p>
             <p><strong>Fim Contrato:</strong> {format(new Date(calculation.fim_contrato), 'dd/MM/yyyy', { locale: ptBR })}</p>
             <p><strong>Tipo de Rescisão:</strong> {calculation.tipo_aviso}</p>
