@@ -1,10 +1,29 @@
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { PasswordInput } from '@/components/ui/password-input';
 import { MadeWithDyad } from '@/components/made-with-dyad';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 const AuthPage = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading || user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
+        <p className="text-orange-500">Carregando...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-gray-900 rounded-lg shadow-lg border border-orange-500">
@@ -35,7 +54,7 @@ const AuthPage = () => {
                 },
                 radii: {
                   borderRadiusButton: '0.5rem',
-                  inputBorderRadius: '0.5rem', // Corrigido: input -> inputBorderRadius
+                  inputBorderRadius: '0.5rem',
                 },
               },
             },
