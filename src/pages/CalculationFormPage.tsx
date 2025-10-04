@@ -156,14 +156,39 @@ const CalculationFormPage = () => {
       showError('Usuário não autenticado.');
       return;
     }
+
+    // Validação client-side para campos obrigatórios
+    if (!calculation.cliente_id) {
+      showError('Por favor, selecione um cliente.');
+      return;
+    }
+    if (!calculation.nome_funcionario) {
+      showError('Por favor, insira o nome do funcionário.');
+      return;
+    }
+    if (!calculation.inicio_contrato) {
+      showError('Por favor, selecione a data de início do contrato.');
+      return;
+    }
+    if (!calculation.fim_contrato) {
+      showError('Por favor, selecione a data de fim do contrato.');
+      return;
+    }
+    if (!calculation.tipo_aviso) {
+      showError('Por favor, selecione o tipo de rescisão.');
+      return;
+    }
+
     setLoading(true);
 
     const calculationData = {
       ...calculation,
-      salario_sindicato: calculation.salario_sindicato || 0,
-      salario_trabalhador: calculation.salario_trabalhador || 0, // Incluir o novo campo
-      media_descontos: calculation.media_descontos || 0,
-      media_remuneracoes: calculation.media_remuneracoes || 0,
+      salario_sindicato: parseFloat(String(calculation.salario_sindicato)) || 0,
+      salario_trabalhador: parseFloat(String(calculation.salario_trabalhador)) || 0,
+      media_descontos: parseFloat(String(calculation.media_descontos)) || 0,
+      media_remuneracoes: parseFloat(String(calculation.media_remuneracoes)) || 0,
+      // Converte sindicato_id para null se for uma string vazia, pois é opcional no DB
+      sindicato_id: calculation.sindicato_id === '' ? null : calculation.sindicato_id,
     };
 
     let response;
