@@ -21,14 +21,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
-  "exclude": ["supabase/functions", "node_modules"],
+  "exclude": ["supabase/functions"],
   "references": [
     {
       "path": "./tsconfig.node.json"

@@ -13,7 +13,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { calculationId, aiResponse } = await req.json();
+    const { calculationId, aiResponse, urlDocumentoCalculo, textoExtraido } = await req.json();
 
     if (!calculationId || !aiResponse) {
       return new Response(JSON.stringify({ error: 'Missing calculationId or aiResponse' }), {
@@ -27,23 +27,44 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for server-side operations
     );
 
-    // Atualiza diretamente a tabela tbl_calculos com a resposta da IA
-    const { data: _data, error } = await supabaseClient
+    // 1. Atualiza diretamente a tabela tbl_calculos com a resposta da IA
+    const { error: updateCalculoError } = await supabaseClient
       .from('tbl_calculos')
       .update({
         resposta_ai: aiResponse,
       })
       .eq('id', calculationId);
 
-    if (error) {
-      console.error('Error updating calculation with AI response:', error);
-      return new Response(JSON.stringify({ error: 'Failed to update calculation with AI response', details: error.message }), {
+    if (updateCalculoError) {
+      console.error('Error updating calculation with AI response:', updateCalculoError);
+      return new Response(JSON.stringify({ error: 'Failed to update calculation with AI response', details: updateCalculoError.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
 
-    return new Response(JSON.stringify({ message: 'AI response received and updated successfully in tbl_calculos', calculationId }), {
+    // 2. Insere ou atualiza (UPSERT) a tabela tbl_resposta_calculo com os detalhes adicionais
+    const { data: _respostaData, error: upsertRespostaError } = await supabaseClient
+      .from('tbl_resposta_calculo')
+      .upsert(
+        {
+          calculo_id: calculationId,
+          url_documento_calculo: urlDocumentoCalculo || null,
+          texto_extraido: textoExtraido || null,
+          data_hora: new Date().toISOString(), // Atualiza a data/hora da resposta
+        },
+        { onConflict: 'calculo_id' } // Usa a restrição UNIQUE para o UPSERT
+      );
+
+    if (upsertRespostaError) {
+      console.error('Error upserting tbl_resposta_calculo:', upsertRespostaError);
+      return new Response(JSON.stringify({ error: 'Failed to upsert tbl_resposta_calculo', details: upsertRespostaError.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    return new Response(JSON.stringify({ message: 'AI response and additional details received and updated successfully', calculationId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
