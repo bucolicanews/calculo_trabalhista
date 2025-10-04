@@ -12,8 +12,8 @@ import { ptBR } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { parseMarkdownTables, convertToCsv, ParsedTable } from '@/utils/markdownParser';
-import jsPDF from 'jspdf'; // Importar jspdf
-import html2canvas from 'html2canvas'; // Importar html2canvas
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface CalculationDetails {
   id: string;
@@ -130,39 +130,77 @@ const CalculationResultPage: React.FC = () => {
   };
 
   const handleDownloadAiResponseAsPdf = async () => {
-    if (markdownRef.current && calculation?.resposta_ai) {
-      showSuccess('Gerando PDF, aguarde...');
-      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
+    const element = markdownRef.current;
+    if (!element || !calculation?.resposta_ai) {
+      showError('Nenhuma resposta da IA disponível ou conteúdo não renderizado para PDF.');
+      return;
+    }
 
-      // Use html2canvas para renderizar o conteúdo do div para um canvas
-      const canvas = await html2canvas(markdownRef.current, {
-        scale: 2, // Aumenta a escala para melhor qualidade
-        useCORS: true, // Importante se houver imagens de outras origens
-      });
+    showSuccess('Gerando PDF, aguarde...');
+    const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // Largura A4 em mm
-      const pageHeight = 297; // Altura A4 em mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+    // 2. Ocultar botões e ajustar estilos para captura
+    const buttonsContainer = element.querySelector('.flex.flex-wrap.gap-2.mt-4') as HTMLElement;
+    const originalButtonsDisplay = buttonsContainer ? buttonsContainer.style.display : '';
+    if (buttonsContainer) {
+      buttonsContainer.style.display = 'none';
+    }
 
+    const originalClassList = element.classList.value;
+    const originalBackgroundColor = element.style.backgroundColor;
+    const originalColor = element.style.color;
+
+    // Aplicar estilos temporários para captura do PDF (texto preto, fundo branco)
+    element.classList.remove('prose-invert');
+    element.classList.add('prose'); // Assume que 'prose' fornece estilos de tema claro
+    element.style.backgroundColor = 'white'; // Garante fundo branco para a captura
+    element.style.color = 'black'; // Garante texto preto para a captura
+
+    // Capturar o conteúdo do div
+    const canvas = await html2canvas(element, {
+      scale: 2, // Aumenta a escala para melhor qualidade
+      useCORS: true,
+      backgroundColor: 'white', // Garante que o fundo do canvas seja branco
+    });
+
+    // Restaurar estilos originais
+    element.classList.value = originalClassList;
+    element.style.backgroundColor = originalBackgroundColor;
+    element.style.color = originalColor;
+    if (buttonsContainer) {
+      buttonsContainer.style.display = originalButtonsDisplay;
+    }
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgWidth = 210; // Largura A4 em mm
+    const pageHeight = 297; // Altura A4 em mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    // 1. Adicionar mensagem (cabeçalho)
+    pdf.setFontSize(16);
+    pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
+    pdf.setFontSize(10);
+    pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
+    pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
+
+    // Iniciar a imagem após o cabeçalho
+    let currentY = 35;
+
+    pdf.addImage(imgData, 'PNG', 0, currentY, imgWidth, imgHeight);
+    heightLeft -= (pageHeight - currentY); // Altura restante após a primeira página
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight; // Calcular a posição para o próximo segmento
+      pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      pdf.save(filename);
-      showSuccess('Download do PDF iniciado!');
-    } else {
-      showError('Nenhuma resposta da IA disponível ou conteúdo não renderizado para PDF.');
     }
+
+    pdf.save(filename);
+    showSuccess('Download do PDF iniciado!');
   };
 
   const handleDownloadAiResponseAsTxt = (aiResponse: string) => {
