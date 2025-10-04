@@ -7,10 +7,9 @@ import ClientListPage from './pages/ClientListPage';
 import ClientFormPage from './pages/ClientFormPage';
 import CalculationListPage from './pages/CalculationListPage';
 import CalculationFormPage from './pages/CalculationFormPage';
-import CalculationResultPage from './pages/CalculationResultPage';
 import SindicatoListPage from './pages/SindicatoListPage';
 import SindicatoFormPage from './pages/SindicatoFormPage';
-import WebhookConfigPage from './pages/WebhookConfigPage'; // Importar a nova página
+import WebhookConfigPage from './pages/WebhookConfigPage';
 import { Toaster } from './components/ui/toaster';
 
 const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
@@ -87,14 +86,6 @@ function App() {
             }
           />
           <Route
-            path="/calculations/:id/result"
-            element={
-              <PrivateRoute>
-                <CalculationResultPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
             path="/sindicatos"
             element={
               <PrivateRoute>
@@ -119,7 +110,7 @@ function App() {
             }
           />
           <Route
-            path="/webhooks" // Nova rota
+            path="/webhooks"
             element={
               <PrivateRoute>
                 <WebhookConfigPage />
