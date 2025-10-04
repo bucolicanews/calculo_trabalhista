@@ -24,6 +24,7 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
   onSend,
   isSending,
 }) => {
+  console.log(`[CalculationWebhookSender] Componente renderizado. isOpen: ${isOpen}`); // NOVO LOG
   const { user } = useAuth();
   const [availableWebhooks, setAvailableWebhooks] = useState<WebhookConfig[]>([]);
   const [selectedWebhookIds, setSelectedWebhookIds] = useState<Set<string>>(new Set());
@@ -38,18 +39,20 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
   }, [isOpen, user]);
 
   const fetchAvailableWebhooks = async () => {
+    console.log('[CalculationWebhookSender] Iniciando fetchAvailableWebhooks...'); // NOVO LOG
     setLoadingWebhooks(true);
     const { data, error } = await supabase
       .from('tbl_webhook_configs')
       .select('*')
       .eq('user_id', user?.id)
-      .or('table_name.eq.tbl_calculos,table_name.eq.tbl_clientes,table_name.eq.tbl_sindicatos,table_name.eq.tbl_dissidios,table_name.eq.all_tables,table_name.eq.tbl_ai_prompt_templates'); // Modificado para incluir tbl_dissidios e tbl_ai_prompt_templates
+      .or('table_name.eq.tbl_calculos,table_name.eq.tbl_clientes,table_name.eq.tbl_sindicatos,table_name.eq.tbl_dissidios,table_name.eq.all_tables,table_name.eq.tbl_ai_prompt_templates');
 
     if (error) {
       showError('Erro ao carregar webhooks disponíveis: ' + error.message);
-      console.error('Error fetching available webhooks:', error);
+      console.error('[CalculationWebhookSender] Erro ao buscar webhooks:', error); // NOVO LOG
       setAvailableWebhooks([]);
     } else {
+      console.log('[CalculationWebhookSender] Webhooks carregados com sucesso:', data); // NOVO LOG
       setAvailableWebhooks(data || []);
     }
     setLoadingWebhooks(false);
@@ -68,12 +71,13 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
   };
 
   const handleConfirmSend = async () => {
+    console.log('[CalculationWebhookSender] Botão "Enviar Selecionados" clicado.'); // NOVO LOG
     if (selectedWebhookIds.size === 0) {
       showError('Selecione pelo menos um webhook para enviar.');
-      console.warn('[CalculationWebhookSender] Nenhum webhook selecionado para enviar.'); // NOVO LOG
+      console.warn('[CalculationWebhookSender] Nenhum webhook selecionado para enviar.');
       return;
     }
-    console.log('[CalculationWebhookSender] Chamando onSend com IDs:', Array.from(selectedWebhookIds)); // NOVO LOG
+    console.log('[CalculationWebhookSender] Chamando onSend com IDs:', Array.from(selectedWebhookIds));
     await onSend(calculationId, Array.from(selectedWebhookIds));
     onOpenChange(false); // Close dialog after sending
   };

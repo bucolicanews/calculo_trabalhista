@@ -113,6 +113,7 @@ const CalculationListPage = () => {
   };
 
   const handleOpenWebhookSelection = (calculationId: string) => {
+    console.log(`[CalculationListPage] Abrindo seleção de webhook para cálculo ID: ${calculationId}`); // NOVO LOG
     setCurrentCalculationIdForWebhook(calculationId);
     setIsWebhookSelectionOpen(true);
   };
