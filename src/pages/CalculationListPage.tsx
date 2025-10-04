@@ -38,6 +38,8 @@ interface Calculation {
 const AUTO_REFRESH_DURATION = 1 * 60 * 1000; // 1 minuto em milissegundos
 
 const CalculationListPage = () => {
+  console.log("[CalculationListPage] Componente CalculationListPage renderizado."); // NOVO LOG AQUI
+
   const { user } = useAuth();
   const [calculations, setCalculations] = useState<Calculation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,13 +115,13 @@ const CalculationListPage = () => {
   };
 
   const handleOpenWebhookSelection = (calculationId: string) => {
-    console.log(`[CalculationListPage] Abrindo seleção de webhook para cálculo ID: ${calculationId}`); // NOVO LOG
+    console.log(`[CalculationListPage] Abrindo seleção de webhook para cálculo ID: ${calculationId}`);
     setCurrentCalculationIdForWebhook(calculationId);
     setIsWebhookSelectionOpen(true);
   };
 
   const handleSendToWebhook = async (calculationId: string, webhookConfigIds: string[]) => {
-    console.log(`[CalculationListPage] handleSendToWebhook called for calculationId: ${calculationId}, webhookConfigIds:`, webhookConfigIds); // NOVO LOG
+    console.log(`[CalculationListPage] handleSendToWebhook called for calculationId: ${calculationId}, webhookConfigIds:`, webhookConfigIds);
 
     if (!user) {
       showError('Usuário não autenticado.');
@@ -138,25 +140,24 @@ const CalculationListPage = () => {
 
       if (webhookError) {
         showError('Erro ao buscar configurações de webhook: ' + webhookError.message);
-        console.error('[Webhook Sender] Erro ao buscar configurações de webhook:', webhookError); // Log de erro
-        updateCalculationStatus(calculationId, 'idle'); // Volta para idle se houver erro
+        console.error('[Webhook Sender] Erro ao buscar configurações de webhook:', webhookError);
+        updateCalculationStatus(calculationId, 'idle');
         setIsSendingWebhook(null);
         return;
       }
 
       if (!webhookConfigs || webhookConfigs.length === 0) {
         showError('Nenhum webhook selecionado ou configurado encontrado.');
-        console.warn('[Webhook Sender] Nenhum webhook selecionado ou configurado encontrado.'); // Log de aviso
-        updateCalculationStatus(calculationId, 'idle'); // Volta para idle
+        console.warn('[Webhook Sender] Nenhum webhook selecionado ou configurado encontrado.');
+        updateCalculationStatus(calculationId, 'idle');
         setIsSendingWebhook(null);
         return;
       }
 
       let sentCount = 0;
       for (const config of webhookConfigs) {
-        const uniqueSupabasePaths: Set<string> = new Set(['id']); // Always select the main ID of tbl_calculos
+        const uniqueSupabasePaths: Set<string> = new Set(['id']);
 
-        // Collect all unique Supabase paths needed for the selected fields
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
@@ -195,62 +196,58 @@ const CalculationListPage = () => {
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            // Use o fieldKey diretamente como chave no payload e extraia o valor
             const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
             payload[fieldKey] = extractValueFromPath(specificCalculationData, extractionPath);
           }
         });
 
-        // Encapsular o payload dentro de uma chave 'body' para compatibilidade com n8n
         const finalPayload = {
           body: payload
         };
 
         console.log(`[Webhook Sender] Enviando para URL: ${config.webhook_url}`);
-        console.log(`[Webhook Sender] Payload final (JSON.stringify):`, JSON.stringify(finalPayload)); // NOVO LOG: Payload exato como string JSON
+        console.log(`[Webhook Sender] Payload final (JSON.stringify):`, JSON.stringify(finalPayload));
 
         const response = await fetch(config.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalPayload), // Envia o payload encapsulado
+          body: JSON.stringify(finalPayload),
         });
 
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`[Webhook Sender] Falha no envio para ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
-          console.error(`[Webhook Sender] Resposta completa do erro:`, response); // NOVO LOG: Objeto de resposta completo em caso de erro
+          console.error(`[Webhook Sender] Resposta completa do erro:`, response);
           showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
         } else {
           sentCount++;
-          const successResponse = await response.json(); // Parse JSON para logar a resposta de sucesso
-          console.log(`[Webhook Sender] Sucesso ao enviar para ${config.webhook_url}. Resposta:`, successResponse); // NOVO LOG: Resposta de sucesso
+          const successResponse = await response.json();
+          console.log(`[Webhook Sender] Sucesso ao enviar para ${config.webhook_url}. Resposta:`, successResponse);
         }
       }
 
       if (sentCount > 0) {
         showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso! A página será atualizada em ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
-        updateCalculationStatus(calculationId, 'pending_response'); // Define como pendente até o refresh
-        // Inicia o timeout para o refresh da página
+        updateCalculationStatus(calculationId, 'pending_response');
         const timeoutId = setTimeout(() => {
           console.log(`Atualizando a página para verificar o cálculo ${calculationId} após ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
-          window.location.reload(); // Recarrega a página
+          window.location.reload();
         }, AUTO_REFRESH_DURATION);
         timeoutsRef.current.set(calculationId, timeoutId);
       } else {
         showError('Nenhum webhook foi enviado com sucesso.');
-        updateCalculationStatus(calculationId, 'idle'); // Volta para idle se nada foi enviado
+        updateCalculationStatus(calculationId, 'idle');
       }
 
     } catch (error: any) {
       showError('Erro inesperado ao enviar cálculo para webhook: ' + error.message);
       console.error('[Webhook Sender] Erro inesperado:', error);
-      updateCalculationStatus(calculationId, 'idle'); // Volta para idle em caso de erro
+      updateCalculationStatus(calculationId, 'idle');
     } finally {
       setIsSendingWebhook(null);
     }
   };
 
-  // Função para lidar com o download da resposta da IA como TXT
   const handleDownloadAiResponseAsTxt = (calculation: Calculation) => {
     if (calculation.resposta_ai) {
       const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.txt`;
@@ -269,24 +266,23 @@ const CalculationListPage = () => {
     }
   };
 
-  // Função para lidar com o download da resposta da IA como PDF
   const handleDownloadAiResponseAsPdf = (calculation: Calculation) => {
     if (calculation.resposta_ai) {
       const doc = new jsPDF();
       const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
       
       const text = calculation.resposta_ai;
-      const lines = doc.splitTextToSize(text, 180); // 180mm de largura para o texto
-      let y = 10; // Posição inicial Y
+      const lines = doc.splitTextToSize(text, 180);
+      let y = 10;
 
       doc.setFontSize(12);
       for (let i = 0; i < lines.length; i++) {
-        if (y + 10 > doc.internal.pageSize.height - 10) { // Verifica se precisa de nova página
+        if (y + 10 > doc.internal.pageSize.height - 10) {
           doc.addPage();
-          y = 10; // Reseta Y para a nova página
+          y = 10;
         }
         doc.text(lines[i], 10, y);
-        y += 7; // Incrementa Y para a próxima linha
+        y += 7;
       }
 
       doc.save(filename);
@@ -316,7 +312,7 @@ const CalculationListPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {calculations.map((calculation) => {
               const currentStatus = calculation.status || 'idle';
-              const hasResult = calculation.resposta_ai; // Simplificado para verificar apenas resposta_ai
+              const hasResult = calculation.resposta_ai;
 
               return (
                 <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
@@ -338,7 +334,6 @@ const CalculationListPage = () => {
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Concluído
                         </Badge>
                       )}
-                      {/* Botão Processar aparece se não estiver enviando, não estiver completo e não tiver resposta_ai */}
                       {currentStatus !== 'sending' && currentStatus !== 'completed' && !hasResult && (
                         <Button
                           variant="outline"
@@ -371,7 +366,6 @@ const CalculationListPage = () => {
                       </Button>
                     )}
 
-                    {/* Botão de download para a resposta da IA como TXT */}
                     {calculation.resposta_ai && (
                       <Button
                         variant="outline"
@@ -383,7 +377,6 @@ const CalculationListPage = () => {
                       </Button>
                     )}
 
-                    {/* Botão de download para a resposta da IA como PDF */}
                     {calculation.resposta_ai && (
                       <Button
                         variant="outline"

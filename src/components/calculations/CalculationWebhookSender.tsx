@@ -24,7 +24,7 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
   onSend,
   isSending,
 }) => {
-  console.log(`[CalculationWebhookSender] Componente renderizado. isOpen: ${isOpen}`); // NOVO LOG
+  console.log(`[CalculationWebhookSender] Componente renderizado. isOpen: ${isOpen}`); // NOVO LOG AQUI
   const { user } = useAuth();
   const [availableWebhooks, setAvailableWebhooks] = useState<WebhookConfig[]>([]);
   const [selectedWebhookIds, setSelectedWebhookIds] = useState<Set<string>>(new Set());
@@ -32,6 +32,7 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
 
   useEffect(() => {
     if (isOpen && user) {
+      console.log('[CalculationWebhookSender] Iniciando fetchAvailableWebhooks...'); // NOVO LOG AQUI
       fetchAvailableWebhooks();
     } else if (!isOpen) {
       setSelectedWebhookIds(new Set()); // Reset selection when dialog closes
@@ -39,7 +40,6 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
   }, [isOpen, user]);
 
   const fetchAvailableWebhooks = async () => {
-    console.log('[CalculationWebhookSender] Iniciando fetchAvailableWebhooks...'); // NOVO LOG
     setLoadingWebhooks(true);
     const { data, error } = await supabase
       .from('tbl_webhook_configs')
@@ -49,10 +49,10 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
 
     if (error) {
       showError('Erro ao carregar webhooks disponíveis: ' + error.message);
-      console.error('[CalculationWebhookSender] Erro ao buscar webhooks:', error); // NOVO LOG
+      console.error('[CalculationWebhookSender] Erro ao buscar webhooks:', error); // NOVO LOG AQUI
       setAvailableWebhooks([]);
     } else {
-      console.log('[CalculationWebhookSender] Webhooks carregados com sucesso:', data); // NOVO LOG
+      console.log('[CalculationWebhookSender] Webhooks carregados com sucesso:', data); // NOVO LOG AQUI
       setAvailableWebhooks(data || []);
     }
     setLoadingWebhooks(false);
@@ -71,7 +71,7 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
   };
 
   const handleConfirmSend = async () => {
-    console.log('[CalculationWebhookSender] Botão "Enviar Selecionados" clicado.'); // NOVO LOG
+    console.log('[CalculationWebhookSender] Botão "Enviar Selecionados" clicado.'); // NOVO LOG AQUI
     if (selectedWebhookIds.size === 0) {
       showError('Selecione pelo menos um webhook para enviar.');
       console.warn('[CalculationWebhookSender] Nenhum webhook selecionado para enviar.');
