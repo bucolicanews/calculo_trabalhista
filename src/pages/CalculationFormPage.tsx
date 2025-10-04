@@ -137,6 +137,7 @@ const CalculationFormPage = () => {
   };
 
   const handleSelectChange = (name: string, value: string) => {
+    console.log(`[CalculationFormPage] handleSelectChange: Setting ${name} to ${value}`);
     setCalculation((prev) => ({ ...prev, [name]: value }));
   };
 
