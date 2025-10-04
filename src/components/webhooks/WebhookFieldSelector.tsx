@@ -27,7 +27,13 @@ const WebhookFieldSelector: React.FC<WebhookFieldSelectorProps> = ({
 }) => {
   const areAllFieldsSelected = availableFields.length > 0 && selectedFields.length === availableFields.length;
 
-  console.log("WebhookFieldSelector - selectedFields:", selectedFields); // Log para depuração
+  // Add a log here to see the actual count of available fields
+  React.useEffect(() => {
+    if (fieldPopoverOpen) {
+      console.log("[WebhookFieldSelector] Available fields count:", availableFields.length);
+      console.log("[WebhookFieldSelector] Selected fields count:", selectedFields.length);
+    }
+  }, [fieldPopoverOpen, availableFields.length, selectedFields.length]);
 
   return (
     <Popover open={fieldPopoverOpen} onOpenChange={setFieldPopoverOpen}>

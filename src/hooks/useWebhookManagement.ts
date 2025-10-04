@@ -10,7 +10,7 @@ export interface WebhookConfig {
   table_name: string;
   selected_fields: string[];
   webhook_url: string;
-  title: string | null; // Adicionado
+  title: string | null;
   created_at: string;
 }
 
@@ -19,7 +19,7 @@ export interface WebhookFormState {
   table_name: string;
   selected_fields: string[];
   webhook_url: string;
-  title: string; // Adicionado, tornando-o obrigatório para o formulário
+  title: string;
 }
 
 export const useWebhookManagement = () => {
@@ -31,7 +31,7 @@ export const useWebhookManagement = () => {
     table_name: '',
     selected_fields: [],
     webhook_url: '',
-    title: '', // Inicializado
+    title: '',
   });
   const [isEditing, setIsEditing] = useState(false);
   const [fieldPopoverOpen, setFieldPopoverOpen] = useState(false);
@@ -71,7 +71,7 @@ export const useWebhookManagement = () => {
       table_name: webhook.table_name,
       selected_fields: webhook.selected_fields,
       webhook_url: webhook.webhook_url,
-      title: webhook.title || '', // Usar título existente ou string vazia
+      title: webhook.title || '',
     });
     setIsDialogOpen(true);
   };
@@ -105,6 +105,14 @@ export const useWebhookManagement = () => {
     ? getDisplayFieldsForTable(currentWebhook.table_name)
     : [];
 
+  // Add a log here to see the count of available fields for the current table
+  useEffect(() => {
+    if (isDialogOpen) {
+      console.log("[useWebhookManagement] currentTableAvailableFields.length:", currentTableAvailableFields.length);
+    }
+  }, [isDialogOpen, currentTableAvailableFields.length]);
+
+
   const areAllFieldsSelected = currentTableAvailableFields.length > 0 &&
     currentWebhook.selected_fields.length === currentTableAvailableFields.length;
 
@@ -129,7 +137,7 @@ export const useWebhookManagement = () => {
       table_name: currentWebhook.table_name,
       selected_fields: currentWebhook.selected_fields,
       webhook_url: currentWebhook.webhook_url,
-      title: currentWebhook.title, // Adicionado ao payload
+      title: currentWebhook.title,
     };
 
     let response;
@@ -187,7 +195,7 @@ export const useWebhookManagement = () => {
     fieldPopoverOpen,
     setFieldPopoverOpen,
     currentTableAvailableFields,
-        areAllFieldsSelected,
+    areAllFieldsSelected,
     handleNewWebhook,
     handleEditWebhook,
     handleChange,
