@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Clock, AlertTriangle, Download, FileText } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Download, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -13,10 +13,10 @@ import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webho
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender';
 import { Badge } from '@/components/ui/badge';
-import jsPDF from 'jspdf'; // Importar jspdf novamente
+import jsPDF from 'jspdf'; // Importar jspdf
 
 // Definindo os possíveis status de um cálculo
-type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'timed_out' | 'error';
+type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed';
 
 interface Calculation {
   id: string;
@@ -35,7 +35,7 @@ interface Calculation {
   [key: string]: any;
 }
 
-const TIMEOUT_DURATION = 20 * 60 * 1000; // 20 minutos em milissegundos
+const AUTO_REFRESH_DURATION = 1 * 60 * 1000; // 1 minuto em milissegundos
 
 const CalculationListPage = () => {
   const { user } = useAuth();
@@ -69,44 +69,13 @@ const CalculationListPage = () => {
   useEffect(() => {
     if (user) {
       fetchCalculations();
-
-      console.log('Attempting to subscribe to Supabase Realtime channel for tbl_calculos...');
-      const channel = supabase
-        .channel('calculation_responses_channel') // Nome do canal para evitar conflitos
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'tbl_calculos', filter: 'resposta_ai=neq.null' }, // Escuta por atualizações em tbl_calculos onde resposta_ai não é nula
-          (payload) => {
-            console.log('Realtime event received:', payload); // Log do payload completo
-            const updatedCalculation = payload.new as Calculation;
-            if (updatedCalculation && updatedCalculation.id && updatedCalculation.resposta_ai) {
-              console.log('Realtime update received for calculation ID:', updatedCalculation.id, 'with AI response.');
-              // Atualiza o status para 'completed' e limpa o timeout para o cálculo específico
-              updateCalculationStatus(updatedCalculation.id, 'completed');
-              clearTimeoutById(updatedCalculation.id);
-              // Opcional: Atualiza os dados do cálculo no estado para refletir a nova resposta_ai
-              setCalculations(prevCalculations =>
-                prevCalculations.map(calc =>
-                  calc.id === updatedCalculation.id ? { ...calc, resposta_ai: updatedCalculation.resposta_ai } : calc
-                )
-              );
-            } else {
-              console.log('Realtime event received, but no relevant AI response update:', updatedCalculation);
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log('Supabase Realtime channel status:', status); // Log do status da subscrição
-        });
-
-      return () => {
-        console.log('Unsubscribing from Supabase Realtime channel.');
-        supabase.removeChannel(channel);
-        // Limpa todos os timeouts ao desmontar o componente
-        timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-        timeoutsRef.current.clear();
-      };
     }
+
+    return () => {
+      // Limpa todos os timeouts ao desmontar o componente
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current.clear();
+    };
   }, [user]);
 
   const fetchCalculations = async () => {
@@ -121,11 +90,10 @@ const CalculationListPage = () => {
       console.error('Error fetching calculations:', error);
     } else {
       const initialCalculations: Calculation[] = (data as unknown as Calculation[] || []).map(calc => {
-        // Determina o status inicial
-        const hasResult = calc.resposta_ai || calc.tbl_resposta_calculo?.url_documento_calculo || calc.tbl_resposta_calculo?.texto_extraido;
+        // Determina o status inicial com base na resposta_ai
         return {
           ...calc,
-          status: hasResult ? 'completed' : 'idle',
+          status: calc.resposta_ai ? 'completed' : 'idle',
         };
       });
       setCalculations(initialCalculations);
@@ -167,14 +135,14 @@ const CalculationListPage = () => {
 
       if (webhookError) {
         showError('Erro ao buscar configurações de webhook: ' + webhookError.message);
-        updateCalculationStatus(calculationId, 'error');
+        updateCalculationStatus(calculationId, 'idle'); // Volta para idle se houver erro
         setIsSendingWebhook(null);
         return;
       }
 
       if (!webhookConfigs || webhookConfigs.length === 0) {
         showError('Nenhum webhook selecionado ou configurado encontrado.');
-        updateCalculationStatus(calculationId, 'error');
+        updateCalculationStatus(calculationId, 'idle'); // Volta para idle
         setIsSendingWebhook(null);
         return;
       }
@@ -253,21 +221,21 @@ const CalculationListPage = () => {
       }
 
       if (sentCount > 0) {
-        showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso!`);
-        updateCalculationStatus(calculationId, 'pending_response');
-        // Inicia o timeout para 'timed_out'
+        showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso! A página será atualizada em 1 minuto.`);
+        updateCalculationStatus(calculationId, 'pending_response'); // Define como pendente até o refresh
+        // Inicia o timeout para o refresh da página
         const timeoutId = setTimeout(() => {
-          updateCalculationStatus(calculationId, 'timed_out');
-          timeoutsRef.current.delete(calculationId);
-        }, TIMEOUT_DURATION);
+          console.log(`Atualizando a página para verificar o cálculo ${calculationId} após 1 minuto.`);
+          window.location.reload(); // Recarrega a página
+        }, AUTO_REFRESH_DURATION);
         timeoutsRef.current.set(calculationId, timeoutId);
       } else {
-        updateCalculationStatus(calculationId, 'error');
+        updateCalculationStatus(calculationId, 'idle'); // Volta para idle se nada foi enviado
       }
 
     } catch (error: any) {
       showError('Erro inesperado ao enviar cálculo para webhook: ' + error.message);
-      updateCalculationStatus(calculationId, 'error');
+      updateCalculationStatus(calculationId, 'idle'); // Volta para idle em caso de erro
     } finally {
       setIsSendingWebhook(null);
     }
@@ -339,7 +307,7 @@ const CalculationListPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {calculations.map((calculation) => {
               const currentStatus = calculation.status || 'idle';
-              const hasResult = calculation.resposta_ai || calculation.tbl_resposta_calculo?.url_documento_calculo || calculation.tbl_resposta_calculo?.texto_extraido;
+              const hasResult = calculation.resposta_ai; // Simplificado para verificar apenas resposta_ai
 
               return (
                 <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
@@ -361,15 +329,16 @@ const CalculationListPage = () => {
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Concluído
                         </Badge>
                       )}
-                      {currentStatus === 'timed_out' && (
-                        <Badge variant="destructive" className="bg-red-600 text-white flex items-center">
-                          <Clock className="h-3 w-3 mr-1" /> Tempo Excedido
-                        </Badge>
-                      )}
-                      {currentStatus === 'error' && (
-                        <Badge variant="destructive" className="bg-red-600 text-white flex items-center">
-                          <AlertTriangle className="h-3 w-3 mr-1" /> Erro
-                        </Badge>
+                      {/* Botão Processar aparece se não estiver enviando, não estiver completo e não tiver resposta_ai */}
+                      {currentStatus !== 'sending' && currentStatus !== 'completed' && !hasResult && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-gray-700 text-white hover:bg-gray-600"
+                          onClick={() => window.location.reload()}
+                        >
+                          Processar
+                        </Button>
                       )}
                     </div>
                     <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.nome || 'N/A'}</p>
@@ -405,7 +374,7 @@ const CalculationListPage = () => {
                       </Button>
                     )}
 
-                    {/* NOVO: Botão de download para a resposta da IA como PDF */}
+                    {/* Botão de download para a resposta da IA como PDF */}
                     {calculation.resposta_ai && (
                       <Button
                         variant="outline"
