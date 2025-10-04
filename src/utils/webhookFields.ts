@@ -1,7 +1,7 @@
 export interface FieldDefinition {
   key: string; // Unique key for the field (e.g., 'cliente_nome')
   label: string; // Display label (e.g., 'Cliente (Nome/Razão Social)')
-  baseSupabasePath: string; // Path from its sourceTable (e.g., 'nome' for client, 'tbl_dissidios(id)' for sindicato)
+  baseSupabasePath: string; // Path from its sourceTable (e.g., 'nome' for client)
   sourceTable: string; // The table where this field originates (e.g., 'tbl_clientes')
   supabasePath?: string; // Full Supabase path, dynamically generated for the selected main table
 }
@@ -47,23 +47,6 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'calculo_carga_horaria', label: 'Cálculo (Carga Horária)', baseSupabasePath: 'carga_horaria', sourceTable: 'tbl_calculos' },
   { key: 'calculo_created_at', label: 'Cálculo (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_calculos' },
   { key: 'calculo_resposta_ai', label: 'Cálculo (Resposta IA)', baseSupabasePath: 'resposta_ai', sourceTable: 'tbl_calculos' },
-
-  // tbl_ai_prompt_templates fields
-  { key: 'ai_template_id', label: 'Modelo IA (ID)', baseSupabasePath: 'id', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_user_id', label: 'Modelo IA (ID do Usuário)', baseSupabasePath: 'user_id', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_title', label: 'Modelo IA (Título)', baseSupabasePath: 'title', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_identificacao', label: 'Modelo IA (Identificação)', baseSupabasePath: 'identificacao', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_comportamento', label: 'Modelo IA (Comportamento)', baseSupabasePath: 'comportamento', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_restricoes', label: 'Modelo IA (Restrições)', baseSupabasePath: 'restricoes', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_atribuicoes', label: 'Modelo IA (Atribuições)', baseSupabasePath: 'atribuicoes', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_leis', label: 'Modelo IA (Leis)', baseSupabasePath: 'leis', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_proventos', label: 'Modelo IA (Proventos)', baseSupabasePath: 'proventos', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_descontos', label: 'Modelo IA (Descontos)', baseSupabasePath: 'descontos', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_observacoes_base_legal', label: 'Modelo IA (Obs. Base Legal)', baseSupabasePath: 'observacoes_base_legal', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_formatacao_texto_cabecalho', label: 'Modelo IA (Formatação Cabeçalho)', baseSupabasePath: 'formatacao_texto_cabecalho', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_formatacao_texto_corpo', label: 'Modelo IA (Formatação Corpo)', baseSupabasePath: 'formatacao_texto_corpo', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_formatacao_texto_rodape', label: 'Modelo IA (Formatação Rodapé)', baseSupabasePath: 'formatacao_texto_rodape', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_created_at', label: 'Modelo IA (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_ai_prompt_templates' },
 ];
 
 // Helper to construct the full Supabase path for a field based on the main table
@@ -119,5 +102,5 @@ export const availableTables = [
   { value: 'tbl_clientes', label: 'Clientes' },
   { value: 'tbl_calculos', label: 'Cálculos' },
   { value: 'tbl_sindicatos', label: 'Sindicatos' },
-  { value: 'tbl_ai_prompt_templates', label: 'Modelos de Prompt IA' },
+  // { value: 'tbl_ai_prompt_templates', label: 'Modelos de Prompt IA' }, // Removido
 ];
