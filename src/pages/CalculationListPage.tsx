@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webhookFields';
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender';
-import jsPDF from 'jspdf';
+//import jsPDF from 'jspdf';
 
 interface Calculation {
   id: string;
