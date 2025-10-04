@@ -1,0 +1,195 @@
+import React, { useEffect, useState } from 'react';
+import MainLayout from '@/components/layout/MainLayout';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { showError } from '@/utils/toast';
+import { ArrowLeft, FileText, Download } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface CalculationDetails {
+  id: string;
+  cliente_id: string;
+  sindicato_id: string | null;
+  nome_funcionario: string;
+  cpf_funcionario: string | null;
+  funcao_funcionario: string | null;
+  inicio_contrato: string;
+  fim_contrato: string;
+  tipo_aviso: string;
+  salario_sindicato: number;
+  salario_trabalhador: number;
+  obs_sindicato: string | null;
+  historia: string | null;
+  ctps_assinada: boolean;
+  media_descontos: number;
+  media_remuneracoes: number;
+  carga_horaria: string | null;
+  created_at: string;
+  tbl_clientes: { nome: string } | null;
+  tbl_sindicatos: { nome: string } | null;
+  tbl_resposta_calculo: {
+    resposta_ai: string | null;
+    url_documento_calculo: string | null;
+    texto_extraido: string | null;
+    data_hora: string;
+  }[] | null;
+}
+
+const CalculationResultPage: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user && id) {
+      fetchCalculationResult();
+    }
+  }, [user, id]);
+
+  const fetchCalculationResult = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('tbl_calculos')
+      .select(`
+        *,
+        tbl_clientes(nome),
+        tbl_sindicatos(nome),
+        tbl_resposta_calculo(resposta_ai, url_documento_calculo, texto_extraido, data_hora)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      showError('Erro ao carregar resultado do cálculo: ' + error.message);
+      console.error('Error fetching calculation result:', error);
+      navigate('/calculations');
+    } else if (data) {
+      setCalculation(data as CalculationDetails);
+    }
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-8 text-center text-gray-400">Carregando resultado do cálculo...</div>
+      </MainLayout>
+    );
+  }
+
+  if (!calculation) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-8 text-center text-gray-400">Nenhum resultado de cálculo encontrado.</div>
+      </MainLayout>
+    );
+  }
+
+  const result = calculation.tbl_resposta_calculo?.[0];
+
+  return (
+    <MainLayout>
+      <div className="container mx-auto py-8">
+        <div className="flex items-center mb-8">
+          <Button variant="ghost" onClick={() => navigate('/calculations')} className="text-orange-500 hover:text-orange-600">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Cálculos
+          </Button>
+          <h1 className="text-4xl font-bold text-orange-500 flex-grow text-center">
+            Resultado do Cálculo
+          </h1>
+          <div className="w-48"></div> {/* Placeholder for alignment */}
+        </div>
+
+        <Card className="max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl text-orange-500">Detalhes do Cálculo</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
+            <p><strong>Funcionário:</strong> {calculation.nome_funcionario}</p>
+            <p><strong>Cliente:</strong> {calculation.tbl_clientes?.nome || 'N/A'}</p>
+            <p><strong>Sindicato:</strong> {calculation.tbl_sindicatos?.nome || 'N/A'}</p>
+            <p><strong>Início Contrato:</strong> {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy', { locale: ptBR })}</p>
+            <p><strong>Fim Contrato:</strong> {format(new Date(calculation.fim_contrato), 'dd/MM/yyyy', { locale: ptBR })}</p>
+            <p><strong>Tipo de Rescisão:</strong> {calculation.tipo_aviso}</p>
+            <p><strong>Salário Trabalhador:</strong> R$ {calculation.salario_trabalhador.toFixed(2)}</p>
+            <p><strong>CTPS Assinada:</strong> {calculation.ctps_assinada ? 'Sim' : 'Não'}</p>
+            {calculation.cpf_funcionario && <p><strong>CPF Funcionário:</strong> {calculation.cpf_funcionario}</p>}
+            {calculation.funcao_funcionario && <p><strong>Função:</strong> {calculation.funcao_funcionario}</p>}
+            {calculation.salario_sindicato > 0 && <p><strong>Piso Salarial Sindicato:</strong> R$ {calculation.salario_sindicato.toFixed(2)}</p>}
+            {calculation.media_descontos > 0 && <p><strong>Média Descontos:</strong> R$ {calculation.media_descontos.toFixed(2)}</p>}
+            {calculation.media_remuneracoes > 0 && <p><strong>Média Remunerações:</strong> R$ {calculation.media_remuneracoes.toFixed(2)}</p>}
+            {calculation.carga_horaria && <p><strong>Carga Horária:</strong> {calculation.carga_horaria}</p>}
+            {calculation.obs_sindicato && <p className="col-span-full"><strong>Obs. Sindicato:</strong> {calculation.obs_sindicato}</p>}
+            {calculation.historia && <p className="col-span-full"><strong>Histórico:</strong> {calculation.historia}</p>}
+          </CardContent>
+        </Card>
+
+        {result ? (
+          <Card className="max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white">
+            <CardHeader>
+              <CardTitle className="text-2xl text-orange-500">Resposta do Webhook</CardTitle>
+              <p className="text-sm text-gray-400">Gerado em: {format(new Date(result.data_hora), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
+            </CardHeader>
+            <CardContent className="space-y-4 text-gray-300">
+              {result.resposta_ai && (
+                <div>
+                  <h3 className="text-lg font-semibold text-orange-400 mb-2">Resposta da IA:</h3>
+                  <p className="whitespace-pre-wrap">{result.resposta_ai}</p>
+                </div>
+              )}
+              {result.texto_extraido && (
+                <div>
+                  <h3 className="text-lg font-semibold text-orange-400 mb-2">Texto Extraído do Documento:</h3>
+                  <p className="whitespace-pre-wrap">{result.texto_extraido}</p>
+                </div>
+              )}
+              {result.url_documento_calculo && (
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5 text-orange-500" />
+                  <a
+                    href={result.url_documento_calculo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    Visualizar Documento PDF
+                  </a>
+                  <Button asChild variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
+                    <a href={result.url_documento_calculo} download>
+                      <Download className="h-4 w-4 mr-1" /> Baixar PDF
+                    </a>
+                  </Button>
+                </div>
+              )}
+              {!result.resposta_ai && !result.texto_extraido && !result.url_documento_calculo && (
+                <p className="text-gray-400">Nenhuma resposta detalhada disponível para este cálculo ainda.</p>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white">
+            <CardHeader>
+              <CardTitle className="text-2xl text-orange-500">Resposta do Webhook</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-400">Ainda não há uma resposta de webhook para este cálculo. Envie o cálculo para um webhook para gerar um resultado.</p>
+              <Button asChild className="mt-4 bg-orange-500 hover:bg-orange-600 text-white">
+                <Link to={`/calculations`}>
+                  Enviar Cálculo
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </MainLayout>
+  );
+};
+
+export default CalculationResultPage;

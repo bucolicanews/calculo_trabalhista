@@ -7,11 +7,12 @@ import ClientListPage from './pages/ClientListPage';
 import ClientFormPage from './pages/ClientFormPage';
 import CalculationListPage from './pages/CalculationListPage';
 import CalculationFormPage from './pages/CalculationFormPage';
+import CalculationResultPage from './pages/CalculationResultPage'; // Importando a nova página
 import SindicatoListPage from './pages/SindicatoListPage';
 import SindicatoFormPage from './pages/SindicatoFormPage';
 import WebhookConfigPage from './pages/WebhookConfigPage';
 import { Toaster } from './components/ui/toaster';
-import Index from './pages/Index'; // Importando a página Index
+import Index from './pages/Index';
 
 const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -29,7 +30,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/" element={<Index />} /> {/* Rota principal agora usa o Index */}
+          <Route path="/" element={<Index />} />
           <Route
             path="/dashboard"
             element={
@@ -83,6 +84,14 @@ function App() {
             element={
               <PrivateRoute>
                 <CalculationFormPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/calculations/:id/result" // Nova rota para a página de resultados
+            element={
+              <PrivateRoute>
+                <CalculationResultPage />
               </PrivateRoute>
             }
           />
