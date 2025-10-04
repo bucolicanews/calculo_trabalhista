@@ -22,8 +22,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
     }
   };
 
-  // URL da função Edge para receber o resumo da IA (dissídios)
   const aiSummaryWebhookUrl = "https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/store-ai-summary";
+  const calculationResultWebhookUrl = "https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/store-calculation-result";
 
   const navItems = [
     { name: 'Dashboard', icon: Home, path: '/dashboard' },
@@ -31,7 +31,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
     { name: 'Cálculos', icon: Calculator, path: '/calculations' },
     { name: 'Sindicatos', icon: Building2, path: '/sindicatos' },
     { name: 'Webhooks', icon: BellRing, path: '/webhooks' },
-    // { name: 'Configurações', icon: Settings, path: '/settings' }, // Futuro
   ];
 
   return (
@@ -59,9 +58,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
         </ul>
       </nav>
       <div className="mt-auto pt-4 border-t border-gray-700">
-        <div className="mb-4 p-2 bg-gray-800 rounded-md text-sm text-gray-400 break-all">
+        <div className="mb-2 p-2 bg-gray-800 rounded-md text-sm text-gray-400 break-all">
           <p className="font-semibold text-orange-400 mb-1">Webhook Resumo IA (Dissídios):</p>
           <span className="text-xs">{aiSummaryWebhookUrl}</span>
+        </div>
+        <div className="mb-4 p-2 bg-gray-800 rounded-md text-sm text-gray-400 break-all">
+          <p className="font-semibold text-orange-400 mb-1">Webhook Resultado Cálculo:</p>
+          <span className="text-xs">{calculationResultWebhookUrl}</span>
         </div>
         <Button
           variant="ghost"
