@@ -149,34 +149,22 @@ const CalculationListPage = () => {
 
       let sentCount = 0;
       for (const config of webhookConfigs) {
-        const selectParts: Set<string> = new Set(['id']);
-        const relatedTableSelections: { [tableName: string]: Set<string> } = {};
-
-        if (config.selected_fields.includes('calculo_resposta_ai')) {
-            selectParts.add('resposta_ai');
-        }
+        const uniqueSupabasePaths: Set<string> = new Set(['id']); // Always select the main ID of tbl_calculos
 
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            if (fieldDef.sourceTable === 'tbl_calculos' && fieldDef.key !== 'calculo_resposta_ai') {
-              selectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable !== 'tbl_calculos') {
-              if (!relatedTableSelections[fieldDef.sourceTable]) {
-                relatedTableSelections[fieldDef.sourceTable] = new Set();
-              }
-              relatedTableSelections[fieldDef.sourceTable].add(fieldDef.baseSupabasePath);
+            // Use getFullSupabasePath for all fields to correctly build nested queries
+            const supabasePath = getFullSupabasePath('tbl_calculos', fieldDef);
+            if (supabasePath) {
+              uniqueSupabasePaths.add(supabasePath);
             }
           }
         });
 
-        for (const tableName in relatedTableSelections) {
-          if (relatedTableSelections[tableName].size > 0) {
-            selectParts.add(`${tableName}(${Array.from(relatedTableSelections[tableName]).join(',')})`);
-          }
-        }
+        const finalSelectString = Array.from(uniqueSupabasePaths).join(', ');
+        console.log(`[Webhook Sender] Final Supabase SELECT string: ${finalSelectString}`);
 
-        const finalSelectString = Array.from(selectParts).join(', ');
 
         const { data: specificCalculationData, error: fetchError } = await supabase
           .from('tbl_calculos')
@@ -186,34 +174,35 @@ const CalculationListPage = () => {
 
         if (fetchError) {
           showError(`Erro ao buscar dados do cálculo para webhook: ${fetchError.message}`);
+          console.error(`[Webhook Sender] Erro ao buscar dados do cálculo:`, fetchError);
           continue;
         }
 
         if (!specificCalculationData) {
           showError('Dados do cálculo não encontrados para o webhook.');
+          console.warn(`[Webhook Sender] Dados do cálculo não encontrados para ID: ${calculationId}`);
           continue;
         }
+        console.log(`[Webhook Sender] Dados do Supabase recebidos:`, specificCalculationData);
+
 
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            if (fieldDef.key === 'calculo_resposta_ai') {
-                payload[fieldDef.key] = (specificCalculationData as any).resposta_ai;
-            } else {
-                const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
-                payload[fieldDef.key] = extractValueFromPath(specificCalculationData, extractionPath);
-            }
+            // Use o fieldKey diretamente como chave no payload e extraia o valor
+            const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
+            payload[fieldKey] = extractValueFromPath(specificCalculationData, extractionPath);
           }
         });
 
-        // NOVO: Encapsular o payload dentro de uma chave 'body' para compatibilidade com n8n
+        // Encapsular o payload dentro de uma chave 'body' para compatibilidade com n8n
         const finalPayload = {
           body: payload
         };
 
         console.log(`[Webhook Sender] Enviando para URL: ${config.webhook_url}`);
-        console.log(`[Webhook Sender] Payload:`, finalPayload);
+        console.log(`[Webhook Sender] Payload final:`, finalPayload);
 
         const response = await fetch(config.webhook_url, {
           method: 'POST',
