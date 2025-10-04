@@ -177,18 +177,20 @@ const CalculationResultPage: React.FC = () => {
     const pdfPageHeight = pdf.internal.pageSize.getHeight();
 
     // Definir margens em mm
-    const contentMarginLeft = 15; // Margem esquerda do conteúdo
-    const contentMarginRight = 15; // Margem direita do conteúdo
+    const contentMarginLeft = 15;
+    const contentMarginRight = 15;
     const contentMarginTop = 10; // Margem entre o cabeçalho e o conteúdo da IA
-    const contentMarginBottom = 10; // Margem inferior do conteúdo
+    const contentMarginBottom = 10;
 
-    const headerHeight = 30; // Altura reservada para o cabeçalho (título, ID, data)
+    const mainHeaderHeight = 30; // Altura reservada para o cabeçalho principal (título, ID, data)
+    const continuationHeaderHeight = 10; // Altura reservada para o cabeçalho de continuação
 
     // Área útil para o conteúdo da IA em cada página
     const contentPrintableWidth = pdfPageWidth - contentMarginLeft - contentMarginRight;
-    const contentPrintableHeightPerPage = pdfPageHeight - headerHeight - contentMarginTop - contentMarginBottom;
+    const contentPrintableHeightForFirstPage = pdfPageHeight - mainHeaderHeight - contentMarginTop - contentMarginBottom;
+    const contentPrintableHeightForSubsequentPages = pdfPageHeight - continuationHeaderHeight - contentMarginTop - contentMarginBottom;
 
-    // 2. Adicionar mensagem (cabeçalho)
+    // Add main header on the first page
     pdf.setFontSize(16);
     pdf.text('Relatório de Cálculo de Rescisão', pdfPageWidth / 2, 15, { align: 'center' });
     pdf.setFontSize(10);
@@ -200,31 +202,31 @@ const CalculationResultPage: React.FC = () => {
     const imgCanvasHeight = canvas.height;
 
     // Calcular as dimensões da imagem quando renderizada no PDF, mantendo a proporção
-    // A imagem será escalada para caber na largura útil da página
     const imageRenderedWidth = contentPrintableWidth;
     const imageRenderedHeight = (imgCanvasHeight * imageRenderedWidth) / imgCanvasWidth;
 
     let currentImageSliceY = 0; // Posição Y dentro da imagem original do canvas para começar a fatiar (em pixels do canvas)
     let remainingImageHeightPx = imgCanvasHeight; // Altura restante da imagem original do canvas (em pixels do canvas)
-
-    const startYContent = headerHeight + contentMarginTop; // Posição Y onde o conteúdo da imagem começa na página do PDF
+    let pageNum = 0;
 
     while (remainingImageHeightPx > 0) {
-      // Calcular quanta altura da imagem renderizada cabe na página atual do PDF
+      const currentContentStartY = (pageNum === 0) ? (mainHeaderHeight + contentMarginTop) : (continuationHeaderHeight + contentMarginTop);
+      const currentPrintableHeight = (pageNum === 0) ? contentPrintableHeightForFirstPage : contentPrintableHeightForSubsequentPages;
+
+      // Calculate how much rendered image height fits on the current PDF page
       const pageContentHeightRendered = Math.min(
         remainingImageHeightPx * (imageRenderedHeight / imgCanvasHeight),
-        contentPrintableHeightPerPage
+        currentPrintableHeight
       );
 
-      // Calcular a altura correspondente em pixels da imagem original do canvas
+      // Calculate the corresponding height in pixels from the original canvas image
       const pageContentHeightPx = (pageContentHeightRendered * imgCanvasHeight) / imageRenderedHeight;
 
-      // Correção: Usar 'any' para a chamada addImage para contornar o erro de tipo
       (pdf as any).addImage(
         imgData,
         'PNG',
         contentMarginLeft, // x
-        startYContent,  // y
+        currentContentStartY,  // y
         imageRenderedWidth, // width
         pageContentHeightRendered, // height
         0, // sX (source X)
@@ -238,7 +240,8 @@ const CalculationResultPage: React.FC = () => {
 
       if (remainingImageHeightPx > 0) {
         pdf.addPage();
-        // Adicionar cabeçalho para páginas subsequentes (opcional)
+        pageNum++;
+        // Add continuation header for subsequent pages
         pdf.setFontSize(10);
         pdf.text('Relatório de Cálculo de Rescisão (continuação)', pdfPageWidth / 2, 10, { align: 'center' });
       }
