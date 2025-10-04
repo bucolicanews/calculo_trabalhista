@@ -149,22 +149,34 @@ const CalculationListPage = () => {
 
       let sentCount = 0;
       for (const config of webhookConfigs) {
-        const uniqueSupabasePaths: Set<string> = new Set(['id']); // Always select the main ID of tbl_calculos
+        const selectParts: Set<string> = new Set(['id']);
+        const relatedTableSelections: { [tableName: string]: Set<string> } = {};
+
+        if (config.selected_fields.includes('calculo_resposta_ai')) {
+            selectParts.add('resposta_ai');
+        }
 
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            // Use getFullSupabasePath for all fields to correctly build nested queries
-            const supabasePath = getFullSupabasePath('tbl_calculos', fieldDef);
-            if (supabasePath) {
-              uniqueSupabasePaths.add(supabasePath);
+            if (fieldDef.sourceTable === 'tbl_calculos' && fieldDef.key !== 'calculo_resposta_ai') {
+              selectParts.add(fieldDef.baseSupabasePath);
+            } else if (fieldDef.sourceTable !== 'tbl_calculos') {
+              if (!relatedTableSelections[fieldDef.sourceTable]) {
+                relatedTableSelections[fieldDef.sourceTable] = new Set();
+              }
+              relatedTableSelections[fieldDef.sourceTable].add(fieldDef.baseSupabasePath);
             }
           }
         });
 
-        const finalSelectString = Array.from(uniqueSupabasePaths).join(', ');
-        console.log(`[Webhook Sender] Final Supabase SELECT string: ${finalSelectString}`);
+        for (const tableName in relatedTableSelections) {
+          if (relatedTableSelections[tableName].size > 0) {
+            selectParts.add(`${tableName}(${Array.from(relatedTableSelections[tableName]).join(',')})`);
+          }
+        }
 
+        const finalSelectString = Array.from(selectParts).join(', ');
 
         const { data: specificCalculationData, error: fetchError } = await supabase
           .from('tbl_calculos')
@@ -174,69 +186,55 @@ const CalculationListPage = () => {
 
         if (fetchError) {
           showError(`Erro ao buscar dados do cálculo para webhook: ${fetchError.message}`);
-          console.error(`[Webhook Sender] Erro ao buscar dados do cálculo:`, fetchError);
           continue;
         }
 
         if (!specificCalculationData) {
           showError('Dados do cálculo não encontrados para o webhook.');
-          console.warn(`[Webhook Sender] Dados do cálculo não encontrados para ID: ${calculationId}`);
           continue;
         }
-        console.log(`[Webhook Sender] Dados do Supabase recebidos:`, specificCalculationData);
-
 
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            // Use o fieldKey diretamente como chave no payload e extraia o valor
-            const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
-            payload[fieldKey] = extractValueFromPath(specificCalculationData, extractionPath);
+            if (fieldDef.key === 'calculo_resposta_ai') {
+                payload[fieldDef.key] = (specificCalculationData as any).resposta_ai;
+            } else {
+                const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
+                payload[fieldDef.key] = extractValueFromPath(specificCalculationData, extractionPath);
+            }
           }
         });
-
-        // Encapsular o payload dentro de uma chave 'body' para compatibilidade com n8n
-        const finalPayload = {
-          body: payload
-        };
-
-        console.log(`[Webhook Sender] Enviando para URL: ${config.webhook_url}`);
-        console.log(`[Webhook Sender] Payload final:`, finalPayload);
 
         const response = await fetch(config.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalPayload), // Envia o payload encapsulado
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
-          console.error(`[Webhook Sender] Erro ao enviar para ${config.webhook_url}:`, response.status, errorText);
+          showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}`);
         } else {
           sentCount++;
-          console.log(`[Webhook Sender] Sucesso ao enviar para ${config.webhook_url}`);
         }
       }
 
       if (sentCount > 0) {
-        showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso! A página será atualizada em ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
+        showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso! A página será atualizada em 1 minuto.`);
         updateCalculationStatus(calculationId, 'pending_response'); // Define como pendente até o refresh
         // Inicia o timeout para o refresh da página
         const timeoutId = setTimeout(() => {
-          console.log(`Atualizando a página para verificar o cálculo ${calculationId} após ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
+          console.log(`Atualizando a página para verificar o cálculo ${calculationId} após 1 minuto.`);
           window.location.reload(); // Recarrega a página
         }, AUTO_REFRESH_DURATION);
         timeoutsRef.current.set(calculationId, timeoutId);
       } else {
-        showError('Nenhum webhook foi enviado com sucesso.');
         updateCalculationStatus(calculationId, 'idle'); // Volta para idle se nada foi enviado
       }
 
     } catch (error: any) {
       showError('Erro inesperado ao enviar cálculo para webhook: ' + error.message);
-      console.error('[Webhook Sender] Erro inesperado:', error);
       updateCalculationStatus(calculationId, 'idle'); // Volta para idle em caso de erro
     } finally {
       setIsSendingWebhook(null);

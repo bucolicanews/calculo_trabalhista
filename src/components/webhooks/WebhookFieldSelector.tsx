@@ -45,10 +45,10 @@ const WebhookFieldSelector: React.FC<WebhookFieldSelectorProps> = ({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 bg-gray-900 border-orange-500"> {/* Fundo escuro e borda laranja */}
+      <PopoverContent className="w-[300px] p-0">
         <Command>
-          <CommandInput placeholder="Buscar campo..." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /> {/* Estilo para o input de busca */}
-          <CommandEmpty className="text-gray-400">Nenhum campo encontrado.</CommandEmpty> {/* Texto visível */}
+          <CommandInput placeholder="Buscar campo..." />
+          <CommandEmpty>Nenhum campo encontrado.</CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
             {availableFields.length > 0 && (
               <>
@@ -68,7 +68,6 @@ const WebhookFieldSelector: React.FC<WebhookFieldSelectorProps> = ({
               </>
             )}
             {availableFields.map((field) => (
-              // Texto branco no fundo escuro
               <CommandItem
                 key={field.key}
                 onSelect={() => onFieldToggle(field.key)}

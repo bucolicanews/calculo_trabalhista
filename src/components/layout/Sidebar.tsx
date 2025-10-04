@@ -63,9 +63,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
         <div className="mb-4 p-2 bg-gray-800 rounded-md text-sm text-gray-400 break-all">
           <p className="font-semibold text-orange-400 mb-1">Webhook Resposta do Cálculo:</p>
           <span className="text-xs">{calculationResponseWebhookUrl}</span>
-          <p className="text-xs text-gray-500 mt-1">
-            (Este é o endpoint para onde a IA deve enviar a resposta final do cálculo.)
-          </p>
         </div>
         <Button
           variant="ghost"
