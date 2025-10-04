@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { parseMarkdownTables, convertToCsv, ParsedTable } from '@/utils/markdownParser';
 
 import html2pdf from 'html2pdf.js';
@@ -234,11 +235,17 @@ const CalculationResultPage: React.FC = () => {
         return null; // Remove "DADOS DA RESCISÃO"
       }
       if (text.includes('RESUMO FINANCEIRO')) {
-        return null; // Remove "RESUMO FINANCEIRO"
-      }
-      if (text.includes('VALOR LÍQUIDO A RECEBER')) {
+        // Centralizado e laranja
         return (
           <h2 className="text-2xl font-bold text-orange-500 mt-6 mb-4 text-center p-4 border border-orange-500 rounded-md">
+            {children}
+          </h2>
+        );
+      }
+      if (text.includes('VALOR LÍQUIDO A RECEBER')) {
+        // Alinhado à direita e laranja
+        return (
+          <h2 className="text-2xl font-bold text-orange-500 mt-6 mb-4 text-right p-4 border border-orange-500 rounded-md">
             {children}
           </h2>
         );
@@ -256,6 +263,7 @@ const CalculationResultPage: React.FC = () => {
       const text = getTextFromChildren(children);
 
       if (text.includes('PROVENTOS') || text.includes('DESCONTOS')) {
+        // Centralizado e laranja
         return (
           <h3 className="text-xl font-bold text-orange-500 bg-black py-2 my-2 text-center rounded-md">
             {children}
@@ -269,14 +277,19 @@ const CalculationResultPage: React.FC = () => {
       // Regex para detectar valores monetários no formato R$ X.XXX,XX
       const monetaryRegex = /R\$\s\d{1,3}(?:\.\d{3})*,\d{2}/;
       if (monetaryRegex.test(text)) {
+        // Alinhado à direita e laranja
         return (
-          <p className="text-4xl font-extrabold text-orange-500 text-center my-4 p-2 bg-gray-800 rounded-md">
+          <p className="text-4xl font-extrabold text-orange-500 text-right my-4 p-2 bg-gray-800 rounded-md">
             {children}
           </p>
         );
       }
       return <p className="mb-4">{children}</p>; // Default paragraph styling
     },
+    table: ({ children }: { children?: React.ReactNode }) => (
+      // Adiciona margem vertical às tabelas
+      <table className="my-4">{children}</table>
+    ),
   };
 
   if (loading) {
@@ -349,7 +362,7 @@ const CalculationResultPage: React.FC = () => {
               {calculation.resposta_ai && (
                 <div ref={markdownRef} className="prose prose-invert max-w-none">
                   <h3 className="text-lg font-semibold text-orange-400 mb-2">Resposta da IA:</h3>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
                     {calculation.resposta_ai}
                   </ReactMarkdown>
                   <div className="flex flex-wrap gap-2 mt-4">

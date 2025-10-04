@@ -101,7 +101,7 @@
 
   /* Custom styles for markdown tables within prose */
   .prose table {
-    @apply w-full border-collapse;
+    @apply w-full border-collapse my-4; /* Adicionado my-4 para margem vertical de 1rem (16px) */
   }
 
   .prose th,
@@ -111,5 +111,16 @@
 
   .prose th {
     @apply bg-gray-800 font-semibold text-orange-400; /* Estilo para cabeçalhos de tabela */
+  }
+
+  /* Ensure specific headers and paragraphs are styled as requested */
+  .prose h2.text-right,
+  .prose p.text-right {
+    @apply text-right; /* Garante explicitamente o alinhamento à direita */
+  }
+
+  .prose h2.text-center,
+  .prose h3.text-center {
+    @apply text-center; /* Garante explicitamente o alinhamento central */
   }
 }

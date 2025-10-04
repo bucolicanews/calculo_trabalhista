@@ -152,7 +152,7 @@ function toast({ ...props }: Toast) {
       ...props,
       id,
       open: true,
-      onOpenChange: (open) => {
+      onOpenChange: (open: boolean) => { // Added type annotation here
         if (!open) dismiss();
       },
     },
