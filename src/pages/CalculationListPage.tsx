@@ -202,7 +202,7 @@ const CalculationListPage = () => {
         };
 
         console.log(`[Webhook Sender] Enviando para URL: ${config.webhook_url}`);
-        console.log(`[Webhook Sender] Payload final:`, finalPayload);
+        console.log(`[Webhook Sender] Payload final (JSON.stringify):`, JSON.stringify(finalPayload)); // NOVO LOG: Payload exato como string JSON
 
         const response = await fetch(config.webhook_url, {
           method: 'POST',
@@ -212,11 +212,13 @@ const CalculationListPage = () => {
 
         if (!response.ok) {
           const errorText = await response.text();
+          console.error(`[Webhook Sender] Falha no envio para ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
+          console.error(`[Webhook Sender] Resposta completa do erro:`, response); // NOVO LOG: Objeto de resposta completo em caso de erro
           showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
-          console.error(`[Webhook Sender] Erro ao enviar para ${config.webhook_url}:`, response.status, errorText);
         } else {
           sentCount++;
-          console.log(`[Webhook Sender] Sucesso ao enviar para ${config.webhook_url}`);
+          const successResponse = await response.json(); // Parse JSON para logar a resposta de sucesso
+          console.log(`[Webhook Sender] Sucesso ao enviar para ${config.webhook_url}. Resposta:`, successResponse); // NOVO LOG: Resposta de sucesso
         }
       }
 
@@ -266,7 +268,7 @@ const CalculationListPage = () => {
   const handleDownloadAiResponseAsPdf = (calculation: Calculation) => {
     if (calculation.resposta_ai) {
       const doc = new jsPDF();
-      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
+      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 0)}.pdf`;
       
       const text = calculation.resposta_ai;
       const lines = doc.splitTextToSize(text, 180); // 180mm de largura para o texto
