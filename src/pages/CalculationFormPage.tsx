@@ -4,18 +4,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
+// Importar os novos componentes modulares
+import ClientSelectField from '@/components/calculations/ClientSelectField';
+import SindicatoSelectField from '@/components/calculations/SindicatoSelectField';
+import EmployeeDetailsSection from '@/components/calculations/EmployeeDetailsSection';
+import ContractDatesSection from '@/components/calculations/ContractDatesSection';
+import RescissionTypeSelectField from '@/components/calculations/RescissionTypeSelectField';
+import SalaryAndObservationsSection from '@/components/calculations/SalaryAndObservationsSection';
+import AveragesSection from '@/components/calculations/AveragesSection';
+import ContractHistoryAndCTPS from '@/components/calculations/ContractHistoryAndCTPS';
 
 interface Client {
   id: string;
@@ -27,7 +28,6 @@ interface Sindicato {
   nome: string;
 }
 
-// Nova lista de Tipos de Rescisão de Contrato de Trabalho
 const noticeTypes = [
   'Rescisão com Justa Causa',
   'Rescisão sem Justa Causa',
@@ -53,9 +53,9 @@ const CalculationFormPage = () => {
     funcao_funcionario: '',
     inicio_contrato: '',
     fim_contrato: '',
-    tipo_aviso: '', // Este campo agora representa o tipo de rescisão
+    tipo_aviso: '',
     salario_sindicato: 0,
-    salario_trabalhador: 0, // NOVO CAMPO
+    salario_trabalhador: 0,
     obs_sindicato: '',
     historia: '',
     ctps_assinada: false,
@@ -121,7 +121,7 @@ const CalculationFormPage = () => {
         ...data,
         inicio_contrato: data.inicio_contrato || '',
         fim_contrato: data.fim_contrato || '',
-        salario_trabalhador: data.salario_trabalhador || 0, // Carregar o novo campo
+        salario_trabalhador: data.salario_trabalhador || 0,
       });
     }
     setLoading(false);
@@ -157,7 +157,6 @@ const CalculationFormPage = () => {
       return;
     }
 
-    // Validação client-side para campos obrigatórios
     if (!calculation.cliente_id) {
       showError('Por favor, selecione um cliente.');
       return;
@@ -187,11 +186,10 @@ const CalculationFormPage = () => {
       salario_trabalhador: parseFloat(String(calculation.salario_trabalhador)) || 0,
       media_descontos: parseFloat(String(calculation.media_descontos)) || 0,
       media_remuneracoes: parseFloat(String(calculation.media_remuneracoes)) || 0,
-      // Converte sindicato_id para null se for uma string vazia, pois é opcional no DB
       sindicato_id: calculation.sindicato_id === '' ? null : calculation.sindicato_id,
     };
 
-    console.log('Attempting to save calculation with data:', calculationData); // Log dos dados enviados
+    console.log('Attempting to save calculation with data:', calculationData);
 
     let response;
     if (isEditing) {
@@ -207,10 +205,10 @@ const CalculationFormPage = () => {
 
     if (response.error) {
       showError('Erro ao salvar cálculo: ' + response.error.message);
-      console.error('Error saving calculation:', response.error.message, response.error.details); // Log detalhado do erro
+      console.error('Error saving calculation:', response.error.message, response.error.details);
     } else {
       showSuccess(`Cálculo ${isEditing ? 'atualizado' : 'criado'} com sucesso!`);
-      navigate('/dashboard'); // Or to a calculation detail page
+      navigate('/dashboard');
     }
     setLoading(false);
   };
@@ -235,257 +233,65 @@ const CalculationFormPage = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Cliente */}
-              <div>
-                <Label htmlFor="cliente_id" className="text-gray-300">Cliente</Label>
-                <Select
-                  name="cliente_id"
-                  value={calculation.cliente_id}
-                  onValueChange={(value) => handleSelectChange('cliente_id', value)}
-                  required
-                >
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus:ring-orange-500">
-                    <SelectValue placeholder="Selecione o cliente" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id} className="text-white hover:bg-gray-700 focus:bg-gray-700">
-                        {client.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <ClientSelectField
+                cliente_id={calculation.cliente_id}
+                clients={clients}
+                onValueChange={(value) => handleSelectChange('cliente_id', value)}
+                disabled={loading}
+              />
 
-              {/* Sindicato */}
-              <div>
-                <Label htmlFor="sindicato_id" className="text-gray-300">Sindicato (Opcional)</Label>
-                <Select
-                  name="sindicato_id"
-                  value={calculation.sindicato_id}
-                  onValueChange={(value) => handleSelectChange('sindicato_id', value)}
-                >
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus:ring-orange-500">
-                    <SelectValue placeholder="Selecione o sindicato" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                    {sindicatos.map((sindicato) => (
-                      <SelectItem key={sindicato.id} value={sindicato.id} className="text-white hover:bg-gray-700 focus:bg-gray-700">
-                        {sindicato.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SindicatoSelectField
+                sindicato_id={calculation.sindicato_id}
+                sindicatos={sindicatos}
+                onValueChange={(value) => handleSelectChange('sindicato_id', value)}
+                disabled={loading}
+              />
 
-              {/* Dados do Funcionário */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="nome_funcionario" className="text-gray-300">Nome do Funcionário</Label>
-                  <Input
-                    id="nome_funcionario"
-                    name="nome_funcionario"
-                    value={calculation.nome_funcionario}
-                    onChange={handleChange}
-                    required
-                    className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cpf_funcionario" className="text-gray-300">CPF do Funcionário</Label>
-                  <Input
-                    id="cpf_funcionario"
-                    name="cpf_funcionario"
-                    value={calculation.cpf_funcionario}
-                    onChange={handleChange}
-                    className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="funcao_funcionario" className="text-gray-300">Função do Funcionário</Label>
-                  <Input
-                    id="funcao_funcionario"
-                    name="funcao_funcionario"
-                    value={calculation.funcao_funcionario}
-                    onChange={handleChange}
-                    className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="carga_horaria" className="text-gray-300">Carga Horária</Label>
-                  <Textarea
-                    id="carga_horaria"
-                    name="carga_horaria"
-                    value={calculation.carga_horaria}
-                    onChange={handleChange}
-                    rows={3}
-                    className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  />
-                </div>
-              </div>
+              <EmployeeDetailsSection
+                nome_funcionario={calculation.nome_funcionario}
+                cpf_funcionario={calculation.cpf_funcionario}
+                funcao_funcionario={calculation.funcao_funcionario}
+                carga_horaria={calculation.carga_horaria}
+                onChange={handleChange}
+                disabled={loading}
+              />
 
-              {/* Datas do Contrato */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="inicio_contrato" className="text-gray-300">Início do Contrato</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700",
-                          !calculation.inicio_contrato && "text-gray-500"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {calculation.inicio_contrato ? format(new Date(calculation.inicio_contrato), 'PPP') : <span>Selecione a data</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
-                      <Calendar
-                        mode="single"
-                        selected={calculation.inicio_contrato ? new Date(calculation.inicio_contrato) : undefined}
-                        onSelect={(date) => handleDateChange('inicio_contrato', date)}
-                        initialFocus
-                        className="bg-gray-900 text-white"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label htmlFor="fim_contrato" className="text-gray-300">Fim do Contrato</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700",
-                          !calculation.fim_contrato && "text-gray-500"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {calculation.fim_contrato ? format(new Date(calculation.fim_contrato), 'PPP') : <span>Selecione a data</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
-                      <Calendar
-                        mode="single"
-                        selected={calculation.fim_contrato ? new Date(calculation.fim_contrato) : undefined}
-                        onSelect={(date) => handleDateChange('fim_contrato', date)}
-                        initialFocus
-                        className="bg-gray-900 text-white"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+              <ContractDatesSection
+                inicio_contrato={calculation.inicio_contrato}
+                fim_contrato={calculation.fim_contrato}
+                onDateChange={handleDateChange}
+                disabled={loading}
+              />
 
-              {/* Tipo de Aviso / Rescisão */}
-              <div>
-                <Label htmlFor="tipo_aviso" className="text-gray-300">Tipo de Rescisão</Label>
-                <Select
-                  name="tipo_aviso"
-                  value={calculation.tipo_aviso}
-                  onValueChange={(value) => handleSelectChange('tipo_aviso', value)}
-                  required
-                >
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus:ring-orange-500">
-                    <SelectValue placeholder="Selecione o tipo de rescisão" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                    {noticeTypes.map((type) => (
-                      <SelectItem key={type} value={type} className="text-white hover:bg-gray-700 focus:bg-gray-700">
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <RescissionTypeSelectField
+                tipo_aviso={calculation.tipo_aviso}
+                noticeTypes={noticeTypes}
+                onValueChange={(value) => handleSelectChange('tipo_aviso', value)}
+                disabled={loading}
+              />
 
-              {/* Salário Sindicato, Salário Trabalhador e Observações */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="salario_sindicato" className="text-gray-300">Piso Salarial Sindicato (R$)</Label>
-                  <Input
-                    id="salario_sindicato"
-                    name="salario_sindicato"
-                    type="number"
-                    value={calculation.salario_sindicato}
-                    onChange={handleChange}
-                    className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="salario_trabalhador" className="text-gray-300">Salário do Trabalhador (R$)</Label>
-                  <Input
-                    id="salario_trabalhador"
-                    name="salario_trabalhador"
-                    type="number"
-                    value={calculation.salario_trabalhador}
-                    onChange={handleChange}
-                    className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="obs_sindicato" className="text-gray-300">Observações Sindicato</Label>
-                <Textarea
-                  id="obs_sindicato"
-                  name="obs_sindicato"
-                  value={calculation.obs_sindicato}
-                  onChange={handleChange}
-                  rows={3}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
-              </div>
+              <SalaryAndObservationsSection
+                salario_sindicato={calculation.salario_sindicato}
+                salario_trabalhador={calculation.salario_trabalhador}
+                obs_sindicato={calculation.obs_sindicato}
+                onChange={handleChange}
+                disabled={loading}
+              />
 
-              {/* Médias */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="media_descontos" className="text-gray-300">Média Descontos (últimos 12 meses)</Label>
-                  <Input
-                    id="media_descontos"
-                    name="media_descontos"
-                    type="number"
-                    value={calculation.media_descontos}
-                    onChange={handleChange}
-                    className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="media_remuneracoes" className="text-gray-300">Média Remunerações Variáveis (últimos 12 meses)</Label>
-                  <Input
-                    id="media_remuneracoes"
-                    name="media_remuneracoes"
-                    type="number"
-                    value={calculation.media_remuneracoes}
-                    onChange={handleChange}
-                    className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  />
-                </div>
-              </div>
+              <AveragesSection
+                media_descontos={calculation.media_descontos}
+                media_remuneracoes={calculation.media_remuneracoes}
+                onChange={handleChange}
+                disabled={loading}
+              />
 
-              {/* Histórico e CTPS */}
-              <div>
-                <Label htmlFor="historia" className="text-gray-300">Histórico do Contrato/Motivo da Rescisão</Label>
-                <Textarea
-                  id="historia"
-                  name="historia"
-                  value={calculation.historia}
-                  onChange={handleChange}
-                  rows={4}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="ctps_assinada"
-                  checked={calculation.ctps_assinada}
-                  onCheckedChange={handleCheckboxChange}
-                  className="border-orange-500 data-[state=checked]:bg-orange-500 data-[state=checked]:text-white"
-                />
-                <Label htmlFor="ctps_assinada" className="text-gray-300">CTPS devidamente assinada?</Label>
-              </div>
+              <ContractHistoryAndCTPS
+                historia={calculation.historia}
+                ctps_assinada={calculation.ctps_assinada}
+                onTextChange={handleChange}
+                onCheckboxChange={handleCheckboxChange}
+                disabled={loading}
+              />
 
               <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
                 {loading ? 'Salvando...' : (isEditing ? 'Atualizar Cálculo' : 'Criar Cálculo')}
