@@ -38,7 +38,7 @@ interface Calculation {
 const AUTO_REFRESH_DURATION = 1 * 60 * 1000; // 1 minuto em milissegundos
 
 const CalculationListPage = () => {
-  console.log("[CalculationListPage] Componente CalculationListPage renderizado."); // NOVO LOG AQUI
+  console.log("[CalculationListPage] Componente CalculationListPage renderizado.");
 
   const { user } = useAuth();
   const [calculations, setCalculations] = useState<Calculation[]>([]);
@@ -156,19 +156,44 @@ const CalculationListPage = () => {
 
       let sentCount = 0;
       for (const config of webhookConfigs) {
-        const uniqueSupabasePaths: Set<string> = new Set(['id']);
+        let selectParts: Set<string> = new Set(['id']); // Always select the main ID of tbl_calculos
+        let clientSelectParts: Set<string> = new Set();
+        let sindicatoSelectParts: Set<string> = new Set();
+        let dissidioSelectParts: Set<string> = new Set();
 
+        // Collect all unique Supabase paths needed for the selected fields
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            const supabasePath = getFullSupabasePath('tbl_calculos', fieldDef);
-            if (supabasePath) {
-              uniqueSupabasePaths.add(supabasePath);
+            // Only include fields that are directly related or reachable from tbl_calculos
+            if (fieldDef.sourceTable === 'tbl_calculos') {
+              selectParts.add(fieldDef.baseSupabasePath);
+            } else if (fieldDef.sourceTable === 'tbl_clientes') {
+              clientSelectParts.add(fieldDef.baseSupabasePath);
+            } else if (fieldDef.sourceTable === 'tbl_sindicatos') {
+              sindicatoSelectParts.add(fieldDef.baseSupabasePath);
+            } else if (fieldDef.sourceTable === 'tbl_dissidios') {
+              dissidioSelectParts.add(fieldDef.baseSupabasePath);
             }
+            // Fields from tbl_ai_prompt_templates are intentionally ignored here
+            // as they are not directly related to tbl_calculos for a single SELECT query.
           }
         });
 
-        const finalSelectString = Array.from(uniqueSupabasePaths).join(', ');
+        if (clientSelectParts.size > 0) {
+          selectParts.add(`tbl_clientes(${Array.from(clientSelectParts).join(',')})`);
+        }
+
+        if (sindicatoSelectParts.size > 0) {
+          let sindicatoPath = `tbl_sindicatos(${Array.from(sindicatoSelectParts).join(',')}`;
+          if (dissidioSelectParts.size > 0) {
+            sindicatoPath += `,tbl_dissidios(${Array.from(dissidioSelectParts).join(',')})`;
+          }
+          sindicatoPath += `)`;
+          selectParts.add(sindicatoPath);
+        }
+
+        const finalSelectString = Array.from(selectParts).join(', ');
         console.log(`[Webhook Sender] Final Supabase SELECT string: ${finalSelectString}`);
 
 
@@ -196,11 +221,13 @@ const CalculationListPage = () => {
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
+            // Use o fieldKey diretamente como chave no payload e extraia o valor
             const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
             payload[fieldKey] = extractValueFromPath(specificCalculationData, extractionPath);
           }
         });
 
+        // Encapsular o payload dentro de uma chave 'body' para compatibilidade com n8n
         const finalPayload = {
           body: payload
         };
@@ -211,7 +238,7 @@ const CalculationListPage = () => {
         const response = await fetch(config.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalPayload),
+          body: JSON.stringify(finalPayload), // Envia o payload encapsulado
         });
 
         if (!response.ok) {
