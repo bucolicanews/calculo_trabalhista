@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Clock, AlertTriangle, FileText } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Clock, AlertTriangle, Download, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -13,6 +13,7 @@ import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webho
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender';
 import { Badge } from '@/components/ui/badge';
+import jsPDF from 'jspdf'; // Importar jspdf novamente
 
 // Definindo os possíveis status de um cálculo
 type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'timed_out' | 'error';
@@ -280,6 +281,33 @@ const CalculationListPage = () => {
     }
   };
 
+  // Função para lidar com o download da resposta da IA como PDF
+  const handleDownloadAiResponseAsPdf = (calculation: Calculation) => {
+    if (calculation.resposta_ai) {
+      const doc = new jsPDF();
+      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
+      
+      const text = calculation.resposta_ai;
+      const lines = doc.splitTextToSize(text, 180); // 180mm de largura para o texto
+      let y = 10; // Posição inicial Y
+
+      doc.setFontSize(12);
+      for (let i = 0; i < lines.length; i++) {
+        if (y + 10 > doc.internal.pageSize.height - 10) { // Verifica se precisa de nova página
+          doc.addPage();
+          y = 10; // Reseta Y para a nova página
+        }
+        doc.text(lines[i], 10, y);
+        y += 7; // Incrementa Y para a próxima linha
+      }
+
+      doc.save(filename);
+      showSuccess('Download da resposta da IA (PDF) iniciado!');
+    } else {
+      showError('Nenhuma resposta da IA disponível para download em PDF.');
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
@@ -363,6 +391,18 @@ const CalculationListPage = () => {
                         onClick={() => handleDownloadAiResponseAsTxt(calculation)}
                       >
                         <FileText className="h-4 w-4" />
+                      </Button>
+                    )}
+
+                    {/* NOVO: Botão de download para a resposta da IA como PDF */}
+                    {calculation.resposta_ai && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white"
+                        onClick={() => handleDownloadAiResponseAsPdf(calculation)}
+                      >
+                        <Download className="h-4 w-4" />
                       </Button>
                     )}
 
