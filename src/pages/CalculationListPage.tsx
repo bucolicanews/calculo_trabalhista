@@ -13,7 +13,7 @@ import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webho
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender';
 import { Badge } from '@/components/ui/badge';
-import jsPDF from 'jspdf'; // Importar jspdf
+
 
 // Definindo os possíveis status de um cálculo
 type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'timed_out' | 'error';
