@@ -26,6 +26,8 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'sindicato_mes_convencao', label: 'Sindicato (Mês Convenção)', baseSupabasePath: 'mes_convencao', sourceTable: 'tbl_sindicatos' },
   { key: 'sindicato_url_documento_sindicato', label: 'Sindicato (URL Documento)', baseSupabasePath: 'url_documento_sindicato', sourceTable: 'tbl_sindicatos' },
   { key: 'sindicato_created_at', label: 'Sindicato (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_sindicatos' },
+  { key: 'sindicato_resumo_dissidio', label: 'Sindicato (Resumo Dissídio)', baseSupabasePath: 'resumo_dissidio', sourceTable: 'tbl_sindicatos' },
+
 
   // tbl_calculos fields
   { key: 'calculo_id', label: 'Cálculo (ID)', baseSupabasePath: 'id', sourceTable: 'tbl_calculos' },
@@ -44,7 +46,37 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'calculo_media_remuneracoes', label: 'Cálculo (Média Remunerações)', baseSupabasePath: 'media_remuneracoes', sourceTable: 'tbl_calculos' },
   { key: 'calculo_carga_horaria', label: 'Cálculo (Carga Horária)', baseSupabasePath: 'carga_horaria', sourceTable: 'tbl_calculos' },
   { key: 'calculo_created_at', label: 'Cálculo (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_calculos' },
-  { key: 'calculo_resposta_ai', label: 'Cálculo (Resposta IA)', baseSupabasePath: 'resposta_ai', sourceTable: 'tbl_calculos' }, // Adicionado explicitamente
+  { key: 'calculo_resposta_ai', label: 'Cálculo (Resposta IA)', baseSupabasePath: 'resposta_ai', sourceTable: 'tbl_calculos' },
+
+  // tbl_ai_prompt_templates fields
+  { key: 'ai_template_id', label: 'Modelo IA (ID)', baseSupabasePath: 'id', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_user_id', label: 'Modelo IA (ID do Usuário)', baseSupabasePath: 'user_id', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_title', label: 'Modelo IA (Título)', baseSupabasePath: 'title', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_identificacao', label: 'Modelo IA (Identificação)', baseSupabasePath: 'identificacao', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_comportamento', label: 'Modelo IA (Comportamento)', baseSupabasePath: 'comportamento', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_restricoes', label: 'Modelo IA (Restrições)', baseSupabasePath: 'restricoes', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_atribuicoes', label: 'Modelo IA (Atribuições)', baseSupabasePath: 'atribuicoes', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_leis', label: 'Modelo IA (Leis)', baseSupabasePath: 'leis', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_proventos', label: 'Modelo IA (Proventos)', baseSupabasePath: 'proventos', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_descontos', label: 'Modelo IA (Descontos)', baseSupabasePath: 'descontos', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_observacoes_base_legal', label: 'Modelo IA (Obs. Base Legal)', baseSupabasePath: 'observacoes_base_legal', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_formatacao_texto_cabecalho', label: 'Modelo IA (Formatação Cabeçalho)', baseSupabasePath: 'formatacao_texto_cabecalho', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_formatacao_texto_corpo', label: 'Modelo IA (Formatação Corpo)', baseSupabasePath: 'formatacao_texto_corpo', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_formatacao_texto_rodape', label: 'Modelo IA (Formatação Rodapé)', baseSupabasePath: 'formatacao_texto_rodape', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_created_at', label: 'Modelo IA (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_ai_prompt_templates' },
+
+  // tbl_dissidios fields
+  { key: 'dissidio_id', label: 'Dissídio (ID)', baseSupabasePath: 'id', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_sindicato_id', label: 'Dissídio (ID Sindicato)', baseSupabasePath: 'sindicato_id', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_nome_dissidio', label: 'Dissídio (Nome Dissídio)', baseSupabasePath: 'nome_dissidio', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_url_documento', label: 'Dissídio (URL Documento)', baseSupabasePath: 'url_documento', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_resumo_dissidio', label: 'Dissídio (Resumo Dissídio)', baseSupabasePath: 'resumo_dissidio', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_data_vigencia_inicial', label: 'Dissídio (Vigência Inicial)', baseSupabasePath: 'data_vigencia_inicial', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_data_vigencia_final', label: 'Dissídio (Vigência Final)', baseSupabasePath: 'data_vigencia_final', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_mes_convencao', label: 'Dissídio (Mês Convenção)', baseSupabasePath: 'mes_convencao', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_texto_extraido', label: 'Dissídio (Texto Extraído)', baseSupabasePath: 'texto_extraido', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_resumo_ai', label: 'Dissídio (Resumo IA)', baseSupabasePath: 'resumo_ai', sourceTable: 'tbl_dissidios' },
+  { key: 'dissidio_created_at', label: 'Dissídio (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_dissidios' },
 ];
 
 // Helper to construct the full Supabase path for a field based on the main table
@@ -61,6 +93,11 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
     if (field.sourceTable === 'tbl_sindicatos') {
       return `tbl_calculos(tbl_sindicatos(${field.baseSupabasePath}))`;
     }
+    if (field.sourceTable === 'tbl_dissidios') {
+      // tbl_clientes -> tbl_calculos -> tbl_sindicatos -> tbl_dissidios
+      return `tbl_calculos(tbl_sindicatos(tbl_dissidios(${field.baseSupabasePath})))`;
+    }
+    // tbl_ai_prompt_templates não tem relação direta com tbl_clientes para webhooks
   } else if (mainTableName === 'tbl_calculos') {
     if (field.sourceTable === 'tbl_clientes') {
       return `tbl_clientes(${field.baseSupabasePath})`;
@@ -68,8 +105,23 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
     if (field.sourceTable === 'tbl_sindicatos') {
       return `tbl_sindicatos(${field.baseSupabasePath})`;
     }
-    // Se tbl_resposta_calculo ainda for necessária para outros campos, adicione seu caminho aqui
-    // Por enquanto, assumindo que resposta_ai é direta, e outros campos de tbl_resposta_calculo não são selecionados via configuração de webhook
+    if (field.sourceTable === 'tbl_dissidios') {
+      // tbl_calculos -> tbl_sindicatos -> tbl_dissidios
+      return `tbl_sindicatos(tbl_dissidios(${field.baseSupabasePath}))`;
+    }
+    // tbl_ai_prompt_templates não tem relação direta com tbl_calculos para webhooks
+  } else if (mainTableName === 'tbl_sindicatos') {
+    if (field.sourceTable === 'tbl_dissidios') {
+      // tbl_sindicatos -> tbl_dissidios
+      return `tbl_dissidios(${field.baseSupabasePath})`;
+    }
+    // tbl_ai_prompt_templates não tem relação direta com tbl_sindicatos para webhooks
+  } else if (mainTableName === 'tbl_ai_prompt_templates') {
+    // Se tbl_ai_prompt_templates for a tabela principal, seus campos são diretos
+    return field.baseSupabasePath;
+  } else if (mainTableName === 'tbl_dissidios') {
+    // Se tbl_dissidios for a tabela principal, seus campos são diretos
+    return field.baseSupabasePath;
   }
   return field.baseSupabasePath; // Fallback
 };
@@ -102,4 +154,6 @@ export const availableTables = [
   { value: 'tbl_clientes', label: 'Clientes' },
   { value: 'tbl_calculos', label: 'Cálculos' },
   { value: 'tbl_sindicatos', label: 'Sindicatos' },
+  { value: 'tbl_dissidios', label: 'Dissídios' },
+  { value: 'tbl_ai_prompt_templates', label: 'Modelos de Prompt IA' },
 ];
