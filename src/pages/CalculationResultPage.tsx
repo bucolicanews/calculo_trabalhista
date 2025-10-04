@@ -184,7 +184,6 @@ const CalculationResultPage: React.FC = () => {
         backgroundColor: 'white', // Garante que o fundo do canvas seja branco
       });
 
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
 
       // Definir margens em mm
@@ -224,27 +223,31 @@ const CalculationResultPage: React.FC = () => {
         // Determine the actual height to crop from the canvas for this page
         let cropHeight = Math.min(contentHeightOnCanvas, canvas.height - currentCanvasY);
 
-        // Add the cropped image to the PDF
-        // The `addImage` parameters for cropping are: sX, sY, sWidth, sHeight
-        // We are cropping from (0, currentCanvasY) with width `canvas.width` and height `cropHeight`
-        // And placing it on the PDF at (marginLeft, marginTop) with width `usableWidth` and height `(cropHeight * usableWidth) / canvas.width`
+        // Create a temporary canvas to draw the cropped section
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = cropHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        if (tempCtx) {
+          tempCtx.drawImage(
+            canvas,
+            0, currentCanvasY, canvas.width, cropHeight, // Source rectangle on original canvas
+            0, 0, tempCanvas.width, tempCanvas.height   // Destination rectangle on temp canvas
+          );
+        }
+        const tempImgData = tempCanvas.toDataURL('image/png');
+
+        // Add the cropped image from the temporary canvas to the PDF
         pdf.addImage(
-          imgData,
+          tempImgData,
           'PNG',
           marginLeft,
           marginTop,
           usableWidth,
           (cropHeight * usableWidth) / canvas.width, // Height on PDF page
-          undefined, // alias
-          'NONE',    // compression
-          0,         // rotation
-          0,         // sX (source X on canvas)
-          currentCanvasY, // sY (source Y on canvas)
-          canvas.width,   // sWidth (source width to crop)
-          cropHeight      // sHeight (source height to crop)
         );
 
-        currentCanvasY += cropHeight; // Move to the next segment on the canvas
+        currentCanvasY += cropHeight; // Move to the next segment on the original canvas
         pageNumber++;
       }
 
