@@ -70,15 +70,17 @@ const CalculationListPage = () => {
     if (user) {
       fetchCalculations();
 
+      console.log('Attempting to subscribe to Supabase Realtime channel for tbl_calculos...');
       const channel = supabase
         .channel('calculation_responses_channel') // Nome do canal para evitar conflitos
         .on(
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'tbl_calculos', filter: 'resposta_ai=neq.null' }, // Escuta por atualizações em tbl_calculos onde resposta_ai não é nula
           (payload) => {
+            console.log('Realtime event received:', payload); // Log do payload completo
             const updatedCalculation = payload.new as Calculation;
             if (updatedCalculation && updatedCalculation.id && updatedCalculation.resposta_ai) {
-              console.log('Realtime update received for calculation:', updatedCalculation.id);
+              console.log('Realtime update received for calculation ID:', updatedCalculation.id, 'with AI response.');
               // Atualiza o status para 'completed' e limpa o timeout para o cálculo específico
               updateCalculationStatus(updatedCalculation.id, 'completed');
               clearTimeoutById(updatedCalculation.id);
@@ -88,12 +90,17 @@ const CalculationListPage = () => {
                   calc.id === updatedCalculation.id ? { ...calc, resposta_ai: updatedCalculation.resposta_ai } : calc
                 )
               );
+            } else {
+              console.log('Realtime event received, but no relevant AI response update:', updatedCalculation);
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Supabase Realtime channel status:', status); // Log do status da subscrição
+        });
 
       return () => {
+        console.log('Unsubscribing from Supabase Realtime channel.');
         supabase.removeChannel(channel);
         // Limpa todos os timeouts ao desmontar o componente
         timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
