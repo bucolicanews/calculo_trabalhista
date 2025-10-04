@@ -118,6 +118,8 @@ const CalculationListPage = () => {
   };
 
   const handleSendToWebhook = async (calculationId: string, webhookConfigIds: string[]) => {
+    console.log(`[CalculationListPage] handleSendToWebhook called for calculationId: ${calculationId}, webhookConfigIds:`, webhookConfigIds); // NOVO LOG
+
     if (!user) {
       showError('Usuário não autenticado.');
       return;
@@ -135,6 +137,7 @@ const CalculationListPage = () => {
 
       if (webhookError) {
         showError('Erro ao buscar configurações de webhook: ' + webhookError.message);
+        console.error('[Webhook Sender] Erro ao buscar configurações de webhook:', webhookError); // Log de erro
         updateCalculationStatus(calculationId, 'idle'); // Volta para idle se houver erro
         setIsSendingWebhook(null);
         return;
@@ -142,6 +145,7 @@ const CalculationListPage = () => {
 
       if (!webhookConfigs || webhookConfigs.length === 0) {
         showError('Nenhum webhook selecionado ou configurado encontrado.');
+        console.warn('[Webhook Sender] Nenhum webhook selecionado ou configurado encontrado.'); // Log de aviso
         updateCalculationStatus(calculationId, 'idle'); // Volta para idle
         setIsSendingWebhook(null);
         return;
@@ -268,7 +272,7 @@ const CalculationListPage = () => {
   const handleDownloadAiResponseAsPdf = (calculation: Calculation) => {
     if (calculation.resposta_ai) {
       const doc = new jsPDF();
-      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 0)}.pdf`;
+      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
       
       const text = calculation.resposta_ai;
       const lines = doc.splitTextToSize(text, 180); // 180mm de largura para o texto

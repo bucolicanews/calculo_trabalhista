@@ -43,7 +43,7 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
       .from('tbl_webhook_configs')
       .select('*')
       .eq('user_id', user?.id)
-      .or('table_name.eq.tbl_calculos,table_name.eq.tbl_clientes,table_name.eq.tbl_sindicatos,table_name.eq.tbl_dissidios,table_name.eq.all_tables'); // Modificado para incluir tbl_clientes, tbl_sindicatos e tbl_dissidios
+      .or('table_name.eq.tbl_calculos,table_name.eq.tbl_clientes,table_name.eq.tbl_sindicatos,table_name.eq.tbl_dissidios,table_name.eq.all_tables,table_name.eq.tbl_ai_prompt_templates'); // Modificado para incluir tbl_dissidios e tbl_ai_prompt_templates
 
     if (error) {
       showError('Erro ao carregar webhooks disponíveis: ' + error.message);
@@ -70,8 +70,10 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
   const handleConfirmSend = async () => {
     if (selectedWebhookIds.size === 0) {
       showError('Selecione pelo menos um webhook para enviar.');
+      console.warn('[CalculationWebhookSender] Nenhum webhook selecionado para enviar.'); // NOVO LOG
       return;
     }
+    console.log('[CalculationWebhookSender] Chamando onSend com IDs:', Array.from(selectedWebhookIds)); // NOVO LOG
     await onSend(calculationId, Array.from(selectedWebhookIds));
     onOpenChange(false); // Close dialog after sending
   };
