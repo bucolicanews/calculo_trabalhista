@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, FileText } from 'lucide-react'; // Removido Download
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2 } from 'lucide-react'; // Removido FileText
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -13,7 +13,6 @@ import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webho
 import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender';
 import { Badge } from '@/components/ui/badge';
-// Removido import jsPDF from 'jspdf';
 
 // Definindo os possíveis status de um cálculo
 type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed';
@@ -41,14 +40,14 @@ interface Calculation {
     formatacao_texto_corpo: string;
     formatacao_texto_rodape: string;
     created_at: string;
-  } | null; // NOVO: Adicionado todos os campos do modelo IA
+  } | null;
   tbl_resposta_calculo: {
     url_documento_calculo: string | null;
     texto_extraido: string | null;
     data_hora: string;
   } | null;
   created_at: string;
-  status?: CalculationStatus; // Adicionando o status ao tipo Calculation
+  status?: CalculationStatus;
   [key: string]: any;
 }
 
@@ -64,10 +63,8 @@ const CalculationListPage = () => {
   const [isWebhookSelectionOpen, setIsWebhookSelectionOpen] = useState(false);
   const [currentCalculationIdForWebhook, setCurrentCalculationIdForWebhook] = useState<string | null>(null);
 
-  // Usar um ref para armazenar os timeouts, para que possamos limpá-los
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  // Função para atualizar o status de um cálculo específico
   const updateCalculationStatus = (id: string, newStatus: CalculationStatus) => {
     setCalculations(prevCalculations =>
       prevCalculations.map(calc =>
@@ -76,7 +73,6 @@ const CalculationListPage = () => {
     );
   };
 
-  // Limpa um timeout específico
   const clearTimeoutById = (id: string) => {
     const timeout = timeoutsRef.current.get(id);
     if (timeout) {
@@ -91,7 +87,6 @@ const CalculationListPage = () => {
     }
 
     return () => {
-      // Limpa todos os timeouts ao desmontar o componente
       timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
       timeoutsRef.current.clear();
     };
@@ -107,7 +102,7 @@ const CalculationListPage = () => {
         tbl_sindicatos(nome), 
         tbl_ai_prompt_templates(id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, formatacao_texto_cabecalho, formatacao_texto_corpo, formatacao_texto_rodape, created_at), 
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
-      `) // NOVO: Adicionado todos os campos do modelo IA
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -115,7 +110,6 @@ const CalculationListPage = () => {
       console.error('Error fetching calculations:', error);
     } else {
       const initialCalculations: Calculation[] = (data as unknown as Calculation[] || []).map(calc => {
-        // Determina o status inicial com base na resposta_ai
         return {
           ...calc,
           status: calc.resposta_ai ? 'completed' : 'idle',
@@ -132,7 +126,7 @@ const CalculationListPage = () => {
       showError('Erro ao deletar cálculo: ' + error.message);
     } else {
       showSuccess('Cálculo deletado com sucesso!');
-      clearTimeoutById(id); // Limpa o timeout se o cálculo for deletado
+      clearTimeoutById(id);
       fetchCalculations();
     }
   };
@@ -179,23 +173,21 @@ const CalculationListPage = () => {
 
       let sentCount = 0;
       for (const config of webhookConfigs) {
-        let selectParts: Set<string> = new Set(['id']); // Always select the main ID of tbl_calculos
+        let selectParts: Set<string> = new Set(['id']);
         let clientSelectParts: Set<string> = new Set();
         let sindicatoSelectParts: Set<string> = new Set();
-        let aiTemplateSelectParts: Set<string> = new Set(); // NOVO
+        let aiTemplateSelectParts: Set<string> = new Set();
 
-        // Collect all unique Supabase paths needed for the selected fields
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            // Only include fields that are directly related or reachable from tbl_calculos
             if (fieldDef.sourceTable === 'tbl_calculos') {
               selectParts.add(fieldDef.baseSupabasePath);
             } else if (fieldDef.sourceTable === 'tbl_clientes') {
               clientSelectParts.add(fieldDef.baseSupabasePath);
             } else if (fieldDef.sourceTable === 'tbl_sindicatos') {
               sindicatoSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_ai_prompt_templates') { // NOVO
+            } else if (fieldDef.sourceTable === 'tbl_ai_prompt_templates') {
               aiTemplateSelectParts.add(fieldDef.baseSupabasePath);
             }
           }
@@ -210,7 +202,7 @@ const CalculationListPage = () => {
           selectParts.add(sindicatoPath);
         }
 
-        if (aiTemplateSelectParts.size > 0) { // NOVO
+        if (aiTemplateSelectParts.size > 0) {
           let aiTemplatePath = `tbl_ai_prompt_templates(${Array.from(aiTemplateSelectParts).join(',')})`;
           selectParts.add(aiTemplatePath);
         }
@@ -243,13 +235,11 @@ const CalculationListPage = () => {
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            // Use o fieldKey diretamente como chave no payload e extraia o valor
             const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
             payload[fieldKey] = extractValueFromPath(specificCalculationData, extractionPath);
           }
         });
 
-        // Encapsular o payload dentro de uma chave 'body' para compatibilidade com n8n
         const finalPayload = {
           body: payload
         };
@@ -260,7 +250,7 @@ const CalculationListPage = () => {
         const response = await fetch(config.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalPayload), // Envia o payload encapsulado
+          body: JSON.stringify(finalPayload),
         });
 
         if (!response.ok) {
@@ -297,23 +287,7 @@ const CalculationListPage = () => {
     }
   };
 
-  const handleDownloadAiResponseAsTxt = (calculation: Calculation) => {
-    if (calculation.resposta_ai) {
-      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.txt`;
-      const blob = new Blob([calculation.resposta_ai], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showSuccess('Download da resposta da IA (TXT) iniciado!');
-    } else {
-      showError('Nenhuma resposta da IA disponível para download em TXT.');
-    }
-  };
+  // Removido handleDownloadAiResponseAsTxt
 
   return (
     <MainLayout>
@@ -392,16 +366,7 @@ const CalculationListPage = () => {
                       </Button>
                     )}
 
-                    {calculation.resposta_ai && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white"
-                        onClick={() => handleDownloadAiResponseAsTxt(calculation)}
-                      >
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                    )}
+                    {/* Botão de download de TXT removido daqui */}
 
                     <Button
                       variant="outline"
