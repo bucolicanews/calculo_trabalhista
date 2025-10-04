@@ -11,6 +11,7 @@ import SindicatoListPage from './pages/SindicatoListPage';
 import SindicatoFormPage from './pages/SindicatoFormPage';
 import WebhookConfigPage from './pages/WebhookConfigPage';
 import { Toaster } from './components/ui/toaster';
+import Index from './pages/Index'; // Importando a página Index
 
 const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -28,7 +29,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/" element={<Index />} /> {/* Rota principal agora usa o Index */}
           <Route
             path="/dashboard"
             element={
