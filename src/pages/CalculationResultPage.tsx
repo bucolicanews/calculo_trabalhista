@@ -5,12 +5,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { showError } from '@/utils/toast';
-import { ArrowLeft, FileText, Download } from 'lucide-react';
+import { showError, showSuccess } from '@/utils/toast'; // Adicionado showSuccess aqui
+import { ArrowLeft, FileText, Download, Table } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import ReactMarkdown from 'react-markdown'; // Importar ReactMarkdown
-import remarkGfm from 'remark-gfm'; // Importar remarkGfm para tabelas e outras extensões
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { parseMarkdownTables, convertToCsv, ParsedTable } from '@/utils/markdownParser';
 
 interface CalculationDetails {
   id: string;
@@ -64,12 +65,22 @@ const CalculationResultPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [parsedTables, setParsedTables] = useState<ParsedTable[]>([]); // Novo estado para tabelas parseadas
 
   useEffect(() => {
     if (user && id) {
       fetchCalculationResult();
     }
   }, [user, id]);
+
+  useEffect(() => {
+    if (calculation?.resposta_ai) {
+      const tables = parseMarkdownTables(calculation.resposta_ai);
+      setParsedTables(tables);
+    } else {
+      setParsedTables([]);
+    }
+  }, [calculation?.resposta_ai]);
 
   const fetchCalculationResult = async () => {
     setLoading(true);
@@ -94,6 +105,25 @@ const CalculationResultPage: React.FC = () => {
       setCalculation(data as CalculationDetails);
     }
     setLoading(false);
+  };
+
+  const handleDownloadCsv = () => {
+    if (parsedTables.length > 0) {
+      const csv = convertToCsv(parsedTables);
+      const filename = `calculo_${calculation?.nome_funcionario.replace(/\s/g, '_')}_${calculation?.id.substring(0, 8)}.csv`;
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess('Download da planilha CSV iniciado!');
+    } else {
+      showError('Nenhuma tabela encontrada na resposta da IA para download em CSV.');
+    }
   };
 
   if (loading) {
@@ -164,11 +194,19 @@ const CalculationResultPage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4 text-gray-300">
               {calculation.resposta_ai && (
-                <div className="prose prose-invert max-w-none"> {/* Usando classes 'prose' para estilização de markdown */}
+                <div className="prose prose-invert max-w-none">
                   <h3 className="text-lg font-semibold text-orange-400 mb-2">Resposta da IA:</h3>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {calculation.resposta_ai}
                   </ReactMarkdown>
+                  {parsedTables.length > 0 && (
+                    <Button
+                      onClick={handleDownloadCsv}
+                      className="mt-4 bg-green-600 hover:bg-green-700 text-white flex items-center"
+                    >
+                      <Table className="h-4 w-4 mr-2" /> Baixar Planilha (CSV)
+                    </Button>
+                  )}
                 </div>
               )}
               {otherResultDetails?.texto_extraido && (
