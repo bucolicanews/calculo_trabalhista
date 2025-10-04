@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -18,12 +18,12 @@ interface Calculation {
   nome_funcionario: string;
   inicio_contrato: string;
   fim_contrato: string;
-  tbl_clientes: { nome: string } | null; // Corrigido para objeto único
-  tbl_resposta_calculo: {
-    resposta_ai: string | null;
+  resposta_ai: string | null; // Agora diretamente em tbl_calculos
+  tbl_clientes: { nome: string } | null;
+  tbl_resposta_calculo: { // Esta tabela ainda mantém outros detalhes do resultado
     url_documento_calculo: string | null;
     texto_extraido: string | null;
-  } | null; // Corrigido para objeto único
+  } | null;
   created_at: string;
   [key: string]: any;
 }
@@ -62,14 +62,13 @@ const CalculationListPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('tbl_calculos')
-      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, tbl_clientes(nome), tbl_resposta_calculo(resposta_ai, url_documento_calculo, texto_extraido)')
+      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, resposta_ai, tbl_clientes(nome), tbl_resposta_calculo(url_documento_calculo, texto_extraido)')
       .order('created_at', { ascending: false });
 
     if (error) {
       showError('Erro ao carregar cálculos: ' + error.message);
       console.error('Error fetching calculations:', error);
     } else {
-      // Usando 'unknown' como um intermediário para resolver o erro de tipo
       setCalculations(data as unknown as Calculation[] || []);
     }
     setLoading(false);
@@ -122,12 +121,17 @@ const CalculationListPage = () => {
         const selectParts: Set<string> = new Set(['id']);
         const relatedTableSelections: { [tableName: string]: Set<string> } = {};
 
-        config.selected_fields.forEach(fieldKey => {
+        // Sempre inclui 'resposta_ai' de tbl_calculos se for um campo selecionado
+        if (config.selected_fields.includes('calculo_resposta_ai')) {
+            selectParts.add('resposta_ai');
+        }
+
+        config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            if (fieldDef.sourceTable === 'tbl_calculos') {
+            if (fieldDef.sourceTable === 'tbl_calculos' && fieldDef.key !== 'calculo_resposta_ai') { // Exclui se já adicionado
               selectParts.add(fieldDef.baseSupabasePath);
-            } else {
+            } else if (fieldDef.sourceTable !== 'tbl_calculos') {
               if (!relatedTableSelections[fieldDef.sourceTable]) {
                 relatedTableSelections[fieldDef.sourceTable] = new Set();
               }
@@ -161,11 +165,16 @@ const CalculationListPage = () => {
         }
 
         const payload: { [key: string]: any } = {};
-        config.selected_fields.forEach(fieldKey => {
+        config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
-            payload[fieldDef.key] = extractValueFromPath(specificCalculationData, extractionPath);
+            // Tratamento especial para 'calculo_resposta_ai' que agora é direto
+            if (fieldDef.key === 'calculo_resposta_ai') {
+                payload[fieldDef.key] = (specificCalculationData as any).resposta_ai;
+            } else {
+                const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
+                payload[fieldDef.key] = extractValueFromPath(specificCalculationData, extractionPath);
+            }
           }
         });
 
@@ -212,11 +221,7 @@ const CalculationListPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {calculations.map((calculation) => {
-              const hasResult = calculation.tbl_resposta_calculo && (
-                calculation.tbl_resposta_calculo.resposta_ai ||
-                calculation.tbl_resposta_calculo.url_documento_calculo ||
-                calculation.tbl_resposta_calculo.texto_extraido
-              );
+              const hasResult = calculation.resposta_ai || calculation.tbl_resposta_calculo?.url_documento_calculo || calculation.tbl_resposta_calculo?.texto_extraido;
               return (
                 <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
                   <CardHeader>

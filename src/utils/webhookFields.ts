@@ -44,6 +44,7 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'calculo_media_remuneracoes', label: 'Cálculo (Média Remunerações)', baseSupabasePath: 'media_remuneracoes', sourceTable: 'tbl_calculos' },
   { key: 'calculo_carga_horaria', label: 'Cálculo (Carga Horária)', baseSupabasePath: 'carga_horaria', sourceTable: 'tbl_calculos' },
   { key: 'calculo_created_at', label: 'Cálculo (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_calculos' },
+  { key: 'calculo_resposta_ai', label: 'Cálculo (Resposta IA)', baseSupabasePath: 'resposta_ai', sourceTable: 'tbl_calculos' }, // Adicionado explicitamente
 ];
 
 // Helper to construct the full Supabase path for a field based on the main table
@@ -67,6 +68,8 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
     if (field.sourceTable === 'tbl_sindicatos') {
       return `tbl_sindicatos(${field.baseSupabasePath})`;
     }
+    // Se tbl_resposta_calculo ainda for necessária para outros campos, adicione seu caminho aqui
+    // Por enquanto, assumindo que resposta_ai é direta, e outros campos de tbl_resposta_calculo não são selecionados via configuração de webhook
   }
   return field.baseSupabasePath; // Fallback
 };

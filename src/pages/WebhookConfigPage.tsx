@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect, useState } from 'react'; // Mantendo useEffect e useState se forem usados internamente
 import MainLayout from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -17,7 +17,7 @@ const WebhookConfigPage = () => {
     fieldPopoverOpen,
     setFieldPopoverOpen,
     currentTableAvailableFields,
-    areAllFieldsSelected,
+    areAllFieldsSelected, // Esta variável é usada no retorno do hook, mas não diretamente no JSX deste componente.
     handleNewWebhook,
     handleEditWebhook,
     handleChange,
@@ -66,7 +66,7 @@ const WebhookConfigPage = () => {
           fieldPopoverOpen={fieldPopoverOpen}
           setFieldPopoverOpen={setFieldPopoverOpen}
           currentTableAvailableFields={currentTableAvailableFields}
-          areAllFieldsSelected={areAllFieldsSelected}
+          // areAllFieldsSelected={areAllFieldsSelected} // Removido, pois não é usado diretamente no WebhookForm
           handleChange={handleChange}
           handleTableChange={handleTableChange}
           handleFieldToggle={handleFieldToggle}

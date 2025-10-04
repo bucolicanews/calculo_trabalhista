@@ -17,7 +17,7 @@ interface WebhookFormProps {
   fieldPopoverOpen: boolean;
   setFieldPopoverOpen: (open: boolean) => void;
   currentTableAvailableFields: FieldDefinition[];
-  areAllFieldsSelected: boolean;
+  // areAllFieldsSelected: boolean; // Removido, pois não é usado diretamente aqui
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleTableChange: (value: string) => void;
   handleFieldToggle: (fieldKey: string) => void;
@@ -34,7 +34,7 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
   fieldPopoverOpen,
   setFieldPopoverOpen,
   currentTableAvailableFields,
-  areAllFieldsSelected,
+  // areAllFieldsSelected, // Removido
   handleChange,
   handleTableChange,
   handleFieldToggle,

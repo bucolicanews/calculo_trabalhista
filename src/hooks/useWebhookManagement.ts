@@ -172,7 +172,7 @@ export const useWebhookManagement = () => {
     setLoading(false);
   };
 
-  const getFieldLabel = (table: string, fieldKey: string) => {
+  const getFieldLabel = (_table: string, fieldKey: string) => {
     const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
     return fieldDef?.label || fieldKey;
   };

@@ -29,14 +29,14 @@ interface CalculationDetails {
   media_remuneracoes: number;
   carga_horaria: string | null;
   created_at: string;
-  tbl_clientes: { nome: string } | null; // Corrigido para objeto único
-  tbl_sindicatos: { nome: string } | null; // Corrigido para objeto único
+  resposta_ai: string | null;
+  tbl_clientes: { nome: string } | null;
+  tbl_sindicatos: { nome: string } | null;
   tbl_resposta_calculo: {
-    resposta_ai: string | null;
     url_documento_calculo: string | null;
     texto_extraido: string | null;
     data_hora: string;
-  } | null; // Corrigido para objeto único
+  } | null;
 }
 
 const CalculationResultPage: React.FC = () => {
@@ -58,9 +58,10 @@ const CalculationResultPage: React.FC = () => {
       .from('tbl_calculos')
       .select(`
         *,
+        resposta_ai,
         tbl_clientes(nome),
         tbl_sindicatos(nome),
-        tbl_resposta_calculo(resposta_ai, url_documento_calculo, texto_extraido, data_hora)
+        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
       `)
       .eq('id', id)
       .single();
@@ -70,7 +71,6 @@ const CalculationResultPage: React.FC = () => {
       console.error('Error fetching calculation result:', error);
       navigate('/calculations');
     } else if (data) {
-      // O Supabase retorna o objeto diretamente, não um array para relacionamentos 1:1 ou N:1
       setCalculation(data as CalculationDetails);
     }
     setLoading(false);
@@ -92,7 +92,9 @@ const CalculationResultPage: React.FC = () => {
     );
   }
 
-  const result = calculation.tbl_resposta_calculo; // Agora é um objeto único ou null
+  const otherResultDetails = calculation.tbl_resposta_calculo;
+
+  const hasAnyResult = calculation.resposta_ai || otherResultDetails?.url_documento_calculo || otherResultDetails?.texto_extraido;
 
   return (
     <MainLayout>
@@ -104,7 +106,7 @@ const CalculationResultPage: React.FC = () => {
           <h1 className="text-4xl font-bold text-orange-500 flex-grow text-center">
             Resultado do Cálculo
           </h1>
-          <div className="w-48"></div> {/* Placeholder for alignment */}
+          <div className="w-48"></div>
         </div>
 
         <Card className="max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white mb-8">
@@ -131,30 +133,30 @@ const CalculationResultPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {result ? (
+        {hasAnyResult ? (
           <Card className="max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white">
             <CardHeader>
               <CardTitle className="text-2xl text-orange-500">Resposta do Webhook</CardTitle>
-              <p className="text-sm text-gray-400">Gerado em: {format(new Date(result.data_hora), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
+              {otherResultDetails?.data_hora && <p className="text-sm text-gray-400">Gerado em: {format(new Date(otherResultDetails.data_hora), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>}
             </CardHeader>
             <CardContent className="space-y-4 text-gray-300">
-              {result.resposta_ai && (
+              {calculation.resposta_ai && (
                 <div>
                   <h3 className="text-lg font-semibold text-orange-400 mb-2">Resposta da IA:</h3>
-                  <p className="whitespace-pre-wrap">{result.resposta_ai}</p>
+                  <p className="whitespace-pre-wrap">{calculation.resposta_ai}</p>
                 </div>
               )}
-              {result.texto_extraido && (
+              {otherResultDetails?.texto_extraido && (
                 <div>
                   <h3 className="text-lg font-semibold text-orange-400 mb-2">Texto Extraído do Documento:</h3>
-                  <p className="whitespace-pre-wrap">{result.texto_extraido}</p>
+                  <p className="whitespace-pre-wrap">{otherResultDetails.texto_extraido}</p>
                 </div>
               )}
-              {result.url_documento_calculo && (
+              {otherResultDetails?.url_documento_calculo && (
                 <div className="flex items-center space-x-2">
                   <FileText className="h-5 w-5 text-orange-500" />
                   <a
-                    href={result.url_documento_calculo}
+                    href={otherResultDetails.url_documento_calculo}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-400 hover:underline"
@@ -162,13 +164,13 @@ const CalculationResultPage: React.FC = () => {
                     Visualizar Documento PDF
                   </a>
                   <Button asChild variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
-                    <a href={result.url_documento_calculo} download>
+                    <a href={otherResultDetails.url_documento_calculo} download>
                       <Download className="h-4 w-4 mr-1" /> Baixar PDF
                     </a>
                   </Button>
                 </div>
               )}
-              {!result.resposta_ai && !result.texto_extraido && !result.url_documento_calculo && (
+              {!calculation.resposta_ai && !otherResultDetails?.texto_extraido && !otherResultDetails?.url_documento_calculo && (
                 <p className="text-gray-400">Nenhuma resposta detalhada disponível para este cálculo ainda.</p>
               )}
             </CardContent>

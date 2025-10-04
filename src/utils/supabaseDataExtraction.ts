@@ -2,7 +2,7 @@
 // Example path: 'tbl_sindicatos(tbl_dissidios(nome_dissidio))'
 // Example path: 'tbl_clientes(nome)'
 // Example path: 'nome_funcionario'
-export const extractValueFromPath = (data: any, path: string) => {
+export const extractValueFromPath = (data: any, path: string): any => {
   const parts = path.match(/(\w+)(?:\((.*)\))?/); // Matches 'table' and 'field(nested_path)'
 
   if (!parts) { // Direct field
