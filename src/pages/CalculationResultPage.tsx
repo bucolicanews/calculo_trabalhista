@@ -175,7 +175,7 @@ const CalculationResultPage: React.FC = () => {
       filename: filename,
       image: { type: 'jpeg' as const, quality: 0.98 }, 
       html2canvas: { scale: 2, useCORS: true, backgroundColor: 'white' }, // Garante fundo branco para o canvas
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'p' as const }, // Corrigido: Usando 'as const' para tipo literal
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }, // Corrigido: Usando 'portrait' as const
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
@@ -264,6 +264,19 @@ const CalculationResultPage: React.FC = () => {
         );
       }
       return <h3 className="text-xl font-semibold text-orange-400 mb-2">{children}</h3>;
+    },
+    p: ({ children }: { children?: React.ReactNode }) => {
+      const text = getTextFromChildren(children);
+      // Regex para detectar valores monetários no formato R$ X.XXX,XX
+      const monetaryRegex = /R\$\s\d{1,3}(?:\.\d{3})*,\d{2}/;
+      if (monetaryRegex.test(text)) {
+        return (
+          <p className="text-4xl font-extrabold text-orange-500 text-center my-4 p-2 bg-gray-800 rounded-md">
+            {children}
+          </p>
+        );
+      }
+      return <p className="mb-4">{children}</p>; // Default paragraph styling
     },
   };
 
