@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -27,6 +27,7 @@ interface Calculation {
   tbl_resposta_calculo: {
     url_documento_calculo: string | null;
     texto_extraido: string | null;
+    data_hora: string;
   } | null;
   created_at: string;
   status?: CalculationStatus; // Adicionando o status ao tipo Calculation
@@ -100,7 +101,7 @@ const CalculationListPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('tbl_calculos')
-      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, resposta_ai, tbl_clientes(nome), tbl_resposta_calculo(url_documento_calculo, texto_extraido)')
+      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, resposta_ai, tbl_clientes(nome), tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -287,6 +288,11 @@ const CalculationListPage = () => {
                   <CardHeader>
                     <div className="flex items-center justify-between mb-2">
                       <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
+                      {currentStatus === 'sending' && (
+                        <Badge variant="secondary" className="bg-yellow-600 text-white flex items-center">
+                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Enviando...
+                        </Badge>
+                      )}
                       {currentStatus === 'pending_response' && (
                         <Badge variant="secondary" className="bg-blue-600 text-white flex items-center">
                           <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Aguardando Resposta...
