@@ -11,11 +11,11 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw'; // Manter rehypeRaw
+import rehypeRaw from 'rehype-raw';
 import { parseMarkdownTables, convertToCsv, ParsedTable } from '@/utils/markdownParser';
 
-import jsPDF from 'jspdf'; // Importar jsPDF
-import html2canvas from 'html2canvas'; // Importar html2canvas
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface CalculationDetails {
   id: string;
@@ -186,37 +186,52 @@ const CalculationResultPage: React.FC = () => {
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // Largura A4 em mm
-      const pageHeight = 297; // Altura A4 em mm
+
+      // Definir margens em mm
+      const marginLeft = 10;
+      const marginRight = 10;
+      const marginTop = 35; // Espaço para o cabeçalho
+      const marginBottom = 10;
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const usableWidth = pdfWidth - marginLeft - marginRight;
+      const usableHeight = pdfHeight - marginTop - marginBottom;
+
+      const imgWidth = usableWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
       let heightLeft = imgHeight;
-      let position = 0;
+      let currentY = marginTop; // Começa a adicionar a imagem após a margem superior
+
+      // Função para adicionar cabeçalho
+      const addHeader = (doc: jsPDF, pageNum: number) => {
+        doc.setFontSize(16);
+        doc.text('Relatório de Cálculo de Rescisão', pdfWidth / 2, 15, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text(`ID Cálculo: ${calculation.id}`, pdfWidth / 2, 22, { align: 'center' });
+        doc.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, pdfWidth / 2, 27, { align: 'center' });
+      };
 
       // Adicionar cabeçalho na primeira página
-      pdf.setFontSize(16);
-      pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
-      pdf.setFontSize(10);
-      pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
-      pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
+      addHeader(pdf, 1);
 
-      // Iniciar a imagem após o cabeçalho
-      let currentY = 35;
+      // Adicionar a primeira parte da imagem
+      pdf.addImage(imgData, 'PNG', marginLeft, currentY, imgWidth, imgHeight);
+      heightLeft -= usableHeight; // Reduz a altura restante pelo espaço utilizável da primeira página
 
-      pdf.addImage(imgData, 'PNG', 0, currentY, imgWidth, imgHeight);
-      heightLeft -= (pageHeight - currentY); // Altura restante após a primeira página
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight; // Calcular a posição para o próximo segmento
+      let pageNum = 1;
+      while (heightLeft > -imgHeight) { // Continua enquanto houver conteúdo para adicionar
+        pageNum++;
         pdf.addPage();
-        // Adicionar cabeçalho em páginas subsequentes
-        pdf.setFontSize(16);
-        pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
-        pdf.setFontSize(10);
-        pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
-        pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
-        
-        pdf.addImage(imgData, 'PNG', 0, position + currentY, imgWidth, imgHeight); // Ajustar posição para o cabeçalho
-        heightLeft -= pageHeight;
+        addHeader(pdf, pageNum); // Adicionar cabeçalho em páginas subsequentes
+
+        // Calcular a posição Y para a nova página
+        // A imagem é um "rolo" contínuo, então a posição Y é negativa para rolar o conteúdo para cima
+        const imgY = currentY - (imgHeight - heightLeft - usableHeight);
+        pdf.addImage(imgData, 'PNG', marginLeft, imgY, imgWidth, imgHeight);
+        heightLeft -= usableHeight;
       }
 
       pdf.save(filename);
@@ -382,7 +397,7 @@ const CalculationResultPage: React.FC = () => {
             {calculation.funcao_funcionario && <p><strong>Função:</strong> {calculation.funcao_funcionario}</p>}
             {calculation.salario_sindicato > 0 && <p><strong>Piso Salarial Sindicato:</strong> R$ {calculation.salario_sindicato.toFixed(2)}</p>}
             {calculation.media_descontos > 0 && <p><strong>Média Descontos:</strong> R$ {calculation.media_descontos.toFixed(2)}</p>}
-            {calculation.media_remuneracoes > 0 && <p><strong>Média Remunerações:</strong> R$ {calculation.media_remuneracoes.toFixed(2)}</p>}
+            {calculation.media_remuneracoes > 0 && <p><strong>Média Remuneracoes:</strong> R$ {calculation.media_remuneracoes.toFixed(2)}</p>}
             {calculation.carga_horaria && <p><strong>Carga Horária:</strong> {calculation.carga_horaria}</p>}
             {calculation.obs_sindicato && <p className="col-span-full"><strong>Obs. Sindicato:</strong> {calculation.obs_sindicato}</p>}
             {calculation.historia && <p className="col-span-full"><strong>Histórico:</strong> {calculation.historia}</p>}
