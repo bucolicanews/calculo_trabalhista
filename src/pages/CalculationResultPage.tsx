@@ -180,8 +180,7 @@ const CalculationResultPage: React.FC = () => {
     };
 
     // Gera o PDF e obtém a instância do jsPDF para adicionar o cabeçalho
-    const pdfGenerator = html2pdf().set(opt).from(element);
-    const pdf = await pdfGenerator.output('jspdf'); // Obtém a instância do jsPDF
+    const pdf = await html2pdf().set(opt).from(element).toPdf(); // Usando toPdf() para obter a instância do jsPDF
 
     // Adicionar cabeçalho a cada página
     const pageCount = pdf.internal.getNumberOfPages();
