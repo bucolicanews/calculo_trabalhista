@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye } from 'lucide-react'; // Adicionado 'Eye'
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -18,12 +18,12 @@ interface Calculation {
   nome_funcionario: string;
   inicio_contrato: string;
   fim_contrato: string;
-  tbl_clientes: { nome: string }[] | null;
+  tbl_clientes: { nome: string } | null; // Corrigido para objeto único
   tbl_resposta_calculo: {
     resposta_ai: string | null;
     url_documento_calculo: string | null;
     texto_extraido: string | null;
-  }[] | null; // Adicionado url_documento_calculo e texto_extraido
+  } | null; // Corrigido para objeto único
   created_at: string;
   [key: string]: any;
 }
@@ -62,14 +62,15 @@ const CalculationListPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('tbl_calculos')
-      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, tbl_clientes(nome), tbl_resposta_calculo(resposta_ai, url_documento_calculo, texto_extraido)') // Incluindo novos campos
+      .select('id, nome_funcionario, inicio_contrato, fim_contrato, created_at, tbl_clientes(nome), tbl_resposta_calculo(resposta_ai, url_documento_calculo, texto_extraido)')
       .order('created_at', { ascending: false });
 
     if (error) {
       showError('Erro ao carregar cálculos: ' + error.message);
       console.error('Error fetching calculations:', error);
     } else {
-      setCalculations(data as Calculation[] || []);
+      // Usando 'unknown' como um intermediário para resolver o erro de tipo
+      setCalculations(data as unknown as Calculation[] || []);
     }
     setLoading(false);
   };
@@ -211,16 +212,16 @@ const CalculationListPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {calculations.map((calculation) => {
-              const hasResult = calculation.tbl_resposta_calculo && calculation.tbl_resposta_calculo.length > 0 && (
-                calculation.tbl_resposta_calculo[0].resposta_ai ||
-                calculation.tbl_resposta_calculo[0].url_documento_calculo ||
-                calculation.tbl_resposta_calculo[0].texto_extraido
+              const hasResult = calculation.tbl_resposta_calculo && (
+                calculation.tbl_resposta_calculo.resposta_ai ||
+                calculation.tbl_resposta_calculo.url_documento_calculo ||
+                calculation.tbl_resposta_calculo.texto_extraido
               );
               return (
                 <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
                   <CardHeader>
                     <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
-                    <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.[0]?.nome || 'N/A'}</p>
+                    <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.nome || 'N/A'}</p>
                     <div className="text-xs text-gray-500 mt-2 space-y-1">
                       <p>Início Contrato: {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy')}</p>
                       <p>Fim Contrato: {format(new Date(calculation.fim_contrato), 'dd/MM/yyyy')}</p>

@@ -29,14 +29,14 @@ interface CalculationDetails {
   media_remuneracoes: number;
   carga_horaria: string | null;
   created_at: string;
-  tbl_clientes: { nome: string } | null;
-  tbl_sindicatos: { nome: string } | null;
+  tbl_clientes: { nome: string } | null; // Corrigido para objeto único
+  tbl_sindicatos: { nome: string } | null; // Corrigido para objeto único
   tbl_resposta_calculo: {
     resposta_ai: string | null;
     url_documento_calculo: string | null;
     texto_extraido: string | null;
     data_hora: string;
-  }[] | null;
+  } | null; // Corrigido para objeto único
 }
 
 const CalculationResultPage: React.FC = () => {
@@ -70,6 +70,7 @@ const CalculationResultPage: React.FC = () => {
       console.error('Error fetching calculation result:', error);
       navigate('/calculations');
     } else if (data) {
+      // O Supabase retorna o objeto diretamente, não um array para relacionamentos 1:1 ou N:1
       setCalculation(data as CalculationDetails);
     }
     setLoading(false);
@@ -91,7 +92,7 @@ const CalculationResultPage: React.FC = () => {
     );
   }
 
-  const result = calculation.tbl_resposta_calculo?.[0];
+  const result = calculation.tbl_resposta_calculo; // Agora é um objeto único ou null
 
   return (
     <MainLayout>
