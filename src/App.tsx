@@ -7,10 +7,12 @@ import ClientListPage from './pages/ClientListPage';
 import ClientFormPage from './pages/ClientFormPage';
 import CalculationListPage from './pages/CalculationListPage';
 import CalculationFormPage from './pages/CalculationFormPage';
-import CalculationResultPage from './pages/CalculationResultPage'; // Importando a nova página
+import CalculationResultPage from './pages/CalculationResultPage';
 import SindicatoListPage from './pages/SindicatoListPage';
 import SindicatoFormPage from './pages/SindicatoFormPage';
 import WebhookConfigPage from './pages/WebhookConfigPage';
+import AiPromptTemplateListPage from './pages/AiPromptTemplateListPage'; // NOVO
+import AiPromptTemplateFormPage from './pages/AiPromptTemplateFormPage'; // NOVO
 import { Toaster } from './components/ui/toaster';
 import Index from './pages/Index';
 
@@ -88,7 +90,7 @@ function App() {
             }
           />
           <Route
-            path="/calculations/:id/result" // Nova rota para a página de resultados
+            path="/calculations/:id/result"
             element={
               <PrivateRoute>
                 <CalculationResultPage />
@@ -124,6 +126,30 @@ function App() {
             element={
               <PrivateRoute>
                 <WebhookConfigPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ai-templates"
+            element={
+              <PrivateRoute>
+                <AiPromptTemplateListPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ai-templates/new"
+            element={
+              <PrivateRoute>
+                <AiPromptTemplateFormPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ai-templates/:id"
+            element={
+              <PrivateRoute>
+                <AiPromptTemplateFormPage />
               </PrivateRoute>
             }
           />
