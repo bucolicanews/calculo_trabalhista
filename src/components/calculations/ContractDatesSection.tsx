@@ -39,7 +39,7 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
               {inicio_contrato ? format(new Date(inicio_contrato), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
+          <PopoverContent className="dark w-auto p-0 bg-background border-border">
             <Calendar
               mode="single"
               selected={inicio_contrato ? new Date(inicio_contrato) : undefined}
@@ -69,7 +69,7 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
               {fim_contrato ? format(new Date(fim_contrato), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-500 text-white">
+          <PopoverContent className="dark w-auto p-0 bg-background border-border">
             <Calendar
               mode="single"
               selected={fim_contrato ? new Date(fim_contrato) : undefined}
