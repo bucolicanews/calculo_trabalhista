@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Clock, AlertTriangle, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -282,6 +282,7 @@ const CalculationListPage = () => {
             {calculations.map((calculation) => {
               const currentStatus = calculation.status || 'idle';
               const hasResult = calculation.resposta_ai || calculation.tbl_resposta_calculo?.url_documento_calculo || calculation.tbl_resposta_calculo?.texto_extraido;
+              const hasDocument = calculation.tbl_resposta_calculo?.url_documento_calculo;
 
               return (
                 <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
@@ -332,6 +333,14 @@ const CalculationListPage = () => {
                         <Link to={`/calculations/${calculation.id}/result`}>
                           <Eye className="h-4 w-4" />
                         </Link>
+                      </Button>
+                    )}
+
+                    {hasDocument && (
+                      <Button asChild variant="outline" size="sm" className="border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white">
+                        <a href={calculation.tbl_resposta_calculo?.url_documento_calculo || '#'} download>
+                          <Download className="h-4 w-4" />
+                        </a>
                       </Button>
                     )}
 
