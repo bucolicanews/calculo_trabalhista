@@ -11,10 +11,11 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import rehypeRaw from 'rehype-raw'; // Manter rehypeRaw
 import { parseMarkdownTables, convertToCsv, ParsedTable } from '@/utils/markdownParser';
 
-import html2pdf from 'html2pdf.js';
+import jsPDF from 'jspdf'; // Importar jsPDF
+import html2canvas from 'html2canvas'; // Importar html2canvas
 
 interface CalculationDetails {
   id: string;
@@ -166,42 +167,58 @@ const CalculationResultPage: React.FC = () => {
     }
 
     const originalClassList = element.classList.value;
-    // Removendo a manipulação direta de background e color para evitar conflitos
-    // const originalBackgroundColor = element.style.backgroundColor;
-    // const originalColor = element.style.color;
+    const originalBackgroundColor = element.style.backgroundColor;
+    const originalColor = element.style.color;
 
     // Aplicar estilos temporários para captura do PDF (texto preto, fundo branco)
     element.classList.remove('prose-invert');
     element.classList.add('prose'); // Assume que 'prose' fornece estilos de tema claro
-    // element.style.backgroundColor = 'white'; // Removido
-    // element.style.color = 'black'; // Removido
-
-    // Define as opções para html2pdf
-    const opt = {
-      margin: [35, 10, 10, 10] as [number, number, number, number], // Top, Right, Bottom, Left - Aumenta a margem superior para o cabeçalho
-      filename: filename,
-      image: { type: 'jpeg' as const, quality: 0.98 }, 
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: 'white' }, // Garante fundo branco para o canvas
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }, 
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
+    element.style.backgroundColor = 'white'; // Garante fundo branco para a captura
+    element.style.color = 'black'; // Garante texto preto para a captura
 
     try {
-      // Gera o PDF e obtém a instância do jsPDF para adicionar o cabeçalho
-      const pdf = await html2pdf().set(opt).from(element).toPdf(); // Usando toPdf() para obter a instância do jsPDF
+      // Capturar o conteúdo do div
+      const canvas = await html2canvas(element, {
+        scale: 2, // Aumenta a escala para melhor qualidade
+        useCORS: true,
+        backgroundColor: 'white', // Garante que o fundo do canvas seja branco
+      });
 
-      // Adicionar cabeçalho a cada página
-      const pageCount = pdf.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i);
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210; // Largura A4 em mm
+      const pageHeight = 297; // Altura A4 em mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Adicionar cabeçalho na primeira página
+      pdf.setFontSize(16);
+      pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
+      pdf.setFontSize(10);
+      pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
+      pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
+
+      // Iniciar a imagem após o cabeçalho
+      let currentY = 35;
+
+      pdf.addImage(imgData, 'PNG', 0, currentY, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - currentY); // Altura restante após a primeira página
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight; // Calcular a posição para o próximo segmento
+        pdf.addPage();
+        // Adicionar cabeçalho em páginas subsequentes
         pdf.setFontSize(16);
         pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
         pdf.setFontSize(10);
         pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
         pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
+        
+        pdf.addImage(imgData, 'PNG', 0, position + currentY, imgWidth, imgHeight); // Ajustar posição para o cabeçalho
+        heightLeft -= pageHeight;
       }
 
-      // Salva o PDF
       pdf.save(filename);
       showSuccess('Download do PDF iniciado!');
     } catch (error) {
@@ -210,8 +227,8 @@ const CalculationResultPage: React.FC = () => {
     } finally {
       // Restaurar estilos originais e exibição dos botões
       element.classList.value = originalClassList;
-      // element.style.backgroundColor = originalBackgroundColor; // Removido
-      // element.style.color = originalColor; // Removido
+      element.style.backgroundColor = originalBackgroundColor;
+      element.style.color = originalColor;
       if (buttonsContainer) {
         buttonsContainer.style.display = originalButtonsDisplay;
       }
