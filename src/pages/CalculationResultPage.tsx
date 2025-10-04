@@ -175,7 +175,7 @@ const CalculationResultPage: React.FC = () => {
       filename: filename,
       image: { type: 'jpeg' as const, quality: 0.98 }, 
       html2canvas: { scale: 2, useCORS: true, backgroundColor: 'white' }, // Garante fundo branco para o canvas
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }, // Corrigido: Usando 'portrait' as const
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }, 
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
@@ -258,7 +258,7 @@ const CalculationResultPage: React.FC = () => {
 
       if (text.includes('PROVENTOS') || text.includes('DESCONTOS')) {
         return (
-          <h3 className="text-xl font-semibold text-white bg-black py-2 my-2 text-center rounded-md">
+          <h3 className="text-xl font-bold text-orange-500 bg-black py-2 my-2 text-center rounded-md">
             {children}
           </h3>
         );
