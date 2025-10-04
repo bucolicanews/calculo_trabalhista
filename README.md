@@ -1,16 +1,22 @@
 # Especificação de Projeto: App de Rescisão Trabalhista (Calculadora Jurídica)
 
-## 1. Objetivo Geral
-Criar um aplicativo web utilizando React e Supabase para permitir que usuários autenticados (advogados, contadores, etc.) gerenciem clientes e insiram dados detalhados para o cálculo de rescisões trabalhistas. O foco inicial é na coleta de dados estruturada e no esqueleto da lógica de cálculo e persistência.
+## 1. Apresentação do Sistema
+Este aplicativo web, denominado "Calculadora Jurídica", foi desenvolvido para auxiliar advogados, contadores e outros profissionais do direito a gerenciar clientes e realizar cálculos de rescisões trabalhistas de forma eficiente. Ele oferece uma interface intuitiva para inserção de dados detalhados de funcionários e contratos, integração com sistemas externos via webhooks e a capacidade de gerar resumos de cálculos em formatos TXT e PDF.
 
-## 2. Tecnologias & Arquitetura
-*   **Frontend**: React (usando componentes funcionais e hooks, preferencialmente Zustand ou Context para estado global).
-*   **Estilização**: Tailwind CSS (para design responsivo e ágil).
-*   **Banco de Dados & Autenticação**: Supabase (PostgreSQL para dados, Auth para gerenciamento de usuários).
-*   **Cores Principais**: Preto (#000000) e Laranja Vibrante (#FF4500 ou similar).
+## 2. Objetivo Geral
+Criar um aplicativo web robusto e seguro utilizando React e Supabase, permitindo que usuários autenticados gerenciem clientes, sindicatos e insiram dados detalhados para o cálculo de rescisões trabalhistas. O sistema foca na coleta de dados estruturada, persistência segura e integração flexível com lógicas de cálculo externas (via webhooks) e geração de documentos.
 
-## 3. Estrutura do Banco de Dados (Supabase Schema)
-O banco de dados deve ser modelado com as seguintes tabelas e relacionamentos. Todas as tabelas devem ter a coluna padrão `created_at` (TIMESTAMP WITH TIME ZONE DEFAULT NOW()).
+## 3. Tecnologias & Arquitetura
+*   **Frontend**: React (com componentes funcionais e hooks).
+*   **Estilização**: Tailwind CSS (para design responsivo e ágil) e Shadcn/ui (componentes pré-construídos).
+*   **Banco de Dados & Autenticação**: Supabase (PostgreSQL para dados, Auth para gerenciamento de usuários, Storage para arquivos).
+*   **Geração de PDF**: `jspdf` (para gerar documentos PDF no lado do cliente).
+*   **Roteamento**: React Router DOM.
+*   **Gerenciamento de Estado**: Context API (para autenticação).
+*   **Cores Principais**: Preto (`#000000`) e Laranja Vibrante (`#FF4500` ou similar).
+
+## 4. Estrutura do Banco de Dados (Supabase Schema)
+O banco de dados é modelado com as seguintes tabelas e relacionamentos. Todas as tabelas incluem a coluna padrão `created_at` (TIMESTAMP WITH TIME ZONE DEFAULT NOW()) e possuem Row Level Security (RLS) habilitada para garantir a segurança dos dados.
 
 ### Tabela: `public.profiles`
 Função: Armazenar informações de perfil do usuário.
@@ -52,7 +58,7 @@ CREATE TABLE tbl_clientes (
   nome TEXT NOT NULL,
   cpf TEXT,
   cnpj TEXT,
-  tipo_empregador TEXT NOT NULL, -- Assuming ENUM is handled by text for simplicity in SQL, or define ENUM type
+  tipo_empregador TEXT NOT NULL,
   responsavel TEXT,
   cpf_responsavel TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -85,8 +91,8 @@ CREATE TABLE tbl_sindicatos (
   data_inicial DATE,
   data_final DATE,
   mes_convencao TEXT,
-  url_documento_sindicato TEXT, -- NOVO: URL pública do documento do sindicato
-  resumo_dissidio TEXT, -- NOVO: Resumo do dissídio (pode ser gerado por IA)
+  url_documento_sindicato TEXT,
+  resumo_dissidio TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -143,8 +149,7 @@ FOR DELETE TO authenticated USING (auth.uid() IS NOT NULL);
 ```
 
 ### Tabela: `tbl_calculos`
-Função: Armazenar os dados específicos de um cálculo de rescisão de um funcionário.
-**Nota:** A `resposta_ai` agora é armazenada diretamente nesta tabela para simplificar o acesso à resposta principal.
+Função: Armazenar os dados específicos de um cálculo de rescisão de um funcionário. A `resposta_ai` é armazenada diretamente nesta tabela para simplificar o acesso à resposta principal.
 ```sql
 -- Create table
 CREATE TABLE tbl_calculos (
@@ -156,9 +161,9 @@ CREATE TABLE tbl_calculos (
   funcao_funcionario TEXT,
   inicio_contrato DATE NOT NULL,
   fim_contrato DATE NOT NULL,
-  tipo_aviso TEXT NOT NULL, -- Assuming ENUM is handled by text
+  tipo_aviso TEXT NOT NULL,
   salario_sindicato NUMERIC DEFAULT 0,
-  salario_trabalhador NUMERIC DEFAULT 0, -- NOVO CAMPO: Salário do trabalhador
+  salario_trabalhador NUMERIC DEFAULT 0,
   obs_sindicato TEXT,
   historia TEXT,
   ctps_assinada BOOLEAN DEFAULT FALSE,
@@ -166,7 +171,7 @@ CREATE TABLE tbl_calculos (
   media_remuneracoes NUMERIC DEFAULT 0,
   carga_horaria TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  resposta_ai TEXT -- NOVO: Resposta da IA para o cálculo, armazenada diretamente aqui
+  resposta_ai TEXT
 );
 
 -- Enable RLS (REQUIRED)
@@ -187,17 +192,16 @@ FOR DELETE TO authenticated USING (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((t
 ```
 
 ### Tabela: `tbl_resposta_calculo`
-Função: Armazenar detalhes adicionais da resposta gerada pela lógica de cálculo ou por um modelo de IA, como documentos PDF e texto extraído. A resposta principal da IA (`resposta_ai`) agora reside em `tbl_calculos`.
+Função: Armazenar detalhes adicionais da resposta gerada pela lógica de cálculo ou por um modelo de IA, como URLs de documentos PDF e texto extraído.
 ```sql
 -- Create table
 CREATE TABLE tbl_resposta_calculo (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   calculo_id UUID REFERENCES tbl_calculos(id) ON DELETE CASCADE NOT NULL,
-  -- resposta_ai TEXT, -- Removido, agora em tbl_calculos
   data_hora TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  url_documento_calculo TEXT, -- URL pública do PDF do cálculo
-  texto_extraido TEXT -- Texto extraído do PDF do cálculo
+  url_documento_calculo TEXT,
+  texto_extraido TEXT
 );
 
 -- Enable RLS (REQUIRED)
@@ -280,82 +284,59 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 ```
 
-## 4. Requisitos de Frontend (React)
+## 5. Requisitos de Frontend (React)
 
-### 4.1. Autenticação
-*   Página de Login/Cadastro (`/auth`) usando `@supabase/auth-ui-react`.
-*   Proteção de rotas privadas com `PrivateRoute` (redireciona para `/auth` se não autenticado).
-*   Contexto de autenticação (`AuthContext`) para gerenciar o estado do usuário globalmente.
+### 5.1. Autenticação
+*   **Página de Login/Cadastro (`/auth`)**: Utiliza `@supabase/auth-ui-react` com tema escuro e cores vibrantes de laranja.
+*   **Proteção de Rotas**: `PrivateRoute` garante que apenas usuários autenticados acessem rotas protegidas, redirecionando para `/auth` caso contrário.
+*   **Contexto de Autenticação (`AuthContext`)**: Gerencia o estado do usuário globalmente, incluindo login, cadastro e logout.
 
-### 4.2. Layout Principal
-*   `MainLayout` com um `Sidebar` responsivo (menu lateral para desktop, sheet para mobile).
-*   Cores predominantes: preto e laranja vibrante.
+### 5.2. Layout Principal
+*   **`MainLayout`**: Componente de layout principal com um `Sidebar` responsivo (menu lateral para desktop, sheet para mobile).
+*   **Cores**: Predominância de preto e laranja vibrante para uma experiência de usuário moderna e consistente.
 
-### 4.3. Dashboard (`/dashboard`)
-*   Exibe um resumo rápido (ex: total de clientes).
-*   Botões de acesso rápido para "Adicionar Cliente", "Iniciar Novo Cálculo", "Ver Todos os Clientes", "Ver Todos os Cálculos", "Gerenciar Sindicatos" e "Gerenciar Webhooks".
+### 5.3. Dashboard (`/dashboard`)
+*   Exibe um resumo rápido de métricas importantes (ex: total de clientes).
+*   Botões de acesso rápido para as principais funcionalidades: "Adicionar Cliente", "Iniciar Novo Cálculo", "Ver Todos os Clientes", "Ver Todos os Cálculos", "Gerenciar Sindicatos" e "Gerenciar Webhooks".
 
-### 4.4. Gerenciamento de Clientes
-*   **Lista de Clientes (`/clients`)**:
-    *   Exibe todos os clientes cadastrados pelo usuário.
-    *   Opções para "Adicionar Cliente", "Editar" e "Excluir" (com confirmação).
-*   **Formulário de Cliente (`/clients/new` ou `/clients/:id`)**:
-    *   Permite criar um novo cliente ou editar um existente.
-    *   Campos: Nome/Razão Social, CPF, CNPJ, Tipo de Empregador (dropdown), Nome do Responsável, CPF do Responsável.
-    *   Validação básica.
+### 5.4. Gerenciamento de Clientes
+*   **Lista de Clientes (`/clients`)**: Exibe todos os clientes cadastrados pelo usuário, com opções para "Adicionar Cliente", "Editar" e "Excluir" (com confirmação via `AlertDialog`).
+*   **Formulário de Cliente (`/clients/new` ou `/clients/:id`)**: Permite criar um novo cliente ou editar um existente. Inclui campos como Nome/Razão Social, CPF, CNPJ, Tipo de Empregador (dropdown), Nome do Responsável e CPF do Responsável.
 
-### 4.5. Gerenciamento de Sindicatos
-*   **Lista de Sindicatos (`/sindicatos`)**:
-    *   Exibe todos os sindicatos cadastrados (públicos para todos os usuários).
-    *   Opções para "Adicionar Sindicato", "Editar" e "Excluir" (com confirmação).
-*   **Formulário de Sindicato (`/sindicatos/new` ou `/sindicatos/:id`)**:
-    *   Permite criar um novo sindicato ou editar um existente.
-    *   Campos: Nome do Sindicato, Data Inicial do Acordo, Data Final do Acordo, Mês da Convenção, URL do Documento do Sindicato, Resumo do Dissídio.
-    *   **Gerenciamento de Dissídios**: Dentro do formulário de sindicato (ao editar), há uma seção para gerenciar os dissídios associados a esse sindicato.
-        *   Permite adicionar, editar e excluir dissídios.
-        *   Campos do Dissídio: Nome, Documento PDF (upload para Supabase Storage), Resumo, Data Início/Fim Vigência, Mês Convenção.
+### 5.5. Gerenciamento de Sindicatos
+*   **Lista de Sindicatos (`/sindicatos`)**: Exibe todos os sindicatos cadastrados (visíveis para todos os usuários), com opções para "Adicionar Sindicato", "Editar" e "Excluir" (com confirmação).
+*   **Formulário de Sindicato (`/sindicatos/new` ou `/sindicatos/:id`)**: Permite criar ou editar um sindicato. Campos incluem Nome do Sindicato, Data Inicial/Final do Acordo, Mês da Convenção, URL do Documento do Sindicato e Resumo do Dissídio.
 
-### 4.6. Gerenciamento de Cálculos
+### 5.6. Gerenciamento de Cálculos
 *   **Lista de Cálculos (`/calculations`)**:
     *   Exibe todos os cálculos de rescisão criados pelo usuário.
     *   Opções para "Novo Cálculo", "Editar", "Ver Resultado" e "Excluir" (com confirmação).
     *   **Envio para Webhook**: Um botão "Enviar" que abre um modal para selecionar um ou mais webhooks configurados (para `tbl_calculos` ou `all_tables`) antes de enviar os dados do cálculo.
-    *   **Status do Webhook**: Exibe o status do envio do webhook (enviando, aguardando resposta, resultado disponível, tempo excedido, erro) com feedback visual (ícones e cores).
-    *   **Download do PDF**: Se um `url_documento_calculo` for retornado pelo webhook, um botão de download do PDF é exibido na página de resultados.
-*   **Formulário de Cálculo (`/calculations/new` ou `/calculations/:id`)**:
-    *   Permite criar um novo cálculo ou editar um existente.
-    *   Campos: Cliente (dropdown), Sindicato (dropdown), Nome/CPF/Função do Funcionário, Início/Fim do Contrato (seletores de data), Tipo de Aviso (dropdown), Salário Sindicato, **Salário do Trabalhador**, Observações Sindicato, Histórico do Contrato, CTPS Assinada (checkbox), Média de Descontos/Remunerações, Carga Horária.
-*   **Página de Resultado do Cálculo (`/calculations/:id/result`)**:
-    *   Exibe os detalhes do cálculo e a resposta gerada pelo webhook.
-    *   A `resposta_ai` é buscada diretamente de `tbl_calculos`.
-    *   Outros detalhes como `url_documento_calculo` e `texto_extraido` são buscados de `tbl_resposta_calculo`.
-    *   Botão para download do PDF, se disponível.
+    *   **Status do Webhook**: Exibe o status do envio do webhook (enviando, aguardando resposta, concluído, tempo excedido, erro) com feedback visual (ícones e badges).
+    *   **Download da Resposta da IA**: Botões para baixar a `resposta_ai` como arquivo TXT ou PDF (usando `jspdf`), visíveis quando a resposta estiver disponível.
+*   **Formulário de Cálculo (`/calculations/new` ou `/calculations/:id`)**: Permite criar ou editar um cálculo. Inclui campos para Cliente (dropdown), Sindicato (dropdown), detalhes do Funcionário (Nome, CPF, Função, Carga Horária), datas de Início/Fim do Contrato, Tipo de Rescisão (dropdown), Salário Sindicato, Salário do Trabalhador, Observações Sindicato, Histórico do Contrato, CTPS Assinada (checkbox) e Médias de Descontos/Remunerações.
+*   **Página de Resultado do Cálculo (`/calculations/:id/result`)**: Exibe os detalhes do cálculo e a resposta gerada pelo webhook. A `resposta_ai` é buscada diretamente de `tbl_calculos`. Outros detalhes como `url_documento_calculo` e `texto_extraido` são buscados de `tbl_resposta_calculo`. Inclui um botão para download do PDF, se disponível.
 
-### 4.7. Configurações de Webhooks (`/webhooks`)
-*   **Lista de Webhooks**:
-    *   Exibe todas as configurações de webhook do usuário.
-    *   Opções para "Novo Webhook", "Editar" e "Excluir" (com confirmação).
-*   **Formulário de Webhook**:
-    *   Permite criar ou editar uma configuração de webhook.
-    *   Campos:
-        *   **Título do Webhook**: Um nome descritivo para o webhook.
-        *   **Tabela**: Dropdown para selecionar a tabela a ser monitorada (`tbl_clientes`, `tbl_calculos`, `tbl_sindicatos`, `tbl_dissidios` ou `TODOS (Todos os Campos)`).
-        *   **Campos Selecionados**: Um seletor de múltiplos itens que lista os campos disponíveis da tabela selecionada.
-            *   Se "TODOS" for selecionado, todos os campos de todas as tabelas são listados.
-            *   Para tabelas específicas, apenas os campos diretos daquela tabela são listados.
-        *   **URL do Webhook**: O endpoint para onde os dados serão enviados.
-    *   A lógica de seleção de campos é dinâmica, mostrando apenas os campos relevantes para a tabela escolhida.
+### 5.7. Configurações de Webhooks (`/webhooks`)
+*   **Lista de Webhooks**: Exibe todas as configurações de webhook do usuário, com opções para "Novo Webhook", "Editar" e "Excluir" (com confirmação).
+*   **Formulário de Webhook**: Permite criar ou editar uma configuração de webhook. Campos incluem:
+    *   **Título do Webhook**: Um nome descritivo.
+    *   **Tabela**: Dropdown para selecionar a tabela a ser monitorada (`tbl_clientes`, `tbl_calculos`, `tbl_sindicatos`, `tbl_dissidios` ou `TODOS (Todos os Campos)`).
+    *   **Campos Selecionados**: Um seletor de múltiplos itens que lista dinamicamente os campos disponíveis da tabela selecionada.
+    *   **URL do Webhook**: O endpoint para onde os dados serão enviados.
 
-### 4.8. Utilidades
+### 5.8. Utilidades
 *   `src/utils/toast.ts`: Funções para exibir notificações de sucesso, erro e carregamento.
 *   `src/utils/supabaseDataExtraction.ts`: Função auxiliar para extrair valores de objetos Supabase aninhados.
 *   `src/utils/webhookFields.ts`: Definições de campos e funções para construir caminhos de seleção do Supabase e filtrar campos para exibição na UI.
 
-## 5. Edge Functions (Supabase)
+## 6. Edge Functions (Supabase)
 
 ### Função: `supabase/functions/store-ai-summary/index.ts`
-Função Edge para receber e armazenar o resumo de IA e texto extraído de documentos de dissídios.
+Função Edge para receber e armazenar o resumo de IA e texto extraído de documentos de dissídios na tabela `tbl_dissidios`.
 ```typescript
+/// <reference lib="deno.ns" />
+declare const Deno: any;
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -381,7 +362,7 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for server-side operations
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
     const updatePayload: { resumo_ai: string; url_documento?: string; texto_extraido?: string } = {
@@ -415,7 +396,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in store-ai-summary Edge Function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
@@ -433,8 +414,11 @@ Função Edge para receber a resposta da IA de um cálculo de rescisão e armaze
 }
 ```
 ```typescript
-/// <reference lib="deno.ns" />
+declare const Deno: any;
+
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
@@ -459,20 +443,19 @@ serve(async (req: Request) => {
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for server-side operations
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Atualiza diretamente a tabela tbl_calculos com a resposta da IA
-    const { data: _data, error } = await supabaseClient
+    const { error: updateCalculoError } = await supabaseClient
       .from('tbl_calculos')
       .update({
         resposta_ai: aiResponse,
       })
       .eq('id', calculationId);
 
-    if (error) {
-      console.error('Error updating calculation with AI response:', error);
-      return new Response(JSON.stringify({ error: 'Failed to update calculation with AI response', details: error.message }), {
+    if (updateCalculoError) {
+      console.error('Error updating calculation with AI response:', updateCalculoError);
+      return new Response(JSON.stringify({ error: 'Failed to update calculation with AI response', details: updateCalculoError.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
@@ -493,5 +476,36 @@ serve(async (req: Request) => {
 });
 ```
 
-## 6. Melhor Commit
-O commit mais relevante que encapsula as funcionalidades e correções mais recentes é o **commit 90**.
+## 7. Como o Sistema Funciona (Fluxo Geral)
+
+1.  **Autenticação**: Usuários fazem login ou se cadastram. Ao se cadastrar, um perfil básico é criado automaticamente.
+2.  **Gerenciamento de Clientes e Sindicatos**: Usuários podem cadastrar e gerenciar seus clientes e sindicatos relevantes.
+3.  **Criação de Cálculos**: Para cada funcionário de um cliente, o usuário insere os dados detalhados do contrato e da rescisão no formulário de cálculo.
+4.  **Envio para Webhook**: Após salvar um cálculo, o usuário pode enviá-lo para um ou mais webhooks configurados. O sistema coleta os campos selecionados e os envia para o endpoint externo.
+5.  **Processamento Externo (n8n/IA)**: Um serviço externo (como n8n) recebe os dados do cálculo, processa-os (ex: usando um agente de IA para gerar a resposta do cálculo) e envia a resposta de volta para a função Edge `store-calculation-result`.
+6.  **Armazenamento da Resposta**: A função Edge recebe a resposta da IA e a salva na coluna `resposta_ai` da tabela `tbl_calculos`. Se houver um documento PDF gerado externamente, sua URL e texto extraído podem ser salvos na `tbl_resposta_calculo`.
+7.  **Visualização e Download**: Na lista de cálculos, o status é atualizado. O usuário pode visualizar o resultado detalhado na página de resultados ou baixar a `resposta_ai` como TXT ou PDF diretamente do card do cálculo.
+
+## 8. Scripts NPM Essenciais
+
+*   `npm run dev`: Inicia o servidor de desenvolvimento.
+*   `npm run build`: Compila o projeto para produção.
+*   `npm run build:dev`: Compila o projeto em modo de desenvolvimento.
+*   `npm run lint`: Executa o linter para verificar problemas de código.
+*   `npm run preview`: Visualiza a build de produção localmente.
+
+## 9. Bibliotecas Chave
+
+*   `react`, `react-dom`: Core do React.
+*   `react-router-dom`: Gerenciamento de rotas.
+*   `@supabase/supabase-js`, `@supabase/auth-ui-react`, `@supabase/auth-ui-shared`: Integração com Supabase.
+*   `tailwindcss`, `tailwindcss-animate`, `clsx`, `tailwind-merge`: Estilização e utilitários de CSS.
+*   `lucide-react`: Ícones.
+*   `date-fns`: Manipulação de datas.
+*   `sonner`: Notificações toast.
+*   `jspdf`: Geração de documentos PDF no cliente.
+*   `next-themes`: Gerenciamento de temas (claro/escuro).
+*   `@radix-ui/*`: Componentes Radix UI (base para Shadcn/ui).
+*   `@hookform/resolvers`, `react-hook-form`, `zod`: Validação de formulários.
+
+Este `README.md` fornece uma visão completa do projeto, facilitando a compreensão e a manutenção.
