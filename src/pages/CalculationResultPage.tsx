@@ -177,32 +177,27 @@ const CalculationResultPage: React.FC = () => {
     const pdfPageHeight = pdf.internal.pageSize.getHeight();
 
     // Definir margens em mm
-    const contentMarginLeft = 15;
-    const contentMarginRight = 15;
-    const contentMarginTop = 10; // Margem entre o cabeçalho e o conteúdo da IA
-    const contentMarginBottom = 10;
+    const marginLeft = 15;
+    const marginRight = 15;
+    const marginTop = 15; // Margem superior para o cabeçalho
+    const marginBottom = 10; // Margem inferior
 
-    const mainHeaderHeight = 30; // Altura reservada para o cabeçalho principal (título, ID, data)
-    const continuationHeaderHeight = 10; // Altura reservada para o cabeçalho de continuação
-
-    // Área útil para o conteúdo da IA em cada página
-    const contentPrintableWidth = pdfPageWidth - contentMarginLeft - contentMarginRight;
-    const contentPrintableHeightForFirstPage = pdfPageHeight - mainHeaderHeight - contentMarginTop - contentMarginBottom;
-    const contentPrintableHeightForSubsequentPages = pdfPageHeight - continuationHeaderHeight - contentMarginTop - contentMarginBottom;
+    const headerContentHeight = 15; // Altura estimada para o cabeçalho (título, ID, data)
+    const contentStartY = marginTop + headerContentHeight; // Posição Y onde o conteúdo da imagem começa
 
     // Add main header on the first page
     pdf.setFontSize(16);
-    pdf.text('Relatório de Cálculo de Rescisão', pdfPageWidth / 2, 15, { align: 'center' });
+    pdf.text('Relatório de Cálculo de Rescisão', pdfPageWidth / 2, marginTop, { align: 'center' });
     pdf.setFontSize(10);
-    pdf.text(`ID Cálculo: ${calculation.id}`, pdfPageWidth / 2, 22, { align: 'center' });
-    pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, pdfPageWidth / 2, 27, { align: 'center' });
+    pdf.text(`ID Cálculo: ${calculation.id}`, pdfPageWidth / 2, marginTop + 7, { align: 'center' });
+    pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, pdfPageWidth / 2, marginTop + 12, { align: 'center' });
 
     // Dimensões da imagem capturada do canvas
     const imgCanvasWidth = canvas.width;
     const imgCanvasHeight = canvas.height;
 
     // Calcular as dimensões da imagem quando renderizada no PDF, mantendo a proporção
-    const imageRenderedWidth = contentPrintableWidth;
+    const imageRenderedWidth = pdfPageWidth - marginLeft - marginRight;
     const imageRenderedHeight = (imgCanvasHeight * imageRenderedWidth) / imgCanvasWidth;
 
     let currentImageSliceY = 0; // Posição Y dentro da imagem original do canvas para começar a fatiar (em pixels do canvas)
@@ -210,23 +205,29 @@ const CalculationResultPage: React.FC = () => {
     let pageNum = 0;
 
     while (remainingImageHeightPx > 0) {
-      const currentContentStartY = (pageNum === 0) ? (mainHeaderHeight + contentMarginTop) : (continuationHeaderHeight + contentMarginTop);
-      const currentPrintableHeight = (pageNum === 0) ? contentPrintableHeightForFirstPage : contentPrintableHeightForSubsequentPages;
+      const currentPrintableHeight = pdfPageHeight - contentStartY - marginBottom; // Altura útil para o conteúdo na página atual
 
-      // Calculate how much rendered image height fits on the current PDF page
+      // Calcular quanta altura da imagem renderizada cabe na página atual do PDF
       const pageContentHeightRendered = Math.min(
         remainingImageHeightPx * (imageRenderedHeight / imgCanvasHeight),
         currentPrintableHeight
       );
 
-      // Calculate the corresponding height in pixels from the original canvas image
+      // Calcular a altura correspondente em pixels da imagem original do canvas
       const pageContentHeightPx = (pageContentHeightRendered * imgCanvasHeight) / imageRenderedHeight;
+
+      if (pageNum > 0) {
+        pdf.addPage();
+        // Adicionar cabeçalho para páginas subsequentes
+        pdf.setFontSize(10);
+        pdf.text('Relatório de Cálculo de Rescisão (continuação)', pdfPageWidth / 2, marginTop, { align: 'center' });
+      }
 
       (pdf as any).addImage(
         imgData,
         'PNG',
-        contentMarginLeft, // x
-        currentContentStartY,  // y
+        marginLeft, // x
+        contentStartY,  // y
         imageRenderedWidth, // width
         pageContentHeightRendered, // height
         0, // sX (source X)
@@ -237,14 +238,7 @@ const CalculationResultPage: React.FC = () => {
 
       remainingImageHeightPx -= pageContentHeightPx;
       currentImageSliceY += pageContentHeightPx;
-
-      if (remainingImageHeightPx > 0) {
-        pdf.addPage();
-        pageNum++;
-        // Add continuation header for subsequent pages
-        pdf.setFontSize(10);
-        pdf.text('Relatório de Cálculo de Rescisão (continuação)', pdfPageWidth / 2, 10, { align: 'center' });
-      }
+      pageNum++;
     }
 
     pdf.save(filename);
