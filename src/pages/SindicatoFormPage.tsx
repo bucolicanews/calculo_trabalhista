@@ -173,7 +173,6 @@ const SindicatoFormPage = () => {
                       captionLayout="dropdown-buttons"
                       fromYear={1950}
                       toYear={new Date().getFullYear()}
-                      className="bg-gray-900 text-white"
                     />
                   </PopoverContent>
                 </Popover>
@@ -205,7 +204,6 @@ const SindicatoFormPage = () => {
                       captionLayout="dropdown-buttons"
                       fromYear={1950}
                       toYear={new Date().getFullYear()}
-                      className="bg-gray-900 text-white"
                     />
                   </PopoverContent>
                 </Popover>

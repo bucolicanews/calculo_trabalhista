@@ -49,7 +49,6 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
               captionLayout="dropdown-buttons"
               fromYear={1950}
               toYear={new Date().getFullYear()}
-              className="bg-gray-900 text-white"
             />
           </PopoverContent>
         </Popover>
@@ -80,7 +79,6 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
               captionLayout="dropdown-buttons"
               fromYear={1950}
               toYear={new Date().getFullYear()}
-              className="bg-gray-900 text-white"
             />
           </PopoverContent>
         </Popover>
