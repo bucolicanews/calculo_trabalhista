@@ -312,7 +312,11 @@ CREATE TRIGGER on_auth_user_created
     *   Exibe todos os cálculos de rescisão criados pelo usuário.
     *   Opções para "Novo Cálculo", "Editar", "Ver Resultado" e "Excluir" (com confirmação).
     *   **Envio para Webhook**: Um botão "Enviar" que abre um modal para selecionar um ou mais webhooks configurados (para `tbl_calculos` ou `all_tables`) antes de enviar os dados do cálculo.
-    *   **Status do Webhook**: Exibe o status do envio do webhook (enviando, aguardando resposta, concluído, tempo excedido, erro) com feedback visual (ícones e badges).
+    *   **Status do Webhook**: O status do cálculo é atualizado com base na `resposta_ai`.
+        *   `Enviando...`: Exibido enquanto o cálculo está sendo enviado para o(s) webhook(s).
+        *   `Aguardando Resposta...`: Exibido após o envio, durante o período de espera pela resposta da IA.
+        *   `Concluído`: Exibido quando a `resposta_ai` é recebida e salva no banco de dados.
+        *   Um botão "Processar" é exibido se o cálculo não estiver concluído e não estiver em processo de envio/espera, permitindo ao usuário recarregar a página para verificar o status.
     *   **Download da Resposta da IA**: Botões para baixar a `resposta_ai` como arquivo TXT ou PDF (usando `jspdf`), visíveis quando a resposta estiver disponível.
 *   **Formulário de Cálculo (`/calculations/new` ou `/calculations/:id`)**: Permite criar ou editar um cálculo. Inclui campos para Cliente (dropdown), Sindicato (dropdown), detalhes do Funcionário (Nome, CPF, Função, Carga Horária), datas de Início/Fim do Contrato, Tipo de Rescisão (dropdown), Salário Sindicato, Salário do Trabalhador, Observações Sindicato, Histórico do Contrato, CTPS Assinada (checkbox) e Médias de Descontos/Remunerações.
 *   **Página de Resultado do Cálculo (`/calculations/:id/result`)**: Exibe os detalhes do cálculo e a resposta gerada pelo webhook. A `resposta_ai` é buscada diretamente de `tbl_calculos`. Outros detalhes como `url_documento_calculo` e `texto_extraido` são buscados de `tbl_resposta_calculo`. Inclui um botão para download do PDF, se disponível.
@@ -483,8 +487,8 @@ serve(async (req: Request) => {
 3.  **Criação de Cálculos**: Para cada funcionário de um cliente, o usuário insere os dados detalhados do contrato e da rescisão no formulário de cálculo.
 4.  **Envio para Webhook**: Após salvar um cálculo, o usuário pode enviá-lo para um ou mais webhooks configurados. O sistema coleta os campos selecionados e os envia para o endpoint externo.
 5.  **Processamento Externo (n8n/IA)**: Um serviço externo (como n8n) recebe os dados do cálculo, processa-os (ex: usando um agente de IA para gerar a resposta do cálculo) e envia a resposta de volta para a função Edge `store-calculation-result`.
-6.  **Armazenamento da Resposta**: A função Edge recebe a resposta da IA e a salva na coluna `resposta_ai` da tabela `tbl_calculos`. Se houver um documento PDF gerado externamente, sua URL e texto extraído podem ser salvos na `tbl_resposta_calculo`.
-7.  **Visualização e Download**: Na lista de cálculos, o status é atualizado. O usuário pode visualizar o resultado detalhado na página de resultados ou baixar a `resposta_ai` como TXT ou PDF diretamente do card do cálculo.
+6.  **Armazenamento da Resposta**: A função Edge recebe a resposta da IA e a salva na coluna `resposta_ai` da tabela `tbl_calculos`.
+7.  **Visualização e Download**: Na lista de cálculos, o status é atualizado automaticamente após 1 minuto (com um refresh da página) ou manualmente através do botão "Processar". O usuário pode visualizar o resultado detalhado na página de resultados ou baixar a `resposta_ai` como TXT ou PDF diretamente do card do cálculo.
 
 ## 8. Scripts NPM Essenciais
 
