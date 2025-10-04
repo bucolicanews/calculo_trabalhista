@@ -12,8 +12,8 @@ import { ptBR } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { parseMarkdownTables, convertToCsv, ParsedTable } from '@/utils/markdownParser';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+
+import html2pdf from 'html2pdf.js';
 
 interface CalculationDetails {
   id: string;
@@ -60,6 +60,19 @@ interface CalculationDetails {
     data_hora: string;
   } | null;
 }
+
+// Helper para extrair texto de children de forma robusta
+const getTextFromChildren = (children: React.ReactNode): string => {
+  return React.Children.toArray(children).map(child => {
+    if (typeof child === 'string') {
+      return child;
+    }
+    if (React.isValidElement(child) && child.props.children) {
+      return getTextFromChildren(child.props.children);
+    }
+    return '';
+  }).join('');
+};
 
 const CalculationResultPage: React.FC = () => {
   const { user } = useAuth();
@@ -139,7 +152,7 @@ const CalculationResultPage: React.FC = () => {
     showSuccess('Gerando PDF, aguarde...');
     const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
 
-    // 2. Ocultar botões e ajustar estilos para captura
+    // Ocultar botões e ajustar estilos para captura
     const buttonsContainer = element.querySelector('.flex.flex-wrap.gap-2.mt-4') as HTMLElement;
     const originalButtonsDisplay = buttonsContainer ? buttonsContainer.style.display : '';
     if (buttonsContainer) {
@@ -156,14 +169,35 @@ const CalculationResultPage: React.FC = () => {
     element.style.backgroundColor = 'white'; // Garante fundo branco para a captura
     element.style.color = 'black'; // Garante texto preto para a captura
 
-    // Capturar o conteúdo do div
-    const canvas = await html2canvas(element, {
-      scale: 2, // Aumenta a escala para melhor qualidade
-      useCORS: true,
-      backgroundColor: 'white', // Garante que o fundo do canvas seja branco
-    });
+    // Define as opções para html2pdf
+    const opt = {
+      margin: [35, 10, 10, 10] as [number, number, number, number], // Top, Right, Bottom, Left - Aumenta a margem superior para o cabeçalho
+      filename: filename,
+      image: { type: 'jpeg' as const, quality: 0.98 }, 
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: 'white' }, // Garante fundo branco para o canvas
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'p' as const }, // Corrigido: Usando 'as const' para tipo literal
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
 
-    // Restaurar estilos originais
+    // Gera o PDF e obtém a instância do jsPDF para adicionar o cabeçalho
+    const pdfGenerator = html2pdf().set(opt).from(element);
+    const pdf = await pdfGenerator.output('jspdf'); // Obtém a instância do jsPDF
+
+    // Adicionar cabeçalho a cada página
+    const pageCount = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(16);
+      pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
+      pdf.setFontSize(10);
+      pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
+      pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
+    }
+
+    // Salva o PDF
+    pdf.save(filename);
+
+    // Restaurar estilos originais e exibição dos botões
     element.classList.value = originalClassList;
     element.style.backgroundColor = originalBackgroundColor;
     element.style.color = originalColor;
@@ -171,35 +205,6 @@ const CalculationResultPage: React.FC = () => {
       buttonsContainer.style.display = originalButtonsDisplay;
     }
 
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210; // Largura A4 em mm
-    const pageHeight = 297; // Altura A4 em mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    // 1. Adicionar mensagem (cabeçalho)
-    pdf.setFontSize(16);
-    pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
-    pdf.setFontSize(10);
-    pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
-    pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
-
-    // Iniciar a imagem após o cabeçalho
-    let currentY = 35;
-
-    pdf.addImage(imgData, 'PNG', 0, currentY, imgWidth, imgHeight);
-    heightLeft -= (pageHeight - currentY); // Altura restante após a primeira página
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight; // Calcular a posição para o próximo segmento
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    pdf.save(filename);
     showSuccess('Download do PDF iniciado!');
   };
 
@@ -219,6 +224,47 @@ const CalculationResultPage: React.FC = () => {
     } else {
       showError('Nenhuma resposta da IA disponível para download em TXT.');
     }
+  };
+
+  // Custom components for ReactMarkdown rendering
+  const components = {
+    h2: ({ children }: { children?: React.ReactNode }) => {
+      const text = getTextFromChildren(children);
+
+      if (text.includes('DADOS DA RESCISÃO')) {
+        return null; // Remove "DADOS DA RESCISÃO"
+      }
+      if (text.includes('RESUMO FINANCEIRO')) {
+        return null; // Remove "RESUMO FINANCEIRO"
+      }
+      if (text.includes('VALOR LÍQUIDO A RECEBER')) {
+        return (
+          <h2 className="text-2xl font-bold text-orange-500 mt-6 mb-4 text-center p-4 border border-orange-500 rounded-md">
+            {children}
+          </h2>
+        );
+      }
+      if (text.includes('OBSERVAÇÕES E BASE LEGAL')) {
+        return (
+          <h2 className="text-2xl font-bold text-white bg-black py-2 mt-8 mb-4 text-center rounded-md">
+            {children}
+          </h2>
+        );
+      }
+      return <h2 className="text-2xl font-bold text-orange-500 mb-4">{children}</h2>;
+    },
+    h3: ({ children }: { children?: React.ReactNode }) => {
+      const text = getTextFromChildren(children);
+
+      if (text.includes('PROVENTOS') || text.includes('DESCONTOS')) {
+        return (
+          <h3 className="text-xl font-semibold text-white bg-black py-2 my-2 text-center rounded-md">
+            {children}
+          </h3>
+        );
+      }
+      return <h3 className="text-xl font-semibold text-orange-400 mb-2">{children}</h3>;
+    },
   };
 
   if (loading) {
@@ -291,7 +337,7 @@ const CalculationResultPage: React.FC = () => {
               {calculation.resposta_ai && (
                 <div ref={markdownRef} className="prose prose-invert max-w-none">
                   <h3 className="text-lg font-semibold text-orange-400 mb-2">Resposta da IA:</h3>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
                     {calculation.resposta_ai}
                   </ReactMarkdown>
                   <div className="flex flex-wrap gap-2 mt-4">
