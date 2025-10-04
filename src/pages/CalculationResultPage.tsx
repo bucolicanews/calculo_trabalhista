@@ -183,32 +183,36 @@ const CalculationResultPage: React.FC = () => {
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
-    // Gera o PDF e obtém a instância do jsPDF para adicionar o cabeçalho
-    const pdf = await html2pdf().set(opt).from(element).toPdf(); // Usando toPdf() para obter a instância do jsPDF
+    try {
+      // Gera o PDF e obtém a instância do jsPDF para adicionar o cabeçalho
+      const pdf = await html2pdf().set(opt).from(element).toPdf(); // Usando toPdf() para obter a instância do jsPDF
 
-    // Adicionar cabeçalho a cada página
-    const pageCount = pdf.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      pdf.setPage(i);
-      pdf.setFontSize(16);
-      pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
-      pdf.setFontSize(10);
-      pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
-      pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
+      // Adicionar cabeçalho a cada página
+      const pageCount = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(16);
+        pdf.text('Relatório de Cálculo de Rescisão', 105, 15, { align: 'center' });
+        pdf.setFontSize(10);
+        pdf.text(`ID Cálculo: ${calculation.id}`, 105, 22, { align: 'center' });
+        pdf.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 105, 27, { align: 'center' });
+      }
+
+      // Salva o PDF
+      pdf.save(filename);
+      showSuccess('Download do PDF iniciado!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      showError('Falha ao gerar PDF. Verifique o console para mais detalhes.');
+    } finally {
+      // Restaurar estilos originais e exibição dos botões
+      element.classList.value = originalClassList;
+      element.style.backgroundColor = originalBackgroundColor;
+      element.style.color = originalColor;
+      if (buttonsContainer) {
+        buttonsContainer.style.display = originalButtonsDisplay;
+      }
     }
-
-    // Salva o PDF
-    pdf.save(filename);
-
-    // Restaurar estilos originais e exibição dos botões
-    element.classList.value = originalClassList;
-    element.style.backgroundColor = originalBackgroundColor;
-    element.style.color = originalColor;
-    if (buttonsContainer) {
-      buttonsContainer.style.display = originalButtonsDisplay;
-    }
-
-    showSuccess('Download do PDF iniciado!');
   };
 
   const handleDownloadAiResponseAsTxt = (aiResponse: string) => {
@@ -246,9 +250,9 @@ const CalculationResultPage: React.FC = () => {
         );
       }
       if (text.includes('VALOR LÍQUIDO A RECEBER')) {
-        // Alinhado à direita e laranja
+        // Alinhado à direita e laranja, com largura total
         return (
-          <h2 className="text-2xl font-bold text-orange-500 mt-6 mb-4 text-right p-4 border border-orange-500 rounded-md">
+          <h2 className="w-full text-2xl font-bold text-orange-500 mt-6 mb-4 text-right p-4 border border-orange-500 rounded-md">
             {children}
           </h2>
         );
@@ -280,9 +284,9 @@ const CalculationResultPage: React.FC = () => {
       // Regex para detectar valores monetários no formato R$ X.XXX,XX
       const monetaryRegex = /R\$\s\d{1,3}(?:\.\d{3})*,\d{2}/;
       if (monetaryRegex.test(text)) {
-        // Alinhado à direita e laranja
+        // Alinhado à direita e laranja, com largura total
         return (
-          <p className="text-4xl font-extrabold text-orange-500 text-right my-4 p-2 bg-gray-800 rounded-md">
+          <p className="w-full text-4xl font-extrabold text-orange-500 text-right my-4 p-2 bg-gray-800 rounded-md">
             {children}
           </p>
         );
