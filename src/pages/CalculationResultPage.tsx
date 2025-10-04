@@ -1,17 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { showError, showSuccess } from '@/utils/toast'; // Adicionado showSuccess aqui
+import { showError, showSuccess } from '@/utils/toast';
 import { ArrowLeft, FileText, Download, Table } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { parseMarkdownTables, convertToCsv, ParsedTable } from '@/utils/markdownParser';
+import jsPDF from 'jspdf'; // Importar jspdf
+import html2canvas from 'html2canvas'; // Importar html2canvas
 
 interface CalculationDetails {
   id: string;
@@ -65,7 +67,8 @@ const CalculationResultPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [parsedTables, setParsedTables] = useState<ParsedTable[]>([]); // Novo estado para tabelas parseadas
+  const [parsedTables, setParsedTables] = useState<ParsedTable[]>([]);
+  const markdownRef = useRef<HTMLDivElement>(null); // Ref para o div que contém o ReactMarkdown
 
   useEffect(() => {
     if (user && id) {
@@ -123,6 +126,60 @@ const CalculationResultPage: React.FC = () => {
       showSuccess('Download da planilha CSV iniciado!');
     } else {
       showError('Nenhuma tabela encontrada na resposta da IA para download em CSV.');
+    }
+  };
+
+  const handleDownloadAiResponseAsPdf = async () => {
+    if (markdownRef.current && calculation?.resposta_ai) {
+      showSuccess('Gerando PDF, aguarde...');
+      const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
+
+      // Use html2canvas para renderizar o conteúdo do div para um canvas
+      const canvas = await html2canvas(markdownRef.current, {
+        scale: 2, // Aumenta a escala para melhor qualidade
+        useCORS: true, // Importante se houver imagens de outras origens
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210; // Largura A4 em mm
+      const pageHeight = 297; // Altura A4 em mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(filename);
+      showSuccess('Download do PDF iniciado!');
+    } else {
+      showError('Nenhuma resposta da IA disponível ou conteúdo não renderizado para PDF.');
+    }
+  };
+
+  const handleDownloadAiResponseAsTxt = (aiResponse: string) => {
+    if (aiResponse) {
+      const filename = `calculo_${calculation?.nome_funcionario.replace(/\s/g, '_')}_${calculation?.id.substring(0, 8)}.txt`;
+      const blob = new Blob([aiResponse], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess('Download da resposta da IA (TXT) iniciado!');
+    } else {
+      showError('Nenhuma resposta da IA disponível para download em TXT.');
     }
   };
 
@@ -194,19 +251,33 @@ const CalculationResultPage: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4 text-gray-300">
               {calculation.resposta_ai && (
-                <div className="prose prose-invert max-w-none">
+                <div ref={markdownRef} className="prose prose-invert max-w-none">
                   <h3 className="text-lg font-semibold text-orange-400 mb-2">Resposta da IA:</h3>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {calculation.resposta_ai}
                   </ReactMarkdown>
-                  {parsedTables.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {parsedTables.length > 0 && (
+                      <Button
+                        onClick={handleDownloadCsv}
+                        className="bg-green-600 hover:bg-green-700 text-white flex items-center"
+                      >
+                        <Table className="h-4 w-4 mr-2" /> Baixar Planilha (CSV)
+                      </Button>
+                    )}
                     <Button
-                      onClick={handleDownloadCsv}
-                      className="mt-4 bg-green-600 hover:bg-green-700 text-white flex items-center"
+                      onClick={handleDownloadAiResponseAsPdf}
+                      className="bg-purple-600 hover:bg-purple-700 text-white flex items-center"
                     >
-                      <Table className="h-4 w-4 mr-2" /> Baixar Planilha (CSV)
+                      <Download className="h-4 w-4 mr-2" /> Baixar PDF
                     </Button>
-                  )}
+                    <Button
+                      onClick={() => handleDownloadAiResponseAsTxt(calculation.resposta_ai || '')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white flex items-center"
+                    >
+                      <FileText className="h-4 w-4 mr-2" /> Baixar TXT
+                    </Button>
+                  </div>
                 </div>
               )}
               {otherResultDetails?.texto_extraido && (
