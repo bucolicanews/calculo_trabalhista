@@ -1,453 +1,266 @@
-# Especificação de Projeto: App de Rescisão Trabalhista (Calculadora Jurídica)
+# Calculadora Trabalhista (Labor Calculator)
 
-## 1. Apresentação do Sistema
-Este aplicativo web, denominado "Calculadora Jurídica", foi desenvolvido para auxiliar advogados, contadores e outros profissionais do direito a gerenciar clientes e realizar cálculos de rescisões trabalhistas de forma eficiente. Ele oferece uma interface intuitiva para inserção de dados detalhados de funcionários e contratos, integração com sistemas externos via webhooks e a capacidade de gerar resumos de cálculos em formatos TXT, PDF e CSV.
+This project is a labor calculation application designed to assist with various labor-related calculations. It integrates with Supabase for backend services (database, authentication) and uses n8n for workflow automation, specifically for processing calculation requests via webhooks and potentially interacting with AI models.
 
-## 2. Objetivo Geral
-Criar um aplicativo web robusto e seguro utilizando React e Supabase, permitindo que usuários autenticados gerenciem clientes, sindicatos e insiram dados detalhados para o cálculo de rescisões trabalhistas. O sistema foca na coleta de dados estruturada, persistência segura e integração flexível com lógicas de cálculo externas (via webhooks) e geração de documentos.
+## Table of Contents
 
-## 3. Tecnologias & Arquitetura
-*   **Frontend**: React (com componentes funcionais e hooks).
-*   **Estilização**: Tailwind CSS (para design responsivo e ágil) e Shadcn/ui (componentes pré-construídos).
-*   **Banco de Dados & Autenticação**: Supabase (PostgreSQL para dados, Auth para gerenciamento de usuários, Storage para arquivos).
-*   **Geração de PDF**: `jspdf` e `html2canvas` (para gerar documentos PDF no lado do cliente com base na renderização HTML).
-*   **Roteamento**: React Router DOM.
-*   **Gerenciamento de Estado**: Context API (para autenticação).
-*   **Cores Principais**: Preto (`#000000`) e Laranja Vibrante (`#FF4500` ou similar).
+1.  [Project Overview](#project-overview)
+2.  [Deployment Guide](#deployment-guide)
+    *   [Prerequisites](#prerequisites)
+    *   [Supabase Setup](#supabase-setup)
+        *   [Database Schema](#database-schema)
+        *   [Relationships](#relationships)
+        *   [Authentication](#authentication)
+        *   [Row Level Security (RLS)](#row-level-security-rls)
+    *   [n8n Workflow](#n8n-workflow)
+    *   [Edge Functions](#edge-functions)
+    *   [Frontend Deployment](#frontend-deployment)
+    *   [Environment Variables](#environment-variables)
+3.  [Local Development](#local-development)
+4.  [Contributing](#contributing)
+5.  [License](#license)
 
-## 4. Estrutura do Banco de Dados (Supabase Schema)
-O banco de dados é modelado com as seguintes tabelas e relacionamentos. Todas as tabelas incluem a coluna padrão `created_at` (TIMESTAMP WITH TIME ZONE DEFAULT NOW()) e possuem Row Level Security (RLS) habilitada para garantir a segurança dos dados.
+---
 
-### Tabela: `public.profiles`
-Função: Armazenar informações de perfil do usuário.
+## 1. Project Overview
+
+This application provides a user interface for inputting labor calculation parameters. It leverages a Supabase backend for data storage and user management. Complex calculations or integrations (e.g., with AI services) are handled by an n8n workflow, which receives data via webhooks. The results from the n8n workflow are then stored back into Supabase and displayed in the frontend.
+
+## 2. Deployment Guide
+
+To deploy this application, you will need to set up Supabase, deploy the n8n workflow, and deploy the frontend application.
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+*   **Node.js** (LTS version recommended)
+*   **npm** or **Yarn**
+*   **Supabase CLI**: `npm install -g supabase`
+*   **Vercel CLI** (if deploying frontend to Vercel): `npm install -g vercel`
+*   **n8n instance**: A running instance of n8n (self-hosted or cloud) where you can import and run workflows.
+
+### Supabase Setup
+
+This application relies heavily on Supabase for its backend. You'll need to create a new Supabase project and configure its database schema, authentication, and Row Level Security.
+
+#### Database Schema
+
+Below are the inferred table schemas based on the application's data fetching and usage. You should create these tables in your Supabase project.
+
+**`tbl_clientes`**
+Stores information about clients.
 ```sql
--- Create profiles table
-CREATE TABLE public.profiles (
-  id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  first_name TEXT,
-  last_name TEXT,
-  avatar_url TEXT,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  PRIMARY KEY (id)
+CREATE TABLE public.tbl_clientes (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome text NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
 );
-
--- Enable RLS (REQUIRED for security)
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
--- Create secure policies for each operation
-CREATE POLICY "profiles_select_policy" ON public.profiles
-FOR SELECT TO authenticated USING (auth.uid() = id);
-
-CREATE POLICY "profiles_insert_policy" ON public.profiles
-FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "profiles_update_policy" ON public.profiles
-FOR UPDATE TO authenticated USING (auth.uid() = id);
-
-CREATE POLICY "profiles_delete_policy" ON public.profiles
-FOR DELETE TO authenticated USING (auth.uid() = id);
 ```
 
-### Tabela: `tbl_clientes`
-Função: Armazenar informações do empregador/cliente que está solicitando o cálculo.
+**`tbl_sindicatos`**
+Stores information about labor unions.
 ```sql
--- Create table
-CREATE TABLE tbl_clientes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  nome TEXT NOT NULL,
-  cpf TEXT,
-  cnpj TEXT,
-  tipo_empregador TEXT NOT NULL,
-  responsavel TEXT,
-  cpf_responsavel TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.tbl_sindicatos (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome text NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
 );
-
--- Enable RLS (REQUIRED)
-ALTER TABLE tbl_clientes ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for tbl_clientes
-CREATE POLICY "Clientes podem ver apenas seus próprios clientes" ON tbl_clientes
-FOR SELECT TO authenticated USING (auth.uid() = user_id);
-
-CREATE POLICY "Clientes podem inserir seus próprios clientes" ON tbl_clientes
-FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Clientes podem atualizar seus próprios clientes" ON tbl_clientes
-FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-
-CREATE POLICY "Clientes podem deletar seus próprios clientes" ON tbl_clientes
-FOR DELETE TO authenticated USING (auth.uid() = user_id);
 ```
 
-### Tabela: `tbl_sindicatos`
-Função: Armazenar informações sindicais que podem afetar o cálculo.
+**`tbl_ai_prompt_templates`**
+Stores templates for AI prompts used in calculations.
 ```sql
--- Create table
-CREATE TABLE tbl_sindicatos (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  nome TEXT NOT NULL,
-  data_inicial DATE,
-  data_final DATE,
-  mes_convencao TEXT,
-  url_documento_sindicato TEXT,
-  resumo_dissidio TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.tbl_ai_prompt_templates (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title text NOT NULL,
+    identificacao text,
+    comportamento text,
+    restricoes text,
+    atribuicoes text,
+    leis text,
+    proventos text,
+    descontos text,
+    observacoes_base_legal text,
+    formatacao_texto_cabecalho text,
+    formatacao_texto_corpo text,
+    formatacao_texto_rodape text,
+    created_at timestamp with time zone DEFAULT now()
 );
-
--- Enable RLS (REQUIRED)
-ALTER TABLE tbl_sindicatos ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for tbl_sindicatos
-CREATE POLICY "Sindicatos podem ser lidos por autenticados" ON tbl_sindicatos
-FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "Sindicatos podem ser inseridos por autenticados" ON tbl_sindicatos
-FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Sindicatos podem ser atualizados por autenticados" ON tbl_sindicatos
-FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Sindicatos podem ser deletados por autenticados" ON tbl_sindicatos
-FOR DELETE TO authenticated USING (auth.uid() IS NOT NULL);
 ```
 
-### Tabela: `tbl_ai_prompt_templates`
-Função: Armazenar modelos de prompt de IA personalizados por usuário.
+**`tbl_calculos`**
+The main table storing details of each labor calculation.
 ```sql
--- Create table
-CREATE TABLE tbl_ai_prompt_templates (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  title TEXT NOT NULL,
-  identificacao TEXT,
-  comportamento TEXT,
-  restricoes TEXT,
-  atribuicoes TEXT,
-  leis TEXT,
-  proventos TEXT,
-  descontos TEXT,
-  observacoes_base_legal TEXT,
-  formatacao_texto_cabecalho TEXT,
-  formatacao_texto_corpo TEXT,
-  formatacao_texto_rodape TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.tbl_calculos (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    cliente_id uuid REFERENCES public.tbl_clientes(id),
+    sindicato_id uuid REFERENCES public.tbl_sindicatos(id),
+    ai_template_id uuid REFERENCES public.tbl_ai_prompt_templates(id),
+    nome_funcionario text NOT NULL,
+    cpf_funcionario text,
+    funcao_funcionario text,
+    inicio_contrato date NOT NULL,
+    fim_contrato date NOT NULL,
+    tipo_aviso text NOT NULL,
+    salario_sindicato numeric,
+    salario_trabalhador numeric NOT NULL,
+    obs_sindicato text,
+    historia text,
+    ctps_assinada boolean DEFAULT FALSE,
+    media_descontos numeric,
+    media_remuneracoes numeric,
+    carga_horaria text,
+    created_at timestamp with time zone DEFAULT now(),
+    resposta_ai text -- Stores the AI's markdown response directly
 );
-
--- Enable RLS (REQUIRED)
-ALTER TABLE tbl_ai_prompt_templates ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for tbl_ai_prompt_templates
-CREATE POLICY "Users can only see their own AI prompt templates" ON tbl_ai_prompt_templates
-FOR SELECT TO authenticated USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can only insert their own AI prompt templates" ON tbl_ai_prompt_templates
-FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can only update their own AI prompt templates" ON tbl_ai_prompt_templates
-FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can only delete their own AI prompt templates" ON tbl_ai_prompt_templates
-FOR DELETE TO authenticated USING (auth.uid() = user_id);
 ```
 
-### Tabela: `tbl_calculos`
-Função: Armazenar os dados específicos de um cálculo de rescisão de um funcionário, incluindo a resposta da IA e a referência ao modelo de prompt utilizado.
+**`tbl_resposta_calculo`**
+Stores additional details or documents related to the calculation response, often from a webhook.
 ```sql
--- Create table
-CREATE TABLE tbl_calculos (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  cliente_id UUID REFERENCES tbl_clientes(id) ON DELETE CASCADE NOT NULL,
-  sindicato_id UUID REFERENCES tbl_sindicatos(id) ON DELETE SET NULL,
-  nome_funcionario TEXT NOT NULL,
-  cpf_funcionario TEXT,
-  funcao_funcionario TEXT,
-  inicio_contrato DATE NOT NULL,
-  fim_contrato DATE NOT NULL,
-  tipo_aviso TEXT NOT NULL,
-  salario_sindicato NUMERIC DEFAULT 0,
-  salario_trabalhador NUMERIC DEFAULT 0,
-  obs_sindicato TEXT,
-  historia TEXT,
-  ctps_assinada BOOLEAN DEFAULT FALSE,
-  media_descontos NUMERIC DEFAULT 0,
-  media_remuneracoes NUMERIC DEFAULT 0,
-  carga_horaria TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  resposta_ai TEXT,
-  ai_template_id UUID REFERENCES tbl_ai_prompt_templates(id) ON DELETE SET NULL
+CREATE TABLE public.tbl_resposta_calculo (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    calculo_id uuid REFERENCES public.tbl_calculos(id) ON DELETE CASCADE, -- Link to tbl_calculos
+    url_documento_calculo text,
+    texto_extraido text,
+    data_hora timestamp with time zone DEFAULT now(),
+    created_at timestamp with time zone DEFAULT now()
 );
-
--- Enable RLS (REQUIRED)
-ALTER TABLE tbl_calculos ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for tbl_calculos
-CREATE POLICY "Calculos podem ser vistos apenas pelos donos dos clientes" ON tbl_calculos
-FOR SELECT TO authenticated USING (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid()))));
-
-CREATE POLICY "Calculos podem ser inseridos apenas pelos donos dos clientes" ON tbl_calculos
-FOR INSERT TO authenticated WITH CHECK (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid()))));
-
-CREATE POLICY "Calculos podem ser atualizados apenas pelos donos dos clientes" ON tbl_calculos
-FOR UPDATE TO authenticated USING (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid()))));
-
-CREATE POLICY "Calculos podem ser deletados apenas pelos donos dos clientes" ON tbl_calculos
-FOR DELETE TO authenticated USING (EXISTS ( SELECT 1 FROM tbl_clientes WHERE ((tbl_clientes.id = tbl_calculos.cliente_id) AND (tbl_clientes.user_id = auth.uid()))));
 ```
 
-### Tabela: `tbl_resposta_calculo`
-Função: Armazenar detalhes adicionais da resposta gerada pela lógica de cálculo ou por um modelo de IA, como URLs de documentos PDF e texto extraído. A resposta principal da IA (`resposta_ai`) é armazenada diretamente em `tbl_calculos`.
+#### Relationships
+
+Ensure the foreign key relationships are correctly established as indicated in the `CREATE TABLE` statements above:
+
+*   `tbl_calculos.cliente_id` references `tbl_clientes.id`
+*   `tbl_calculos.sindicato_id` references `tbl_sindicatos.id`
+*   `tbl_calculos.ai_template_id` references `tbl_ai_prompt_templates.id`
+*   `tbl_resposta_calculo.calculo_id` references `tbl_calculos.id` (with `ON DELETE CASCADE` for data integrity)
+
+#### Authentication
+
+Configure Supabase Auth for user management. The application currently uses email/password authentication.
+
+1.  Go to **Authentication** in your Supabase project.
+2.  Enable **Email** provider.
+3.  Configure any desired email templates or settings.
+
+#### Row Level Security (RLS)
+
+It is highly recommended to enable and configure RLS for all tables containing sensitive user data to ensure data privacy and security. For example, you might want to ensure users can only view/edit their own calculations.
+
+**Example RLS Policy for `tbl_calculos` (adjust as needed):**
+
 ```sql
--- Create table
-CREATE TABLE tbl_resposta_calculo (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  calculo_id UUID REFERENCES tbl_calculos(id) ON DELETE CASCADE NOT NULL,
-  data_hora TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  url_documento_calculo TEXT,
-  texto_extraido TEXT
-);
+-- Enable RLS on tbl_calculos
+ALTER TABLE public.tbl_calculos ENABLE ROW LEVEL SECURITY;
 
--- Enable RLS (REQUIRED)
-ALTER TABLE tbl_resposta_calculo ENABLE ROW LEVEL SECURITY;
+-- Policy for authenticated users to view their own calculations
+CREATE POLICY "Users can view their own calculations" ON public.tbl_calculos
+  FOR SELECT USING (auth.uid() = (SELECT id FROM auth.users WHERE id = auth.uid()));
 
--- Adicionar restrição UNIQUE para permitir UPSERTs na função Edge
-ALTER TABLE public.tbl_resposta_calculo
-ADD CONSTRAINT unique_calculo_id UNIQUE (calculo_id);
+-- Policy for authenticated users to insert their own calculations
+CREATE POLICY "Users can insert their own calculations" ON public.tbl_calculos
+  FOR INSERT WITH CHECK (auth.uid() = (SELECT id FROM auth.users WHERE id = auth.uid()));
 
--- RLS Policies for tbl_resposta_calculo
-CREATE POLICY "Respostas de calculo podem ser vistas apenas pelos donos dos ca" ON tbl_resposta_calculo
-FOR SELECT TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_resposta_calculo.calculo_id) AND (cl.user_id = auth.uid()))));
+-- Policy for authenticated users to update their own calculations
+CREATE POLICY "Users can update their own calculations" ON public.tbl_calculos
+  FOR UPDATE USING (auth.uid() = (SELECT id FROM auth.users WHERE id = auth.uid()));
 
-CREATE POLICY "Respostas de calculo podem ser inseridas apenas pelos donos dos" ON tbl_resposta_calculo
-FOR INSERT TO authenticated WITH CHECK (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_resposta_calculo.calculo_id) AND (cl.user_id = auth.uid()))));
+-- Policy for authenticated users to delete their own calculations
+CREATE POLICY "Users can delete their own calculations" ON public.tbl_calculos
+  FOR DELETE USING (auth.uid() = (SELECT id FROM auth.users WHERE id = auth.uid()));
+```
+**Note**: The RLS policies above are examples. You will need to adapt them based on how `auth.uid()` is linked to your `tbl_calculos` table (e.g., if `tbl_calculos` has a `user_id` column). If `tbl_calculos` does not directly store `auth.uid()`, you'll need to adjust the `USING` and `WITH CHECK` clauses accordingly. For this application, it's assumed that `tbl_calculos` might implicitly be tied to the user who created it, or a `user_id` column would be added.
 
-CREATE POLICY "Respostas de calculo podem ser atualizadas apenas pelos donos d" ON tbl_resposta_calculo
-FOR UPDATE TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_resposta_calculo.calculo_id) AND (cl.user_id = auth.uid()))));
+### n8n Workflow
 
-CREATE POLICY "Respostas de calculo podem ser deletadas apenas pelos donos dos" ON tbl_resposta_calculo
-FOR DELETE TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_resposta_calculo.calculo_id) AND (cl.user_id = auth.uid()))));
+The application uses an n8n workflow for processing calculation requests.
+
+**Workflow File:** `src/n8n/calculo_trabalhista_n8n.json`
+
+**Steps to Deploy the n8n Workflow:**
+
+1.  **Import**: In your n8n instance, go to "Workflows" and click "New" -> "Import from JSON". Upload the `calculo_trabalhista_n8n.json` file.
+2.  **Configure Webhook**: The workflow will likely start with a "Webhook" trigger. After importing, activate the workflow to get its unique webhook URL. This URL will be used in your frontend environment variables.
+3.  **Environment Variables/Credentials in n8n**: The n8n workflow will likely require credentials or environment variables for:
+    *   **Supabase Integration**: API URL and Service Role Key for writing data back to Supabase.
+    *   **AI Service Integration**: API keys for any AI models (e.g., OpenAI, Gemini) if the workflow interacts with them.
+    *   **Other Services**: Any other third-party services the workflow connects to.
+    *   **Important**: Ensure your Supabase Service Role Key is kept secure and only used within trusted backend environments like n8n. Do not expose it in your frontend.
+4.  **Activate**: Once configured, activate the n8n workflow.
+
+### Edge Functions
+
+Based on the current application structure, there are no explicit Supabase Edge Functions defined or used in the provided code snippets. If your project requires server-side logic that runs close to your users, you would typically define and deploy them using the Supabase CLI.
+
+**Example of deploying an Edge Function (if you were to add one):**
+
+```bash
+# Create a new Edge Function
+supabase functions new my-function
+
+# Deploy the Edge Function
+supabase functions deploy my-function --no-verify-jwt
+```
+*(Note: `--no-verify-jwt` is often used for functions called by webhooks or other services where JWT verification is handled differently or not required for the specific use case. Always consider security implications.)*
+
+### Frontend Deployment
+
+The frontend is a React application. It can be deployed to platforms like Vercel, Netlify, or any static site hosting service.
+
+**Steps for Vercel Deployment (Recommended):**
+
+1.  **Install Vercel CLI**: `npm install -g vercel`
+2.  **Login**: `vercel login`
+3.  **Deploy**: Navigate to your project root and run `vercel`. Follow the prompts.
+4.  **Configure Environment Variables**: After deployment, go to your Vercel project settings and add the necessary [Environment Variables](#environment-variables).
+
+### Environment Variables
+
+You will need to set the following environment variables for your frontend application. These should be configured in your hosting provider (e.g., Vercel project settings) and in your local `.env.local` file for development.
+
+*   **`VITE_SUPABASE_URL`**: Your Supabase project URL (e.g., `https://your-project-ref.supabase.co`).
+*   **`VITE_SUPABASE_ANON_KEY`**: Your Supabase public `anon` key.
+*   **`VITE_N8N_WEBHOOK_URL`**: The URL of your n8n webhook that receives calculation requests.
+
+**Example `.env.local` file:**
+
+```
+VITE_SUPABASE_URL="https://your-project-ref.supabase.co"
+VITE_SUPABASE_ANON_KEY="your-supabase-anon-key"
+VITE_N8N_WEBHOOK_URL="https://your-n8n-instance/webhook/your-webhook-path"
 ```
 
-### Tabela: `tbl_webhook_configs`
-Função: Armazenar as configurações de webhooks para cada usuário.
-```sql
--- Create table
-CREATE TABLE tbl_webhook_configs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  title TEXT,
-  table_name TEXT NOT NULL,
-  selected_fields TEXT[] NOT NULL,
-  webhook_url TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+## 3. Local Development
 
--- Enable RLS (REQUIRED)
-ALTER TABLE tbl_webhook_configs ENABLE ROW LEVEL SECURITY;
+To run the application locally:
 
--- RLS Policies for tbl_webhook_configs
-CREATE POLICY "Users can only see their own webhook configs" ON tbl_webhook_configs
-FOR SELECT TO authenticated USING (auth.uid() = user_id);
+1.  **Clone the repository**:
+    ```bash
+    git clone <repository-url>
+    cd <project-folder>
+    ```
+2.  **Install dependencies**:
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
+3.  **Set up environment variables**: Create a `.env.local` file in the project root and populate it with the variables listed in the [Environment Variables](#environment-variables) section.
+4.  **Start the development server**:
+    ```bash
+    npm run dev
+    # or
+    yarn dev
+    ```
+    The application will typically be available at `http://localhost:5173`.
 
-CREATE POLICY "Users can only insert their own webhook configs" ON tbl_webhook_configs
-FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+## 4. Contributing
 
-CREATE POLICY "Users can only update their own webhook configs" ON tbl_webhook_configs
-FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+Contributions are welcome! Please feel free to open issues or submit pull requests.
 
-CREATE POLICY "Users can only delete their own webhook configs" ON tbl_webhook_configs
-FOR DELETE TO authenticated USING (auth.uid() = user_id);
-```
+## 5. License
 
-### Funções SQL (PostgreSQL)
-
-#### Função: `public.handle_new_user()`
-Função para criar automaticamente um perfil público para novos usuários autenticados.
-```sql
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER
-LANGUAGE PLPGSQL
-SECURITY DEFINER SET search_path = ''
-AS $$
-BEGIN
-  INSERT INTO public.profiles (id, first_name, last_name)
-  VALUES (
-    new.id,
-    new.raw_user_meta_data ->> 'first_name',
-    new.raw_user_meta_data ->> 'last_name'
-  );
-  RETURN new;
-END;
-$$;
-
--- Trigger the function on user creation
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-```
-
-## 5. Requisitos de Frontend (React)
-
-### 5.1. Autenticação
-*   **Página de Login/Cadastro (`/auth`)**: Utiliza `@supabase/auth-ui-react` com tema escuro e cores vibrantes de laranja.
-*   **Proteção de Rotas**: `PrivateRoute` garante que apenas usuários autenticados acessem rotas protegidas, redirecionando para `/auth` caso contrário.
-*   **Contexto de Autenticação (`AuthContext`)**: Gerencia o estado do usuário globalmente, incluindo login, cadastro e logout.
-
-### 5.2. Layout Principal
-*   **`MainLayout`**: Componente de layout principal com um `Sidebar` responsivo (menu lateral para desktop, sheet para mobile).
-*   **Cores**: Predominância de preto e laranja vibrante para uma experiência de usuário moderna e consistente.
-
-### 5.3. Dashboard (`/dashboard`)
-*   Exibe um resumo rápido de métricas importantes (ex: total de clientes).
-*   Botões de acesso rápido para as principais funcionalidades: "Adicionar Cliente", "Iniciar Novo Cálculo", "Ver Todos os Clientes", "Ver Todos os Cálculos", "Gerenciar Sindicatos", "Gerenciar Webhooks" e "Gerenciar Modelos IA".
-
-### 5.4. Gerenciamento de Clientes
-*   **Lista de Clientes (`/clients`)**: Exibe todos os clientes cadastrados pelo usuário, com opções para "Adicionar Cliente", "Editar" e "Excluir" (com confirmação via `AlertDialog`).
-*   **Formulário de Cliente (`/clients/new` ou `/clients/:id`)**: Permite criar um novo cliente ou editar um existente. Inclui campos como Nome/Razão Social, CPF, CNPJ, Tipo de Empregador (dropdown), Nome do Responsável e CPF do Responsável.
-
-### 5.5. Gerenciamento de Sindicatos
-*   **Lista de Sindicatos (`/sindicatos`)**: Exibe todos os sindicatos cadastrados (visíveis para todos os usuários), com opções para "Adicionar Sindicato", "Editar" e "Excluir" (com confirmação).
-*   **Formulário de Sindicato (`/sindicatos/new` ou `/sindicatos/:id`)**: Permite criar ou editar um sindicato. Campos incluem Nome do Sindicato, Data Inicial/Final do Acordo, Mês da Convenção, URL do Documento do Sindicato e Resumo do Dissídio.
-
-### 5.6. Gerenciamento de Cálculos
-*   **Lista de Cálculos (`/calculations`)**:
-    *   Exibe todos os cálculos de rescisão criados pelo usuário.
-    *   Opções para "Novo Cálculo", "Editar", "Ver Resultado" e "Excluir" (com confirmação).
-    *   **Envio para Webhook**: Um botão "Enviar" que abre um modal para selecionar um ou mais webhooks configurados (para `tbl_calculos` ou `all_tables`) antes de enviar os dados do cálculo.
-    *   **Status do Webhook**: O status do cálculo é atualizado com base na `resposta_ai`.
-        *   `Enviando...`: Exibido enquanto o cálculo está sendo enviado para o(s) webhook(s).
-        *   `Aguardando Resposta...`: Exibido após o envio, durante o período de espera pela resposta da IA.
-        *   `Concluído`: Exibido quando a `resposta_ai` é recebida e salva no banco de dados.
-        *   Um botão "Processar" é exibido se o cálculo não estiver concluído e não estiver em processo de envio/espera, permitindo ao usuário recarregar a página para verificar o status.
-*   **Formulário de Cálculo (`/calculations/new` ou `/calculations/:id`)**: Permite criar ou editar um cálculo. Inclui campos para Cliente (dropdown), Sindicato (dropdown), **Modelo de Prompt IA (dropdown)**, detalhes do Funcionário (Nome, CPF, Função, Carga Horária), datas de Início/Fim do Contrato, Tipo de Rescisão (dropdown), Salário Sindicato, Salário do Trabalhador, Observações Sindicato, Histórico do Contrato, CTPS Assinada (checkbox) e Médias de Descontos/Remunerações.
-*   **Página de Resultado do Cálculo (`/calculations/:id/result`)**: Exibe os detalhes do cálculo e a resposta gerada pelo webhook. A `resposta_ai` é buscada diretamente de `tbl_calculos`. Outros detalhes como `url_documento_calculo` e `texto_extraido` são buscados de `tbl_resposta_calculo`. Inclui botões para download da `resposta_ai` como **CSV, PDF e TXT**, se disponível.
-
-### 5.7. Configurações de Webhooks (`/webhooks`)
-*   **Lista de Webhooks**: Exibe todas as configurações de webhook do usuário, com opções para "Novo Webhook", "Editar" e "Excluir" (com confirmação).
-*   **Formulário de Webhook**: Permite criar ou editar uma configuração de webhook. Campos incluem:
-    *   **Título do Webhook**: Um nome descritivo.
-    *   **Tabela**: Dropdown para selecionar a tabela a ser monitorada (`tbl_clientes`, `tbl_calculos`, `tbl_sindicatos`, `tbl_ai_prompt_templates` ou `TODOS (Todos os Campos)`).
-    *   **Campos Selecionados**: Um seletor de múltiplos itens que lista dinamicamente os campos disponíveis da tabela selecionada.
-    *   **URL do Webhook**: O endpoint para onde os dados serão enviados.
-
-### 5.8. Gerenciamento de Modelos de Prompt IA (`/ai-templates`)
-*   **Lista de Modelos de Prompt IA**: Exibe todos os modelos de prompt de IA cadastrados pelo usuário, com opções para "Novo Modelo", "Editar" e "Excluir" (com confirmação).
-*   **Formulário de Modelo de Prompt IA**: Permite criar ou editar um modelo. Inclui campos para Título, Identificação, Comportamento, Restrições, Atribuições, Leis, Proventos, Descontos, Observações e Base Legal, e campos de formatação de texto (Cabeçalho, Corpo, Rodapé).
-
-### 5.9. Utilidades
-*   `src/utils/toast.ts`: Funções para exibir notificações de sucesso, erro e carregamento.
-*   `src/utils/supabaseDataExtraction.ts`: Função auxiliar para extrair valores de objetos Supabase aninhados.
-*   `src/utils/webhookFields.ts`: Definições de campos e funções para construir caminhos de seleção do Supabase e filtrar campos para exibição na UI.
-*   `src/utils/markdownParser.ts`: Funções para analisar tabelas Markdown e convertê-las para CSV.
-
-## 6. Edge Functions (Supabase)
-
-### Função: `supabase/functions/store-calculation-result/index.ts`
-Função Edge para receber a resposta da IA de um cálculo de rescisão e armazená-la diretamente na coluna `resposta_ai` da tabela `tbl_calculos`.
-**Estrutura JSON esperada para a resposta do webhook de cálculo:**
-```json
-{
-  "calculationId": "UUID_DO_CALCULO",
-  "aiResponse": "Texto detalhado da resposta do cálculo gerada pela IA."
-}
-```
-```typescript
-declare const Deno: any;
-
-// @ts-ignore
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @ts-ignore
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { calculationId, aiResponse } = await req.json();
-
-    if (!calculationId || !aiResponse) {
-      return new Response(JSON.stringify({ error: 'Missing calculationId or aiResponse' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
-
-    const { error: updateCalculoError } = await supabaseClient
-      .from('tbl_calculos')
-      .update({
-        resposta_ai: aiResponse,
-      })
-      .eq('id', calculationId);
-
-    if (updateCalculoError) {
-      console.error('Error updating calculation with AI response:', updateCalculoError);
-      return new Response(JSON.stringify({ error: 'Failed to update calculation with AI response', details: updateCalculoError.message }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
-
-    return new Response(JSON.stringify({ message: 'AI response received and updated successfully in tbl_calculos', calculationId }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-
-  } catch (error) {
-    console.error('Error in store-calculation-result Edge Function:', error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-});
-```
-
-## 7. Como o Sistema Funciona (Fluxo Geral)
-
-1.  **Autenticação**: Usuários fazem login ou se cadastram. Ao se cadastrar, um perfil básico é criado automaticamente.
-2.  **Gerenciamento de Clientes, Sindicatos e Modelos IA**: Usuários podem cadastrar e gerenciar seus clientes, sindicatos relevantes e **modelos de prompt de IA personalizados**.
-3.  **Criação de Cálculos**: Para cada funcionário de um cliente, o usuário insere os dados detalhados do contrato e da rescisão no formulário de cálculo, **selecionando opcionalmente um Modelo de Prompt IA**.
-4.  **Envio para Webhook**: Após salvar um cálculo, o usuário pode enviá-lo para um ou mais webhooks configurados. O sistema coleta os campos selecionados (incluindo dados do modelo IA, se selecionado) e os envia para o endpoint externo.
-5.  **Processamento Externo (n8n/IA)**: Um serviço externo (como n8n) recebe os dados do cálculo, processa-os (ex: usando um agente de IA para gerar a resposta do cálculo com base no modelo de prompt selecionado) e envia a resposta de volta para a função Edge `store-calculation-result`.
-6.  **Armazenamento da Resposta**: A função Edge recebe a resposta da IA e a salva na coluna `resposta_ai` da tabela `tbl_calculos`.
-7.  **Visualização e Download**: Na lista de cálculos, o status é atualizado automaticamente após 1 minuto (com um refresh da página) ou manualmente através do botão "Processar". O usuário pode visualizar o resultado detalhado na página de resultados ou baixar a `resposta_ai` como **CSV, PDF ou TXT** diretamente da página de resultados.
-
-## 8. Scripts NPM Essenciais
-
-*   `npm run dev`: Inicia o servidor de desenvolvimento.
-*   `npm run build`: Compila o projeto para produção.
-*   `npm run build:dev`: Compila o projeto em modo de desenvolvimento.
-*   `npm run lint`: Executa o linter para verificar problemas de código.
-*   `npm run preview`: Visualiza a build de produção localmente.
-
-## 9. Bibliotecas Chave
-
-*   `react`, `react-dom`: Core do React.
-*   `react-router-dom`: Gerenciamento de rotas.
-*   `@supabase/supabase-js`, `@supabase/auth-ui-react`, `@supabase/auth-ui-shared`: Integração com Supabase.
-*   `tailwindcss`, `tailwindcss-animate`, `clsx`, `tailwind-merge`: Estilização e utilitários de CSS.
-*   `lucide-react`: Ícones.
-*   `date-fns`: Manipulação de datas.
-*   `sonner`: Notificações toast.
-*   `jspdf`, `html2canvas`: Geração de documentos PDF no cliente.
-*   `react-markdown`, `remark-gfm`: Renderização de Markdown.
-*   `next-themes`: Gerenciamento de temas (claro/escuro).
-*   `@radix-ui/*`: Componentes Radix UI (base para Shadcn/ui).
-*   `@hookform/resolvers`, `react-hook-form`, `zod`: Validação de formulários.
-
-Este `README.md` fornece uma visão completa do projeto, facilitando a compreensão e a manutenção.
+This project is licensed under the MIT License.
