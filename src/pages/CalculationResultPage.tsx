@@ -153,6 +153,8 @@ const CalculationResultPage: React.FC = () => {
       return;
     }
 
+    console.log('Attempting to generate PDF from element:', element); // Log para depuração
+
     showSuccess('Gerando PDF, aguarde...');
     const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
 
@@ -164,14 +166,15 @@ const CalculationResultPage: React.FC = () => {
     }
 
     const originalClassList = element.classList.value;
-    const originalBackgroundColor = element.style.backgroundColor;
-    const originalColor = element.style.color;
+    // Removendo a manipulação direta de background e color para evitar conflitos
+    // const originalBackgroundColor = element.style.backgroundColor;
+    // const originalColor = element.style.color;
 
     // Aplicar estilos temporários para captura do PDF (texto preto, fundo branco)
     element.classList.remove('prose-invert');
     element.classList.add('prose'); // Assume que 'prose' fornece estilos de tema claro
-    element.style.backgroundColor = 'white'; // Garante fundo branco para a captura
-    element.style.color = 'black'; // Garante texto preto para a captura
+    // element.style.backgroundColor = 'white'; // Removido
+    // element.style.color = 'black'; // Removido
 
     // Define as opções para html2pdf
     const opt = {
@@ -203,12 +206,12 @@ const CalculationResultPage: React.FC = () => {
       showSuccess('Download do PDF iniciado!');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      showError('Falha ao gerar PDF. Verifique o console para mais detalhes.');
+      showError('Falha ao gerar PDF. Verifique o console do navegador para mais detalhes.');
     } finally {
       // Restaurar estilos originais e exibição dos botões
       element.classList.value = originalClassList;
-      element.style.backgroundColor = originalBackgroundColor;
-      element.style.color = originalColor;
+      // element.style.backgroundColor = originalBackgroundColor; // Removido
+      // element.style.color = originalColor; // Removido
       if (buttonsContainer) {
         buttonsContainer.style.display = originalButtonsDisplay;
       }
@@ -250,9 +253,9 @@ const CalculationResultPage: React.FC = () => {
         );
       }
       if (text.includes('VALOR LÍQUIDO A RECEBER')) {
-        // Alinhado à direita e laranja, com largura total
+        // De volta para o lado esquerdo
         return (
-          <h2 className="w-full text-2xl font-bold text-orange-500 mt-6 mb-4 text-right p-4 border border-orange-500 rounded-md">
+          <h2 className="text-2xl font-bold text-orange-500 mt-6 mb-4 text-left p-4 border border-orange-500 rounded-md">
             {children}
           </h2>
         );
@@ -284,9 +287,9 @@ const CalculationResultPage: React.FC = () => {
       // Regex para detectar valores monetários no formato R$ X.XXX,XX
       const monetaryRegex = /R\$\s\d{1,3}(?:\.\d{3})*,\d{2}/;
       if (monetaryRegex.test(text)) {
-        // Alinhado à direita e laranja, com largura total
+        // De volta para o lado esquerdo
         return (
-          <p className="w-full text-4xl font-extrabold text-orange-500 text-right my-4 p-2 bg-gray-800 rounded-md">
+          <p className="text-4xl font-extrabold text-orange-500 text-left my-4 p-2 bg-gray-800 rounded-md">
             {children}
           </p>
         );
