@@ -154,6 +154,8 @@ const CalculationResultPage: React.FC = () => {
       return;
     }
 
+    console.log('Attempting to generate PDF from element:', element); // Log para depuração
+
     showSuccess('Gerando PDF, aguarde...');
     const filename = `calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
 
@@ -175,6 +177,7 @@ const CalculationResultPage: React.FC = () => {
     element.style.color = 'black'; // Garante texto preto para a captura
 
     try {
+      // Capturar o conteúdo do div
       const canvas = await html2canvas(element, {
         scale: 2, // Aumenta a escala para melhor qualidade
         useCORS: true,
@@ -190,18 +193,14 @@ const CalculationResultPage: React.FC = () => {
       const marginTop = 35; // Espaço para o cabeçalho
       const marginBottom = 10;
 
-      const pdfWidth = pdf.internal.pageSize.getWidth(); // 210 mm for A4
-      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297 mm for A4
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      const contentUsableWidth = pdfWidth - marginLeft - marginRight; // Largura utilizável para o conteúdo
-      const contentUsableHeight = pdfHeight - marginTop - marginBottom; // Altura utilizável para o conteúdo em uma página
+      const usableWidth = pdfWidth - marginLeft - marginRight;
+      const usableHeight = pdfHeight - marginTop - marginBottom;
 
-      // Calcular a altura da imagem do canvas quando escalada para a largura utilizável do PDF
-      const imgAspectRatio = canvas.width / canvas.height;
-      const imgScaledHeight = contentUsableWidth / imgAspectRatio; // Altura total da imagem do HTML no PDF
-
-      let currentCanvasY = 0; // Posição Y atual no canvas original (em pixels)
-      let remainingPdfHeight = imgScaledHeight; // Altura restante do conteúdo a ser adicionado ao PDF (em mm)
+      let currentCanvasY = 0; // This will track the Y position on the original canvas
+      let pageNumber = 0;
 
       // Função para adicionar cabeçalho
       const addHeader = (doc: jsPDF) => {
@@ -212,59 +211,41 @@ const CalculationResultPage: React.FC = () => {
         doc.text(`Data do Cálculo: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, pdfWidth / 2, 27, { align: 'center' });
       };
 
-      addHeader(pdf); // Adicionar cabeçalho na primeira página
+      while (currentCanvasY < canvas.height) {
+        if (pageNumber > 0) {
+          pdf.addPage();
+        }
+        addHeader(pdf);
 
-      // Calcular a altura do conteúdo que cabe na primeira página (após o cabeçalho)
-      let heightToDrawOnPage = Math.min(remainingPdfHeight, contentUsableHeight);
+        // Calculate the height of the content to be placed on the current PDF page
+        // This is the usable height of the PDF page, scaled back to canvas pixels
+        const contentHeightOnCanvas = (usableHeight * canvas.width) / usableWidth;
 
-      // Converter a altura em mm para pixels do canvas original
-      let canvasSliceHeight = (heightToDrawOnPage / imgScaledHeight) * canvas.height;
+        // Determine the actual height to crop from the canvas for this page
+        let cropHeight = Math.min(contentHeightOnCanvas, canvas.height - currentCanvasY);
 
-      // Adicionar a primeira parte da imagem
-      pdf.addImage(
-        imgData,
-        'PNG',
-        marginLeft,
-        marginTop,
-        contentUsableWidth,
-        heightToDrawOnPage,
-        undefined,
-        'FAST',
-        0, // rotation
-        0, // sX: Início X no canvas original
-        currentCanvasY, // sY: Início Y no canvas original
-        canvas.width, // sWidth: Largura do slice no canvas original
-        canvasSliceHeight // sHeight: Altura do slice no canvas original
-      );
-
-      currentCanvasY += canvasSliceHeight; // Avançar no canvas original
-      remainingPdfHeight -= heightToDrawOnPage; // Reduzir a altura restante do conteúdo
-
-      while (remainingPdfHeight > 0) {
-        pdf.addPage();
-        addHeader(pdf); // Adicionar cabeçalho em páginas subsequentes
-
-        heightToDrawOnPage = Math.min(remainingPdfHeight, contentUsableHeight);
-        canvasSliceHeight = (heightToDrawOnPage / imgScaledHeight) * canvas.height;
-
+        // Add the cropped image to the PDF
+        // The `addImage` parameters for cropping are: sX, sY, sWidth, sHeight
+        // We are cropping from (0, currentCanvasY) with width `canvas.width` and height `cropHeight`
+        // And placing it on the PDF at (marginLeft, marginTop) with width `usableWidth` and height `(cropHeight * usableWidth) / canvas.width`
         pdf.addImage(
           imgData,
           'PNG',
           marginLeft,
           marginTop,
-          contentUsableWidth,
-          heightToDrawOnPage,
-          undefined,
-          'FAST',
-          0, // rotation
-          0, // sX: Início X no canvas original
-          currentCanvasY, // sY: Início Y no canvas original
-          canvas.width, // sWidth: Largura do slice no canvas original
-          canvasSliceHeight // sHeight: Altura do slice no canvas original
+          usableWidth,
+          (cropHeight * usableWidth) / canvas.width, // Height on PDF page
+          undefined, // alias
+          'NONE',    // compression
+          0,         // rotation
+          0,         // sX (source X on canvas)
+          currentCanvasY, // sY (source Y on canvas)
+          canvas.width,   // sWidth (source width to crop)
+          cropHeight      // sHeight (source height to crop)
         );
 
-        currentCanvasY += canvasSliceHeight;
-        remainingPdfHeight -= heightToDrawOnPage;
+        currentCanvasY += cropHeight; // Move to the next segment on the canvas
+        pageNumber++;
       }
 
       pdf.save(filename);
@@ -430,7 +411,7 @@ const CalculationResultPage: React.FC = () => {
             {calculation.funcao_funcionario && <p><strong>Função:</strong> {calculation.funcao_funcionario}</p>}
             {calculation.salario_sindicato > 0 && <p><strong>Piso Salarial Sindicato:</strong> R$ {calculation.salario_sindicato.toFixed(2)}</p>}
             {calculation.media_descontos > 0 && <p><strong>Média Descontos:</strong> R$ {calculation.media_descontos.toFixed(2)}</p>}
-            {calculation.media_remuneracoes > 0 && <p><strong>Média Remunerações:</strong> R$ {calculation.media_remuneracoes.toFixed(2)}</p>}
+            {calculation.media_remuneracoes > 0 && <p><strong>Média Remuneracoes:</strong> R$ {calculation.media_remuneracoes.toFixed(2)}</p>}
             {calculation.carga_horaria && <p><strong>Carga Horária:</strong> {calculation.carga_horaria}</p>}
             {calculation.obs_sindicato && <p className="col-span-full"><strong>Obs. Sindicato:</strong> {calculation.obs_sindicato}</p>}
             {calculation.historia && <p className="col-span-full"><strong>Histórico:</strong> {calculation.historia}</p>}
