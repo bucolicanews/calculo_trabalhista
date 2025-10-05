@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit, Trash2, ChevronDown } from 'lucide-react'; // Removido ChevronUp
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { WebhookConfig } from '@/hooks/useWebhookManagement';
 import { availableTables } from '@/utils/webhookFields';
@@ -42,8 +42,7 @@ const WebhookCard: React.FC<WebhookCardProps> = ({ webhook, onEdit, onDelete, ge
               ) : (
                 <span className="text-sm text-gray-500">Nenhum campo</span>
               )}
-              <ChevronDown className="h-4 w-4 ml-2 data-[state=open]:hidden" />
-              <ChevronUp className="h-4 w-4 ml-2 data-[state=closed]:hidden" />
+              <ChevronDown className="h-4 w-4 ml-2 transition-transform data-[state=open]:rotate-180" />
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-2 mt-2">
