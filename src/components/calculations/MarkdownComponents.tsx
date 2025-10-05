@@ -73,17 +73,17 @@ export const customMarkdownComponents = {
     }
     return <p className="mb-4">{children}</p>; // Default paragraph styling
   },
-  table: ({ children }: { children?: React.ReactNode }) => (
-    // Adiciona margem vertical às tabelas
-    <table className="my-4">{children}</table>
-  ),
+  // Removendo o componente 'table' customizado para permitir que o CSS global gerencie o layout da tabela.
+  // table: ({ children }: { children?: React.ReactNode }) => (
+  //   <table className="my-4">{children}</table>
+  // ),
   td: ({ children, align }: { children?: React.ReactNode, align?: string }) => ( // Tipo de 'align' expandido
-    <td className={`p-2 border border-gray-700 text-${align || 'left'}`}>
+    <td className={`text-${align || 'left'}`}>
       {children}
     </td>
   ),
   th: ({ children, align }: { children?: React.ReactNode, align?: string }) => ( // Tipo de 'align' expandido
-    <th className={`p-2 border border-gray-700 bg-gray-700 text-white text-${align || 'left'}`}>
+    <th className={`text-${align || 'left'}`}>
       {children}
     </th>
   ),

@@ -191,7 +191,7 @@ const AiResponseDisplay: React.FC<AiResponseDisplayProps> = ({
       </CardHeader>
       <CardContent className="space-y-4 text-gray-300">
         {aiResponse && (
-          <div ref={markdownRef} className="prose prose-invert max-w-none">
+          <div ref={markdownRef} className="prose prose-invert max-w-none overflow-x-auto">
             <h3 className="text-lg font-semibold text-orange-400 mb-2">Resposta da IA:</h3>
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={customMarkdownComponents}>
               {aiResponse}
