@@ -200,20 +200,20 @@ const AiResponseDisplay: React.FC<AiResponseDisplayProps> = ({
               {parsedTables.length > 0 && (
                 <Button
                   onClick={handleDownloadCsv}
-                  className="bg-green-600 hover:bg-green-700 text-white flex items-center"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white flex items-center"
                 >
                   <Table className="h-4 w-4 mr-2" /> Baixar Planilha (CSV)
                 </Button>
               )}
               <Button
                 onClick={handleDownloadAiResponseAsPdf}
-                className="bg-purple-600 hover:bg-purple-700 text-white flex items-center"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white flex items-center"
               >
                 <Download className="h-4 w-4 mr-2" /> Baixar PDF
               </Button>
               <Button
                 onClick={() => handleDownloadAiResponseAsTxt(aiResponse || '')}
-                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center"
               >
                 <FileText className="h-4 w-4 mr-2" /> Baixar TXT
               </Button>
