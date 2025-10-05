@@ -62,9 +62,9 @@ const AiPromptTemplateListPage: React.FC = () => {
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-orange-500">Meus Modelos de Prompt da IA</h1>
-          <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-orange-500 mb-4 md:mb-0">Meus Modelos de Prompt da IA</h1>
+          <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white w-full md:w-auto">
             <Link to="/ai-templates/new">
               <PlusCircle className="mr-2 h-4 w-4" /> Novo Modelo
             </Link>
