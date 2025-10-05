@@ -15,6 +15,11 @@ import SettingsPage from './pages/SettingsPage'; // Placeholder
 import NotFound from './pages/NotFound'; // Usando NotFound
 import { Toaster } from '@/components/ui/toaster';
 import AiTemplateConfigurationGuidePage from './pages/AiTemplateConfigurationGuidePage';
+import ClientListPage from './pages/ClientListPage';
+import ClientFormPage from './pages/ClientFormPage';
+import SindicatoListPage from './pages/SindicatoListPage';
+import SindicatoFormPage from './pages/SindicatoFormPage';
+import WebhookConfigPage from './pages/WebhookConfigPage';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -32,16 +37,30 @@ const App: React.FC = () => {
 
           {/* Private Routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+          
+          <Route path="/clients" element={<PrivateRoute><ClientListPage /></PrivateRoute>} />
+          <Route path="/clients/new" element={<PrivateRoute><ClientFormPage /></PrivateRoute>} />
+          <Route path="/clients/:id" element={<PrivateRoute><ClientFormPage /></PrivateRoute>} /> {/* Rota para editar/visualizar cliente */}
+
           <Route path="/calculations" element={<PrivateRoute><CalculationListPage /></PrivateRoute>} />
           <Route path="/calculations/new" element={<PrivateRoute><CalculationFormPage /></PrivateRoute>} />
-          <Route path="/calculations/edit/:id" element={<PrivateRoute><CalculationFormPage /></PrivateRoute>} />
-          <Route path="/calculations/result/:id" element={<PrivateRoute><CalculationResultPage /></PrivateRoute>} />
+          <Route path="/calculations/:id" element={<PrivateRoute><CalculationFormPage /></PrivateRoute>} /> {/* Rota para editar/visualizar cálculo */}
+          <Route path="/calculations/:id/result" element={<PrivateRoute><CalculationResultPage /></PrivateRoute>} />
+          
+          <Route path="/sindicatos" element={<PrivateRoute><SindicatoListPage /></PrivateRoute>} />
+          <Route path="/sindicatos/new" element={<PrivateRoute><SindicatoFormPage /></PrivateRoute>} />
+          <Route path="/sindicatos/:id" element={<PrivateRoute><SindicatoFormPage /></PrivateRoute>} /> {/* Rota para editar/visualizar sindicato */}
+
+          <Route path="/webhooks" element={<PrivateRoute><WebhookConfigPage /></PrivateRoute>} />
+
           <Route path="/ai-templates" element={<PrivateRoute><AiPromptTemplateListPage /></PrivateRoute>} />
           <Route path="/ai-templates/new" element={<PrivateRoute><AiPromptTemplateFormPage /></PrivateRoute>} />
-          <Route path="/ai-templates/edit/:id" element={<PrivateRoute><AiPromptTemplateFormPage /></PrivateRoute>} />
+          <Route path="/ai-templates/:id" element={<PrivateRoute><AiPromptTemplateFormPage /></PrivateRoute>} /> {/* Nova rota para visualizar/editar modelo de IA */}
+          <Route path="/ai-templates/guide" element={<PrivateRoute><AiTemplateConfigurationGuidePage /></PrivateRoute>} />
+
           <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
-          <Route path="/ai-templates/guide" element={<PrivateRoute><AiTemplateConfigurationGuidePage /></PrivateRoute>} />
+          
 
           {/* Catch-all for 404 */}
           <Route path="*" element={<NotFound />} />
