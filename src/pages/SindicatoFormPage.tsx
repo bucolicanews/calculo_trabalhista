@@ -120,14 +120,14 @@ const SindicatoFormPage = () => {
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
-        <div className="flex items-center mb-8">
-          <Button variant="ghost" onClick={() => navigate('/sindicatos')} className="text-orange-500 hover:text-orange-600">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+          <Button variant="ghost" onClick={() => navigate('/sindicatos')} className="text-orange-500 hover:text-orange-600 mb-4 sm:mb-0 sm:w-auto">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Button>
-          <h1 className="text-4xl font-bold text-orange-500 flex-grow text-center">
+          <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
             {isEditing ? 'Editar Cadastro de Sindicato' : 'Novo Cadastro de Sindicato'}
           </h1>
-          <div className="w-24"></div> {/* Placeholder for alignment */}
+          <div className="w-full sm:w-24 h-0 sm:h-auto"></div> {/* Placeholder for alignment */}
         </div>
         <Card className="max-w-2xl mx-auto bg-gray-900 border-orange-500 text-white">
           <CardHeader>

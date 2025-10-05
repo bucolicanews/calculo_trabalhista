@@ -51,26 +51,26 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right text-gray-300">Título do Webhook</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="title" className="sm:text-right text-gray-300">Título do Webhook</Label>
             <Input
               id="title"
               name="title"
               value={currentWebhook.title}
               onChange={handleChange}
               required
-              className="col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+              className="col-span-1 sm:col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
               disabled={loading}
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="table_name" className="text-right text-gray-300">Tabela</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="table_name" className="sm:text-right text-gray-300">Tabela</Label>
             <Select
               value={currentWebhook.table_name}
               onValueChange={handleTableChange}
               disabled={loading}
             >
-              <SelectTrigger className="col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500">
+              <SelectTrigger className="col-span-1 sm:col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500">
                 <SelectValue placeholder="Selecione a tabela" />
               </SelectTrigger>
               <SelectContent className="bg-gray-900 border-orange-500 text-white">
@@ -83,8 +83,8 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
             </Select>
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="selected_fields" className="text-right text-gray-300">Campos</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="selected_fields" className="sm:text-right text-gray-300">Campos</Label>
             <WebhookFieldSelector 
               selectedFields={currentWebhook.selected_fields}
               availableFields={currentTableAvailableFields}
@@ -96,20 +96,20 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="webhook_url" className="text-right text-gray-300">URL do Webhook</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="webhook_url" className="sm:text-right text-gray-300">URL do Webhook</Label>
             <Input
               id="webhook_url"
               name="webhook_url"
               value={currentWebhook.webhook_url}
               onChange={handleChange}
               required
-              className="col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+              className="col-span-1 sm:col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
               disabled={loading}
             />
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={loading} className="bg-orange-500 hover:bg-orange-600 text-white">
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white">
               {loading ? 'Salvando...' : (isEditing ? 'Atualizar Webhook' : 'Criar Webhook')}
             </Button>
           </DialogFooter>
