@@ -232,19 +232,24 @@ const AiPromptTemplateFormPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-auto px-1 sm:px-1 lg:px-3 min-h-screen">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <Button variant="ghost" onClick={() => navigate('/ai-templates')} className="text-orange-500 hover:text-orange-600 mb-4 sm:mb-0 sm:w-auto">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Button>
           <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
-            {isEditing ? 'Editar Modelo de Prompt da IA' : 'Novo Modelo de Prompt da IA'}
+            {isEditing ? 'Editar Modelo de Prompt da IA' : 'Configurções '}
+
+          </h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
+
+            {isEditing ? 'Editar Modelo de Prompt da IA' : 'Prompt da IA'}
           </h1>
           <div className="w-full sm:w-24 h-0 sm:h-auto"></div> {/* Placeholder for alignment */}
         </div>
         <Card className="w-full sm:max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white">
           <CardHeader>
-            <CardTitle className="text-2xl text-orange-500">Configuração do Prompt</CardTitle>
+            <CardTitle className="text-2xl text-orange-500">Configuração</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -255,7 +260,7 @@ const AiPromptTemplateFormPage: React.FC = () => {
                   disabled={loading}
                   className="w-full bg-gray-700 hover:bg-gray-600 text-white mb-6"
                 >
-                  <Brain className="mr-2 h-4 w-4" /> Preencher com Modelo Padrão
+                  <Brain className="mr-2 h-4 w-4" /> Modelo Padrão
                 </Button>
               )}
               <div>
