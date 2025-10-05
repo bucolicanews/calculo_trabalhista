@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, ChevronDown } from 'lucide-react'; // Removido ChevronUp
+import { Edit, Trash2, ChevronDown } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { WebhookConfig } from '@/hooks/useWebhookManagement';
 import { availableTables } from '@/utils/webhookFields';
@@ -34,15 +34,17 @@ const WebhookCard: React.FC<WebhookCardProps> = ({ webhook, onEdit, onDelete, ge
           <CollapsibleTrigger asChild>
             <Button
               variant="outline"
-              className="w-full justify-between bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+              className="w-full flex items-center justify-between bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
             >
-              <span className="font-semibold text-gray-300">Campos Selecionados:</span>
-              {webhook.selected_fields.length > 0 ? (
-                <span className="text-sm text-gray-400">{webhook.selected_fields.length} campo(s)</span>
-              ) : (
-                <span className="text-sm text-gray-500">Nenhum campo</span>
-              )}
-              <ChevronDown className="h-4 w-4 ml-2 transition-transform data-[state=open]:rotate-180" />
+              <div className="flex items-center flex-grow min-w-0">
+                <span className="font-semibold text-gray-300 mr-1 flex-shrink-0">Campos Selecionados:</span>
+                {webhook.selected_fields.length > 0 ? (
+                  <span className="text-sm text-gray-400 truncate">{webhook.selected_fields.length} campo(s)</span>
+                ) : (
+                  <span className="text-sm text-gray-500 truncate">Nenhum campo</span>
+                )}
+              </div>
+              <ChevronDown className="h-4 w-4 ml-2 transition-transform data-[state=open]:rotate-180 flex-shrink-0" />
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-2 mt-2">
