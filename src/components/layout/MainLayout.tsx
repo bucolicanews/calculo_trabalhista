@@ -21,7 +21,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <div className="min-h-screen flex flex-col bg-black text-white">
       <header className="bg-gray-900 p-4 flex justify-between items-center border-b border-orange-500 md:hidden">
         <Link to="/dashboard" className="text-2xl font-bold text-orange-500">
-          Calculadora Jurídica
+          Jota Cálculos Trabalhistas
         </Link>
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>

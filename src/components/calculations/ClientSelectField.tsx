@@ -22,7 +22,7 @@ const ClientSelectField: React.FC<ClientSelectFieldProps> = ({
 }) => {
   return (
     <div>
-      <Label htmlFor="cliente_id" className="text-gray-300">Cliente</Label>
+      <Label htmlFor="cliente_id" className="text-gray-300">Empregador</Label>
       <Select
         name="cliente_id"
         value={cliente_id}
@@ -30,12 +30,12 @@ const ClientSelectField: React.FC<ClientSelectFieldProps> = ({
         required
         disabled={disabled}
       >
-        <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus:ring-orange-500">
+        <SelectTrigger className="bg-gray-800 border-orange-700 text-orange focus:ring-orange-500">
           <SelectValue placeholder="Selecione o cliente" />
         </SelectTrigger>
         <SelectContent className="bg-gray-800 border-gray-700 text-white">
           {clients.map((client) => (
-            <SelectItem key={client.id} value={client.id} className="text-white hover:bg-gray-700 focus:bg-gray-700">
+            <SelectItem key={client.id} value={client.id} className="text-white hover:bg-white-700 focus:bg-orange-700">
               {client.nome}
             </SelectItem>
           ))}

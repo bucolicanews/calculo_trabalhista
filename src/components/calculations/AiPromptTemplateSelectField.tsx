@@ -29,12 +29,12 @@ const AiPromptTemplateSelectField: React.FC<AiPromptTemplateSelectFieldProps> = 
         onValueChange={onValueChange}
         disabled={disabled}
       >
-        <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus:ring-orange-500">
+        <SelectTrigger className="bg-gray-800 border-orange-700 text-white focus:ring-orange-500">
           <SelectValue placeholder="Selecione um modelo de prompt IA" />
         </SelectTrigger>
         <SelectContent className="bg-gray-800 border-gray-700 text-white">
           {aiTemplates.map((template) => (
-            <SelectItem key={template.id} value={template.id} className="text-white hover:bg-gray-700 focus:bg-gray-700">
+            <SelectItem key={template.id} value={template.id} className="text-white hover:bg-white-700 focus:bg-orange-700">
               {template.title}
             </SelectItem>
           ))}

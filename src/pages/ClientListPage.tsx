@@ -62,19 +62,19 @@ const ClientListPage = () => {
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-orange-500">Meus Clientes</h1>
-          <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-orange-500 mb-4 md:mb-0">Empregadores</h1>
+          <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white w-full md:w-auto">
             <Link to="/clients/new">
-              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Cliente
+              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Empregador
             </Link>
           </Button>
         </div>
 
         {loading ? (
-          <p className="text-gray-400">Carregando clientes...</p>
+          <p className="text-gray-400">Carregando Empregadores...</p>
         ) : clients.length === 0 ? (
-          <p className="text-gray-400">Nenhum cliente cadastrado ainda. Adicione um novo cliente para começar!</p>
+            <p className="text-gray-400">Nenhum empregador cadastrado ainda. Adicione um novo empregador para começar!</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {clients.map((client) => (
@@ -101,7 +101,7 @@ const ClientListPage = () => {
                         <AlertDialogHeader>
                           <AlertDialogTitle className="text-red-500">Tem certeza?</AlertDialogTitle>
                           <AlertDialogDescription className="text-gray-300">
-                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente "{client.nome}".
+                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o empregador "{client.nome}".
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

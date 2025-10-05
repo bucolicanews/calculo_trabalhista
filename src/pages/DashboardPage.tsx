@@ -27,7 +27,7 @@ const DashboardPage = () => {
       .eq('user_id', user?.id);
 
     if (error) {
-      showError('Erro ao carregar total de clientes: ' + error.message);
+      showError('Erro ao carregar total de Empregador: ' + error.message);
       console.error('Error fetching total clients:', error);
     } else {
       setTotalClients(count || 0);
@@ -43,7 +43,7 @@ const DashboardPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card className="bg-gray-900 border-orange-500 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
+              <CardTitle className="text-sm font-medium">Total de Empregadores</CardTitle>
               <User className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
@@ -52,18 +52,18 @@ const DashboardPage = () => {
               ) : (
                 <div className="text-2xl font-bold">{totalClients}</div>
               )}
-              <p className="text-xs text-gray-400">Clientes cadastrados</p>
+              <p className="text-xs text-gray-400">Empregador cadastrados</p>
             </CardContent>
           </Card>
           <Card className="bg-gray-900 border-orange-500 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Novo Cliente</CardTitle>
+              <CardTitle className="text-sm font-medium">Novo Empregador</CardTitle>
               <Briefcase className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full bg-orange-500 hover:bg-orange-600 text-white">
                 <Link to="/clients/new">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Cliente
+                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Empregador
                 </Link>
               </Button>
             </CardContent>
@@ -87,7 +87,7 @@ const DashboardPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Button asChild className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700">
             <Link to="/clients">
-              <User className="mr-2 h-4 w-4" /> Ver Todos os Clientes
+              <User className="mr-2 h-4 w-4" /> Ver Todos os Empregadores
             </Link>
           </Button>
           <Button asChild className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700">

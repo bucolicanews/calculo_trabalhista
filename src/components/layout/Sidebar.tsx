@@ -27,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
 
   const navItems = [
     { name: 'Dashboard', icon: Home, path: '/dashboard' },
-    { name: 'Clientes', icon: Users, path: '/clients' },
+    { name: 'Empregadores', icon: Users, path: '/clients' },
     { name: 'Cálculos', icon: Calculator, path: '/calculations' },
     { name: 'Sindicatos', icon: Building2, path: '/sindicatos' },
     { name: 'Webhooks', icon: BellRing, path: '/webhooks' },
