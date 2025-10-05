@@ -6,7 +6,6 @@ import { Edit, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { WebhookConfig } from '@/hooks/useWebhookManagement';
 import { availableTables } from '@/utils/webhookFields';
-import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface WebhookCardProps {
@@ -33,8 +32,11 @@ const WebhookCard: React.FC<WebhookCardProps> = ({ webhook, onEdit, onDelete, ge
       <CardContent className="flex flex-col space-y-3">
         <Collapsible>
           <CollapsibleTrigger asChild>
-            <div className="flex items-center justify-between cursor-pointer">
-              <Label className="text-gray-300">Campos Selecionados:</Label>
+            <Button
+              variant="outline"
+              className="w-full justify-between bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+            >
+              <span className="font-semibold text-gray-300">Campos Selecionados:</span>
               {webhook.selected_fields.length > 0 ? (
                 <span className="text-sm text-gray-400">{webhook.selected_fields.length} campo(s)</span>
               ) : (
@@ -42,7 +44,7 @@ const WebhookCard: React.FC<WebhookCardProps> = ({ webhook, onEdit, onDelete, ge
               )}
               <ChevronDown className="h-4 w-4 ml-2 data-[state=open]:hidden" />
               <ChevronUp className="h-4 w-4 ml-2 data-[state=closed]:hidden" />
-            </div>
+            </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-2 mt-2">
             <div className="flex flex-wrap gap-2">
