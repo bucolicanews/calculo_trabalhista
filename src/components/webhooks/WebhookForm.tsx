@@ -85,7 +85,7 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="selected_fields" className="text-right text-gray-300">Campos</Label>
-            <WebhookFieldSelector
+            <WebhookFieldSelector 
               selectedFields={currentWebhook.selected_fields}
               availableFields={currentTableAvailableFields}
               onFieldToggle={handleFieldToggle}

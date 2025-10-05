@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2 } from 'lucide-react'; // Removido FileText
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -25,21 +25,10 @@ interface Calculation {
   resposta_ai: string | null;
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
-  tbl_ai_prompt_templates: { 
+  tbl_ai_prompt_templates: {
     id: string;
     title: string;
-    identificacao: string;
-    comportamento: string;
-    restricoes: string;
-    atribuicoes: string;
-    leis: string;
-    proventos: string;
-    descontos: string;
-    observacoes_base_legal: string;
-    formatacao_texto_cabecalho: string;
-    formatacao_texto_corpo: string;
-    formatacao_texto_rodape: string;
-    created_at: string;
+    // ... outros campos
   } | null;
   tbl_resposta_calculo: {
     url_documento_calculo: string | null;
@@ -51,20 +40,29 @@ interface Calculation {
   [key: string]: any;
 }
 
-const AUTO_REFRESH_DURATION = 1 * 60 * 1000; // 1 minuto em milissegundos
+const AUTO_REFRESH_DURATION = 2 * 60 * 1000; // 2 minutos em milissegundos
+// NOVO: Duração da espera do botão "Processar"
+const PROCESS_WAIT_DURATION = 1 * 60 * 1000; // 1 minuto em milissegundos
+
+const formatCountdown = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+};
 
 const CalculationListPage = () => {
-  console.log("[CalculationListPage] Componente CalculationListPage renderizado.");
-
   const { user } = useAuth();
   const [calculations, setCalculations] = useState<Calculation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSendingWebhook, setIsSendingWebhook] = useState<string | null>(null);
   const [isWebhookSelectionOpen, setIsWebhookSelectionOpen] = useState(false);
   const [currentCalculationIdForWebhook, setCurrentCalculationIdForWebhook] = useState<string | null>(null);
+  const [countdownTimers, setCountdownTimers] = useState<Map<string, number>>(new Map());
 
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const intervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
+  // ... (funções updateCalculationStatus, clearTimeoutAndIntervalById, useEffect, fetchCalculations não mudam) ...
   const updateCalculationStatus = (id: string, newStatus: CalculationStatus) => {
     setCalculations(prevCalculations =>
       prevCalculations.map(calc =>
@@ -73,11 +71,16 @@ const CalculationListPage = () => {
     );
   };
 
-  const clearTimeoutById = (id: string) => {
+  const clearTimeoutAndIntervalById = (id: string) => {
     const timeout = timeoutsRef.current.get(id);
     if (timeout) {
       clearTimeout(timeout);
       timeoutsRef.current.delete(id);
+    }
+    const interval = intervalsRef.current.get(id);
+    if (interval) {
+      clearInterval(interval);
+      intervalsRef.current.delete(id);
     }
   };
 
@@ -89,6 +92,8 @@ const CalculationListPage = () => {
     return () => {
       timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
       timeoutsRef.current.clear();
+      intervalsRef.current.forEach(interval => clearInterval(interval));
+      intervalsRef.current.clear();
     };
   }, [user]);
 
@@ -120,16 +125,56 @@ const CalculationListPage = () => {
     setLoading(false);
   };
 
+
   const handleDeleteCalculation = async (id: string) => {
     const { error } = await supabase.from('tbl_calculos').delete().eq('id', id);
     if (error) {
       showError('Erro ao deletar cálculo: ' + error.message);
     } else {
       showSuccess('Cálculo deletado com sucesso!');
-      clearTimeoutById(id);
+      clearTimeoutAndIntervalById(id);
       fetchCalculations();
     }
   };
+
+  // NOVO: Função para iniciar a espera do botão "Processar"
+  const handleProcessWait = (calculationId: string) => {
+    console.log(`[CalculationListPage] Iniciando espera de 1 minuto para o cálculo ID: ${calculationId}`);
+
+    // Atualiza o status para mostrar a badge de "Aguardando Resposta"
+    updateCalculationStatus(calculationId, 'pending_response');
+    showSuccess('Processamento iniciado. A página será atualizada em 1 minuto.');
+
+    // Cria o temporizador para recarregar a página
+    const timeoutId = setTimeout(() => {
+      console.log(`Atualizando a página para o cálculo ${calculationId} após 1 minuto.`);
+      window.location.reload();
+    }, PROCESS_WAIT_DURATION);
+    timeoutsRef.current.set(calculationId, timeoutId);
+
+    // Inicia o contador visual
+    const initialSeconds = PROCESS_WAIT_DURATION / 1000;
+    setCountdownTimers(prev => new Map(prev).set(calculationId, initialSeconds));
+
+    const intervalId = setInterval(() => {
+      setCountdownTimers(prev => {
+        const newTimers = new Map(prev);
+        const currentSeconds = newTimers.get(calculationId);
+
+        if (currentSeconds !== undefined && currentSeconds > 1) {
+          newTimers.set(calculationId, currentSeconds - 1);
+          return newTimers;
+        } else {
+          clearInterval(intervalId);
+          intervalsRef.current.delete(calculationId);
+          newTimers.delete(calculationId);
+          return newTimers;
+        }
+      });
+    }, 1000);
+    intervalsRef.current.set(calculationId, intervalId);
+  };
+
 
   const handleOpenWebhookSelection = (calculationId: string) => {
     console.log(`[CalculationListPage] Abrindo seleção de webhook para cálculo ID: ${calculationId}`);
@@ -138,6 +183,7 @@ const CalculationListPage = () => {
   };
 
   const handleSendToWebhook = async (calculationId: string, webhookConfigIds: string[]) => {
+    // ... (esta função permanece a mesma)
     console.log(`[CalculationListPage] handleSendToWebhook called for calculationId: ${calculationId}, webhookConfigIds:`, webhookConfigIds);
 
     if (!user) {
@@ -150,6 +196,7 @@ const CalculationListPage = () => {
     showSuccess('Iniciando envio para webhooks selecionados...');
 
     try {
+      // ... (código interno do try/catch não muda)
       const { data: webhookConfigs, error: webhookError } = await supabase
         .from('tbl_webhook_configs')
         .select('*')
@@ -208,9 +255,6 @@ const CalculationListPage = () => {
         }
 
         const finalSelectString = Array.from(selectParts).join(', ');
-        console.log(`[Webhook Sender] Final Supabase SELECT string: ${finalSelectString}`);
-
-
         const { data: specificCalculationData, error: fetchError } = await supabase
           .from('tbl_calculos')
           .select(finalSelectString)
@@ -219,17 +263,13 @@ const CalculationListPage = () => {
 
         if (fetchError) {
           showError(`Erro ao buscar dados do cálculo para webhook: ${fetchError.message}`);
-          console.error(`[Webhook Sender] Erro ao buscar dados do cálculo:`, fetchError);
           continue;
         }
 
         if (!specificCalculationData) {
           showError('Dados do cálculo não encontrados para o webhook.');
-          console.warn(`[Webhook Sender] Dados do cálculo não encontrados para ID: ${calculationId}`);
           continue;
         }
-        console.log(`[Webhook Sender] Dados do Supabase recebidos:`, specificCalculationData);
-
 
         const payload: { [key: string]: any } = {};
         config.selected_fields.forEach((fieldKey: string) => {
@@ -244,9 +284,6 @@ const CalculationListPage = () => {
           body: payload
         };
 
-        console.log(`[Webhook Sender] Enviando para URL: ${config.webhook_url}`);
-        console.log(`[Webhook Sender] Payload final (JSON.stringify):`, JSON.stringify(finalPayload));
-
         const response = await fetch(config.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -255,24 +292,42 @@ const CalculationListPage = () => {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`[Webhook Sender] Falha no envio para ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
-          console.error(`[Webhook Sender] Resposta completa do erro:`, response);
           showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
         } else {
           sentCount++;
-          const successResponse = await response.json();
-          console.log(`[Webhook Sender] Sucesso ao enviar para ${config.webhook_url}. Resposta:`, successResponse);
         }
       }
 
       if (sentCount > 0) {
         showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso! A página será atualizada em ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
         updateCalculationStatus(calculationId, 'pending_response');
+
         const timeoutId = setTimeout(() => {
-          console.log(`Atualizando a página para verificar o cálculo ${calculationId} após ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
           window.location.reload();
         }, AUTO_REFRESH_DURATION);
         timeoutsRef.current.set(calculationId, timeoutId);
+
+        const initialSeconds = AUTO_REFRESH_DURATION / 1000;
+        setCountdownTimers(prev => new Map(prev).set(calculationId, initialSeconds));
+
+        const intervalId = setInterval(() => {
+          setCountdownTimers(prev => {
+            const newTimers = new Map(prev);
+            const currentSeconds = newTimers.get(calculationId);
+
+            if (currentSeconds !== undefined && currentSeconds > 1) {
+              newTimers.set(calculationId, currentSeconds - 1);
+              return newTimers;
+            } else {
+              clearInterval(intervalId);
+              intervalsRef.current.delete(calculationId);
+              newTimers.delete(calculationId);
+              return newTimers;
+            }
+          });
+        }, 1000);
+        intervalsRef.current.set(calculationId, intervalId);
+
       } else {
         showError('Nenhum webhook foi enviado com sucesso.');
         updateCalculationStatus(calculationId, 'idle');
@@ -287,7 +342,6 @@ const CalculationListPage = () => {
     }
   };
 
-  // Removido handleDownloadAiResponseAsTxt
 
   return (
     <MainLayout>
@@ -310,38 +364,52 @@ const CalculationListPage = () => {
             {calculations.map((calculation) => {
               const currentStatus = calculation.status || 'idle';
               const hasResult = calculation.resposta_ai;
+              const remainingSeconds = countdownTimers.get(calculation.id);
 
               return (
                 <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
                   <CardHeader>
+                    <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
                     <div className="flex items-center justify-between mb-2">
-                      <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
+
+                      {/* ... (Badges 'sending', 'pending_response', 'completed' não mudam) ... */}
+
                       {currentStatus === 'sending' && (
                         <Badge variant="secondary" className="bg-yellow-600 text-white flex items-center">
                           <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Enviando...
                         </Badge>
                       )}
+
                       {currentStatus === 'pending_response' && (
                         <Badge variant="secondary" className="bg-blue-600 text-white flex items-center">
-                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Aguardando Resposta...
+                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                          Aguardando Resposta...
+                          {remainingSeconds !== undefined && (
+                            <span className="ml-2 font-mono">({formatCountdown(remainingSeconds)})</span>
+                          )}
                         </Badge>
                       )}
+
                       {currentStatus === 'completed' && (
                         <Badge variant="secondary" className="bg-green-600 text-white flex items-center">
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Concluído
                         </Badge>
                       )}
-                      {currentStatus !== 'sending' && currentStatus !== 'completed' && !hasResult && (
+
+
+                      {/* ALTERADO: O onClick do botão "Processar" agora chama a nova função */}
+                      {currentStatus !== 'sending' && currentStatus !== 'completed' && currentStatus !== 'pending_response' && !hasResult && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="bg-gray-700 text-white hover:bg-gray-600"
-                          onClick={() => window.location.reload()}
+                          onClick={() => handleProcessWait(calculation.id)}
                         >
                           Processar
                         </Button>
                       )}
                     </div>
+                    {/* ... (Restante do CardHeader não muda) ... */}
                     <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.nome || 'N/A'}</p>
                     {calculation.tbl_ai_prompt_templates?.title && (
                       <p className="text-sm text-gray-400">Modelo IA: {calculation.tbl_ai_prompt_templates.title}</p>
@@ -352,12 +420,13 @@ const CalculationListPage = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="flex justify-end space-x-2 w-full">
+                    {/* ... (Botões de ação não mudam) ... */}
                     <Button asChild variant="outline" size="sm" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
                       <Link to={`/calculations/${calculation.id}`}>
                         <Edit className="h-4 w-4" />
                       </Link>
                     </Button>
-                    
+
                     {hasResult && (
                       <Button asChild variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
                         <Link to={`/calculations/${calculation.id}/result`}>
@@ -365,8 +434,6 @@ const CalculationListPage = () => {
                         </Link>
                       </Button>
                     )}
-
-                    {/* Botão de download de TXT removido daqui */}
 
                     <Button
                       variant="outline"

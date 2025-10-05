@@ -42,7 +42,7 @@ const WebhookFieldSelector: React.FC<WebhookFieldSelectorProps> = ({
           variant="outline"
           role="combobox"
           aria-expanded={fieldPopoverOpen}
-          className="col-span-3 justify-between bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+          className="col-span-3 justify-between bg-red-800 border-blue-700 text-red hover:bg-gray-700"
           disabled={disabled}
         >
           {selectedFields.length > 0
@@ -70,14 +70,14 @@ const WebhookFieldSelector: React.FC<WebhookFieldSelectorProps> = ({
                     )}
                   />
                 </CommandItem>
-                <div className="my-1 h-px bg-gray-700" /> {/* Separador adicionado */}
+                <div className="my-1 h-px bg-red-700" /> {/* Separador adicionado */}
               </>
             )}
             {availableFields.map((field) => (
               <CommandItem
                 key={field.key}
                 onSelect={() => onFieldToggle(field.key)}
-                className="flex items-center justify-between cursor-pointer hover:bg-gray-700 text-white"
+                className="flex items-center justify-between cursor-pointer hover:bg-gray-700 text-red"
               >
                 {field.label}
                 <Check
