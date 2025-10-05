@@ -2,11 +2,12 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { WebhookConfig } from '@/hooks/useWebhookManagement';
 import { availableTables } from '@/utils/webhookFields';
 import { Label } from '@/components/ui/label';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface WebhookCardProps {
   webhook: WebhookConfig;
@@ -30,20 +31,33 @@ const WebhookCard: React.FC<WebhookCardProps> = ({ webhook, onEdit, onDelete, ge
         <p className="text-sm text-gray-400 truncate">URL: {webhook.webhook_url}</p>
       </CardHeader>
       <CardContent className="flex flex-col space-y-3">
-        <div>
-          <Label className="text-gray-300">Campos Selecionados:</Label>
-          <div className="flex flex-wrap gap-2 mt-1">
-            {webhook.selected_fields.length > 0 ? (
-              webhook.selected_fields.map((fieldKey) => (
-                <Badge key={fieldKey} variant="secondary" className="bg-gray-700 text-gray-200">
-                  {getFieldLabel(webhook.table_name, fieldKey)}
-                </Badge>
-              ))
-            ) : (
-              <span className="text-gray-500 text-sm">Nenhum campo selecionado</span>
-            )}
-          </div>
-        </div>
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center justify-between cursor-pointer">
+              <Label className="text-gray-300">Campos Selecionados:</Label>
+              {webhook.selected_fields.length > 0 ? (
+                <span className="text-sm text-gray-400">{webhook.selected_fields.length} campo(s)</span>
+              ) : (
+                <span className="text-sm text-gray-500">Nenhum campo</span>
+              )}
+              <ChevronDown className="h-4 w-4 ml-2 data-[state=open]:hidden" />
+              <ChevronUp className="h-4 w-4 ml-2 data-[state=closed]:hidden" />
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 mt-2">
+            <div className="flex flex-wrap gap-2">
+              {webhook.selected_fields.length > 0 ? (
+                webhook.selected_fields.map((fieldKey) => (
+                  <Badge key={fieldKey} variant="secondary" className="bg-gray-700 text-gray-200">
+                    {getFieldLabel(webhook.table_name, fieldKey)}
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-gray-500 text-sm">Nenhum campo selecionado</span>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
         <div className="flex justify-end space-x-2 mt-4">
           <Button
             variant="outline"
