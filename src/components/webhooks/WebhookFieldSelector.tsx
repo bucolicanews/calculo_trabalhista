@@ -70,20 +70,20 @@ const WebhookFieldSelector: React.FC<WebhookFieldSelectorProps> = ({
                     )}
                   />
                 </CommandItem>
-                <div className="my-1 h-px bg-gray-700" /> {/* Separador adicionado */}
+                <div className="my-1 h-px bg-orange-900" /> {/* Separador adicionado */}
               </>
             )}
             {availableFields.map((field) => (
               <CommandItem
                 key={field.key}
                 onSelect={() => onFieldToggle(field.key)}
-                className="flex items-center justify-between cursor-pointer hover:bg-gray-700 text-white"
+                className="flex items-center justify-between cursor-pointer hover:bg-orange-700 text-red"
               >
                 {field.label}
                 <Check
                   className={cn(
                     "ml-auto h-4 w-4",
-                    selectedFields.includes(field.key) ? "opacity-100 text-orange-500" : "opacity-0"
+                    selectedFields.includes(field.key) ? "border-2 border-red-500 opacity-100 text-red-500" : "opacity-0"
                   )}
                 />
               </CommandItem>

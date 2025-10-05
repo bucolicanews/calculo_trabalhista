@@ -114,7 +114,7 @@ Aviso Prévio Indenizado	Calculado com base na Lei nº 12.506/2011 (30 dias + 3 
 Férias Proporcionais	Fórmula: (Salário Base de Cálculo / 12) * meses do período aquisitivo (considerando a projeção do aviso prévio).
 INSS	Incide sobre o Saldo de Salário e o 13º Salário, conforme tabelas vigentes. Verbas indenizatórias não possuem incidência de INSS.
 Multa de 40% do FGTS	O saldo de FGTS é estimado com base nos depósitos de 8% sobre a remuneração durante o período do contrato. A multa de 40% incide sobre este total, caso não tenha a ctps assinada
-Diferença de salário entre salario estipulado pelo sindicato e salario recebido , calcular a diferença entre o perio trabalhado
+Diferença de salário entre salario estipulado pelo sindicato e relação ao recebido pelo trabalhador durante o período de trabalho
 Fgts – valor do fgts , caso não tenha a ctps assinada`,
   descontos: `caso esteja sem carteira assinada não desconta nada , caso não descontar , inss, ir se for o caso`,
   observacoes_base_legal: `Base Legal Geral	Cálculo realizado em conformidade com o Decreto-Lei nº 5.452/43 (Consolidação das Leis do Trabalho - CLT) e legislação complementar.
@@ -242,7 +242,7 @@ const AiPromptTemplateFormPage: React.FC = () => {
           </h1>
           <div className="w-full sm:w-24 h-0 sm:h-auto"></div> {/* Placeholder for alignment */}
         </div>
-        <Card className="max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white">
+        <Card className="w-full sm:max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white">
           <CardHeader>
             <CardTitle className="text-2xl text-orange-500">Configuração do Prompt</CardTitle>
           </CardHeader>
