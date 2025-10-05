@@ -1,163 +1,55 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import AuthPage from './pages/AuthPage';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import PrivateRoute from './components/auth/PrivateRoute';
+import PublicRoute from './components/auth/PublicRoute';
+import AuthPage from './pages/AuthPage'; // Usando AuthPage para login/registro
 import DashboardPage from './pages/DashboardPage';
-import ClientListPage from './pages/ClientListPage';
-import ClientFormPage from './pages/ClientFormPage';
-import CalculationListPage from './pages/CalculationListPage';
+import CalculationListPage from './pages/CalculationListPage'; // Usando CalculationListPage
 import CalculationFormPage from './pages/CalculationFormPage';
 import CalculationResultPage from './pages/CalculationResultPage';
-import SindicatoListPage from './pages/SindicatoListPage';
-import SindicatoFormPage from './pages/SindicatoFormPage';
-import WebhookConfigPage from './pages/WebhookConfigPage';
-import AiPromptTemplateListPage from './pages/AiPromptTemplateListPage'; // NOVO
-import AiPromptTemplateFormPage from './pages/AiPromptTemplateFormPage'; // NOVO
-import { Toaster } from './components/ui/toaster';
-import Index from './pages/Index';
+import AiPromptTemplateListPage from './pages/AiPromptTemplateListPage'; // Usando AiPromptTemplateListPage
+import AiPromptTemplateFormPage from './pages/AiPromptTemplateFormPage';
+import ProfilePage from './pages/ProfilePage'; // Placeholder
+import SettingsPage from './pages/SettingsPage'; // Placeholder
+import NotFound from './pages/NotFound'; // Usando NotFound
+import { Toaster } from '@/components/ui/toaster';
+import AiTemplateConfigurationGuidePage from './pages/AiTemplateConfigurationGuidePage';
 
-const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
-  const { user, loading } = useAuth();
+const App: React.FC = () => {
+  useEffect(() => {
+    // Any global app initialization can go here
+  }, []);
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen bg-gray-900 text-orange-500">Carregando...</div>;
-  }
-
-  return user ? children : <Navigate to="/auth" />;
-};
-
-function App() {
   return (
     <Router>
       <AuthProvider>
         <Routes>
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/" element={<Index />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <DashboardPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/clients"
-            element={
-              <PrivateRoute>
-                <ClientListPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/clients/new"
-            element={
-              <PrivateRoute>
-                <ClientFormPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/clients/:id"
-            element={
-              <PrivateRoute>
-                <ClientFormPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/calculations"
-            element={
-              <PrivateRoute>
-                <CalculationListPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/calculations/new"
-            element={
-              <PrivateRoute>
-                <CalculationFormPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/calculations/:id"
-            element={
-              <PrivateRoute>
-                <CalculationFormPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/calculations/:id/result"
-            element={
-              <PrivateRoute>
-                <CalculationResultPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/sindicatos"
-            element={
-              <PrivateRoute>
-                <SindicatoListPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/sindicatos/new"
-            element={
-              <PrivateRoute>
-                <SindicatoFormPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/sindicatos/:id"
-            element={
-              <PrivateRoute>
-                <SindicatoFormPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/webhooks"
-            element={
-              <PrivateRoute>
-                <WebhookConfigPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ai-templates"
-            element={
-              <PrivateRoute>
-                <AiPromptTemplateListPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ai-templates/new"
-            element={
-              <PrivateRoute>
-                <AiPromptTemplateFormPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/ai-templates/:id"
-            element={
-              <PrivateRoute>
-                <AiPromptTemplateFormPage />
-              </PrivateRoute>
-            }
-          />
+          {/* Public Routes */}
+          <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
+          <Route path="/register" element={<PublicRoute><AuthPage /></PublicRoute>} />
+          <Route path="/" element={<PublicRoute><AuthPage /></PublicRoute>} /> {/* Default public route */}
+
+          {/* Private Routes */}
+          <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+          <Route path="/calculations" element={<PrivateRoute><CalculationListPage /></PrivateRoute>} />
+          <Route path="/calculations/new" element={<PrivateRoute><CalculationFormPage /></PrivateRoute>} />
+          <Route path="/calculations/edit/:id" element={<PrivateRoute><CalculationFormPage /></PrivateRoute>} />
+          <Route path="/calculations/result/:id" element={<PrivateRoute><CalculationResultPage /></PrivateRoute>} />
+          <Route path="/ai-templates" element={<PrivateRoute><AiPromptTemplateListPage /></PrivateRoute>} />
+          <Route path="/ai-templates/new" element={<PrivateRoute><AiPromptTemplateFormPage /></PrivateRoute>} />
+          <Route path="/ai-templates/edit/:id" element={<PrivateRoute><AiPromptTemplateFormPage /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+          <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+          <Route path="/ai-templates/guide" element={<PrivateRoute><AiTemplateConfigurationGuidePage /></PrivateRoute>} />
+
+          {/* Catch-all for 404 */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
       </AuthProvider>
     </Router>
   );
-}
+};
 
 export default App;
