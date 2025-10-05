@@ -43,7 +43,7 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
 }) => {
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent className="sm:max-w-[600px] bg-gray-900 border-orange-500 text-white overflow-y-auto">
+      <DialogContent className="w-full max-w-full sm:max-w-[600px] bg-gray-900 border-orange-500 text-white overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-orange-500">{isEditing ? 'Editar Webhook' : 'Novo Webhook'}</DialogTitle>
           <DialogDescription className="text-gray-300">
