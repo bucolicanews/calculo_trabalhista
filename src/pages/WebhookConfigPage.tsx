@@ -167,7 +167,7 @@ const WebhookConfigPage: React.FC = () => {
                     onValueChange={(value) => handleChange(index, 'event_type', value)}
                     disabled={saving}
                   >
-                    <SelectTrigger id={`event_type-${index}`} className="bg-gray-800 border-gray-700 text-black focus:border-orange-500"> {/* Adicionado text-black aqui */}
+                    <SelectTrigger id={`event_type-${index}`} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"> {/* Corrigido para text-white */}
                       <SelectValue placeholder="Selecione um tipo de evento" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700 text-white">
