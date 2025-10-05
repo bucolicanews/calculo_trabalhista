@@ -120,9 +120,9 @@ const CalculationResultPage: React.FC = () => {
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-          <Button variant="ghost" onClick={() => navigate('/calculations')} className="text-orange-500 hover:text-orange-600 mb-4 sm:mb-0 sm:w-auto">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Cálculos
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
+          <Button variant="ghost" onClick={() => navigate('/calculations')} className="text-orange-500 hover:text-orange-600 mb-2 sm:mb-0 sm:w-auto">
+            <ArrowLeft className="mr-1 h-1 w-1" /> Voltar para Cálculos
           </Button>
           <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
             Resultado do Cálculo
