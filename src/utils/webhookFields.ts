@@ -47,9 +47,9 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'calculo_carga_horaria', label: 'Cálculo (Carga Horária)', baseSupabasePath: 'carga_horaria', sourceTable: 'tbl_calculos' },
   { key: 'calculo_created_at', label: 'Cálculo (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_calculos' },
   { key: 'calculo_resposta_ai', label: 'Cálculo (Resposta IA)', baseSupabasePath: 'resposta_ai', sourceTable: 'tbl_calculos' },
-  { key: 'calculo_ai_template_id', label: 'Cálculo (ID Modelo IA)', baseSupabasePath: 'ai_template_id', sourceTable: 'tbl_calculos' },
+  { key: 'calculo_ai_template_id', label: 'Cálculo (ID Modelo IA)', baseSupabasePath: 'ai_template_id', sourceTable: 'tbl_calculos' }, // NOVO
 
-  // tbl_ai_prompt_templates fields
+  // tbl_ai_prompt_templates fields (agora acessíveis via tbl_calculos)
   { key: 'ai_template_title', label: 'Modelo IA (Título)', baseSupabasePath: 'title', sourceTable: 'tbl_ai_prompt_templates' },
   { key: 'ai_template_identificacao', label: 'Modelo IA (Identificação)', baseSupabasePath: 'identificacao', sourceTable: 'tbl_ai_prompt_templates' },
   { key: 'ai_template_comportamento', label: 'Modelo IA (Comportamento)', baseSupabasePath: 'comportamento', sourceTable: 'tbl_ai_prompt_templates' },
@@ -59,8 +59,9 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'ai_template_proventos', label: 'Modelo IA (Proventos)', baseSupabasePath: 'proventos', sourceTable: 'tbl_ai_prompt_templates' },
   { key: 'ai_template_descontos', label: 'Modelo IA (Descontos)', baseSupabasePath: 'descontos', sourceTable: 'tbl_ai_prompt_templates' },
   { key: 'ai_template_observacoes_base_legal', label: 'Modelo IA (Obs. Base Legal)', baseSupabasePath: 'observacoes_base_legal', sourceTable: 'tbl_ai_prompt_templates' },
-  { key: 'ai_template_estrutura_json_modelo_saida', label: 'Modelo IA (Estrutura JSON Saída)', baseSupabasePath: 'estrutura_json_modelo_saida', sourceTable: 'tbl_ai_prompt_templates' }, // NOVO
-  { key: 'ai_template_instrucoes_entrada_dados_rescisao', label: 'Modelo IA (Instruções Entrada Rescisão)', baseSupabasePath: 'instrucoes_entrada_dados_rescisao', sourceTable: 'tbl_ai_prompt_templates' }, // NOVO
+  { key: 'ai_template_formatacao_texto_cabecalho', label: 'Modelo IA (Formatação Cabeçalho)', baseSupabasePath: 'formatacao_texto_cabecalho', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_formatacao_texto_corpo', label: 'Modelo IA (Formatação Corpo)', baseSupabasePath: 'formatacao_texto_corpo', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_formatacao_texto_rodape', label: 'Modelo IA (Formatação Rodapé)', baseSupabasePath: 'formatacao_texto_rodape', sourceTable: 'tbl_ai_prompt_templates' },
   { key: 'ai_template_created_at', label: 'Modelo IA (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_ai_prompt_templates' },
 ];
 
@@ -79,7 +80,7 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
       return `tbl_calculos(tbl_sindicatos(${field.baseSupabasePath}))`;
     }
     if (field.sourceTable === 'tbl_ai_prompt_templates') {
-      return `tbl_calculos(tbl_ai_prompt_templates(${field.baseSupabasePath}))`;
+      return `tbl_calculos(tbl_ai_prompt_templates(${field.baseSupabasePath}))`; // NOVO
     }
   } else if (mainTableName === 'tbl_calculos') {
     if (field.sourceTable === 'tbl_clientes') {
@@ -89,7 +90,7 @@ export const getFullSupabasePath = (mainTableName: string, field: FieldDefinitio
       return `tbl_sindicatos(${field.baseSupabasePath})`;
     }
     if (field.sourceTable === 'tbl_ai_prompt_templates') {
-      return `tbl_ai_prompt_templates(${field.baseSupabasePath})`;
+      return `tbl_ai_prompt_templates(${field.baseSupabasePath})`; // NOVO
     }
   }
   return field.baseSupabasePath; // Fallback for direct fields or if no specific relation is found
