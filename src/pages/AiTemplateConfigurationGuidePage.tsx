@@ -47,71 +47,12 @@ INSTRUÇÕES DE FORMATO OBRIGATÓRIAS:
 -professor de cálculo trabalhista e rescisões`,
     laws: `- calcular sempre a diferença de salário exigido pelo sindicato e relação ao recebido pelo trabalhador durante o período de trabalho
 A Lei Principal: Consolidação das Leis do Trabalho (CLT)
-O núcleo de toda a legislação trabalhista brasileira é a Consolidação das Leis do Trabalho (CLT), aprovada pelo Decreto-Lei nº 5.452, de 1º de maio de 1943.A CLT é a principal fonte de regras que define e regulamenta a relação de emprego individual e coletiva, abrangendo temas como:
-Registro e Documentação: Obrigatoriedade da Carteira de Trabalho e Previdência Social (CTPS), hoje majoritariamente digital.
-Contrato de Trabalho: Tipos de contrato (prazo determinado, indeterminado, intermitente, etc.) e condições.
-Jornada de Trabalho: Limites diários e semanais (geralmente 8 horas diárias e 44 semanais), horas extras e regime de turnos.
-Remuneração: Salário mínimo, equiparação salarial e descontos.
-Férias: Direito, período de concessão e pagamento.
-Segurança e Medicina do Trabalho: Normas de saúde e segurança (as NRs - Normas Regulamentadoras, que se baseiam na CLT).
-Proteção ao Trabalho: Regras para o trabalho da mulher, do menor e do aprendiz.
-Rescisão do Contrato: Tipos de demissão (justa causa, sem justa causa, pedido de demissão, etc.) e verbas rescisórias.
-Direito Coletivo: Sindicatos, acordos e convenções coletivas de trabalho.
-
-2. Norma Máxima: Constituição Federal de 1988
-Acima da CLT, a Constituição da República Federativa do Brasil (CF/88) estabelece os direitos sociais básicos dos trabalhadores no seu Artigo 7º. Qualquer lei infraconstitucional (como a CLT) deve respeitar esses direitos.
-Direitos constitucionais incluem:
-Salário mínimo.
-Décimo terceiro salário (Lei nº 4.090/62).
-Fundo de Garantia por Tempo de Serviço (FGTS).
-Seguro-desemprego (Lei nº 7.998/90).
-Férias anuais remuneradas com, no mínimo, um terço a mais.
-Licença-maternidade e licença-paternidade.
-Proteção contra a despedida arbitrária ou sem justa causa (multa de 40% do FGTS).
-
-3. Leis Específicas e Complementares
-Além da CLT, diversas leis e normas tratam de relações de trabalho específicas ou detalham direitos e obrigações:
-Legislação
-Número
-Finalidade
-Lei do Aviso Prévio
-Lei nº 12.506/2011
-Regulamenta o acréscimo de 3 dias por ano de serviço ao aviso prévio.
-Lei da Terceirização
-Lei nº 13.429/2017
-Disciplina o trabalho temporário e a terceirização de todas as atividades.
-Lei do Trabalho Doméstico
-Lei Complementar nº 150/2015
-Garante direitos específicos (como FGTS obrigatório, seguro-desemprego, etc.) aos empregados domésticos.
-Lei do Estágio
-Lei nº 11.788/2008
-Define as regras para a contratação de estagiários (que não gera vínculo empregatício CLT).
-Lei da Aprendizagem
-Lei nº 10.097/2000
-Regulamenta a contratação de jovens aprendizes.
-Lei do PIS/PASEP
-Lei nº 7.998/90
-Define o programa de Abono Salarial (PIS/PASEP) e o seguro-desemprego.
-Normas Regulamentadoras (NRs)
-Portarias do Ministério do Trabalho
-Conjunto de regras que detalham as obrigações de segurança e saúde no trabalho (NR 7, NR 9, etc.).`,
-    proventos: `Saldo de Salário	Fórmula: (Salário Base de Cálculo / 30) * dias trabalhados no mês da rescisão.
-Aviso Prévio Indenizado	Calculado com base na Lei nº 12.506/2011 (30 dias + 3 dias por ano de serviço), utilizando as datas de {{ $json.inicioContrato }} e {{ $json.inicioContrato }}.
-13º Salário Proporcional	Fórmula: (Acréscimos Médios / 12) * meses trabalhados no ano (considerando a projeção do aviso prévio).
-Férias Proporcionais	Fórmula: (Salário Base de Cálculo / 12) * meses do período aquisitivo (considerando a projeção do aviso prévio).
-INSS	Incide sobre o Saldo de Salário e o 13º Salário, conforme tabelas vigentes. Verbas indenizatórias não possuem incidência de INSS.
-Multa de 40% do FGTS	O saldo de FGTS é estimado com base nos depósitos de 8% sobre a remuneração durante o período do contrato. A multa de 40% incide sobre este total, caso não tenha a ctps assinada
-Diferença de salário entre salario estipulado pelo sindicato e relação ao recebido pelo trabalhador durante o período de trabalho
-Fgts – valor do fgts , caso não tenha a ctps assinada`,
+O núcleo de toda a legislação trabalhista brasileira é a Consolidação das Leis do Trabalho (CLT), aprovada pelo Decreto-Lei nº 5.452, de 1º de maio de 1943.A CLT é a principal fonte de regras que define e regulamenta a relação de emprego individual e coletiva, abrangendo temas como:\nRegistro e Documentação: Obrigatoriedade da Carteira de Trabalho e Previdência Social (CTPS), hoje majoritariamente digital.\nContrato de Trabalho: Tipos de contrato (prazo determinado, indeterminado, intermitente, etc.) e condições.\nJornada de Trabalho: Limites diários e semanais (geralmente 8 horas diárias e 44 semanais), horas extras e regime de turnos.\nRemuneração: Salário mínimo, equiparação salarial e descontos.\nFérias: Direito, período de concessão e pagamento.\nSegurança e Medicina do Trabalho: Normas de saúde e segurança (as NRs - Normas Regulamentadoras, que se baseiam na CLT).\nProteção ao Trabalho: Regras para o trabalho da mulher, do menor e do aprendiz.\nRescisão do Contrato: Tipos de demissão (justa causa, sem justa causa, pedido de demissão, etc.) e verbas rescisórias.\nDireito Coletivo: Sindicatos, acordos e convenções coletivas de trabalho.\n\n2. Norma Máxima: Constituição Federal de 1988\nAcima da CLT, a Constituição da República Federativa do Brasil (CF/88) estabelece os direitos sociais básicos dos trabalhadores no seu Artigo 7º. Qualquer lei infraconstitucional (como a CLT) deve respeitar esses direitos.\nDireitos constitucionais incluem:\nSalário mínimo.\nDécimo terceiro salário (Lei nº 4.090/62).\nFundo de Garantia por Tempo de Serviço (FGTS).\nSeguro-desemprego (Lei nº 7.998/90).\nFérias anuais remuneradas com, no mínimo, um terço a mais.\nLicença-maternidade e licença-paternidade.\nProteção contra a despedida arbitrária ou sem justa causa (multa de 40% do FGTS).\n\n3. Leis Específicas e Complementares\nAlém da CLT, diversas leis e normas tratam de relações de trabalho específicas ou detalham direitos e obrigações:\nLegislação\nNúmero\nFinalidade\nLei do Aviso Prévio\nLei nº 12.506/2011\nRegulamenta o acréscimo de 3 dias por ano de serviço ao aviso prévio.\nLei da Terceirização\nLei nº 13.429/2017\nDisciplina o trabalho temporário e a terceirização de todas as atividades.\nLei do Trabalho Doméstico\nLei Complementar nº 150/2015\nGarante direitos específicos (como FGTS obrigatório, seguro-desemprego, etc.) aos empregados domésticos.\nLei do Estágio\nLei nº 11.788/2008\nDefine as regras para a contratação de estagiários (que não gera vínculo empregatício CLT).\nLei da Aprendizagem\nLei nº 10.097/2000\nRegulamenta a contratação de jovens aprendizes.\nLei do PIS/PASEP\nLei nº 7.998/90\nDefine o programa de Abono Salarial (PIS/PASEP) e o seguro-desemprego.\nNormas Regulamentadoras (NRs)\nPortarias do Ministério do Trabalho\nConjunto de regras que detalham as obrigações de segurança e saúde no trabalho (NR 7, NR 9, etc.).',
+    proventos: `Saldo de Salário	Fórmula: (Salário Base de Cálculo / 30) * dias trabalhados no mês da rescisão.\nAviso Prévio Indenizado	Calculado com base na Lei nº 12.506/2011 (30 dias + 3 dias por ano de serviço), utilizando as datas de {{ $json.inicioContrato }} e {{ $json.inicioContrato }}.\n13º Salário Proporcional	Fórmula: (Acréscimos Médios / 12) * meses trabalhados no ano (considerando a projeção do aviso prévio).\nFérias Proporcionais	Fórmula: (Salário Base de Cálculo / 12) * meses do período aquisitivo (considerando a projeção do aviso prévio).\nINSS	Incide sobre o Saldo de Salário e o 13º Salário, conforme tabelas vigentes. Verbas indenizatórias não possuem incidência de INSS.\nMulta de 40% do FGTS	O saldo de FGTS é estimado com base nos depósitos de 8% sobre a remuneração durante o período do contrato. A multa de 40% incide sobre este total, caso não tenha a ctps assinada\nDiferença de salário entre salario estipulado pelo sindicato e relação ao recebido pelo trabalhador durante o período de trabalho\nFgts – valor do fgts , caso não tenha a ctps assinada`,
     descontos: `caso esteja sem carteira assinada não desconta nada , caso não descontar , inss, ir se for o caso`,
-    observationsBaseLegal: `Base Legal Geral	Cálculo realizado em conformidade com o Decreto-Lei nº 5.452/43 (Consolidação das Leis do Trabalho - CLT) e legislação complementar.
-Observação CTPS	Se a CTPS não estiver assinada ({{ $json.ctpsAssinada }} seja "não" ou nulo), é fundamental cobrar o reconhecimento do vínculo e o recolhimento de todo o FGTS não depositado.
-Observação Sindicato	O campo {{ $json.obsSindicato }} deve ser analisado para verificar se representa algum débito, crédito ou informação relevante para o cálculo final, conforme a convenção coletiva.
-Observação FGTS	O saldo do FGTS a ser liberado para saque será o valor acumulado na conta vinculada, acrescido da multa de 40% paga pelo empregador.
-Aviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valores podem variar dependendo das especificidades do contrato de trabalho e da convenção coletiva.`,
-    headerFormatting: `Jota Contabilidade - Relatório de Cálculo de Rescisão Contratual`,
-    bodyFormatting: `Atenciosamente Jota Contabilidade`,
-    footerFormatting: `- Inclua a saudação final ("Atenciosamente, [Jota Contabilidade]").`
+    observationsBaseLegal: `Base Legal Geral	Cálculo realizado em conformidade com o Decreto-Lei nº 5.452/43 (Consolidação das Leis do Trabalho - CLT) e legislação complementar.\nObservação CTPS	Se a CTPS não estiver assinada ({{ $json.ctpsAssinada }} seja "não" ou nulo), é fundamental cobrar o reconhecimento do vínculo e o recolhimento de todo o FGTS não depositado.\nObservação Sindicato	O campo {{ $json.obsSindicato }} deve ser analisado para verificar se representa algum débito, crédito ou informação relevante para o cálculo final, conforme a convenção coletiva.\nObservação FGTS	O saldo do FGTS a ser liberado para saque será o valor acumulado na conta vinculada, acrescido da multa de 40% paga pelo empregador.\nAviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valores podem variar dependendo das especificidades do contrato de trabalho e da convenção coletiva.`,
+    jsonOutputStructure: '```json\n{\n  "cabecalho": "Jota Contabilidade\\nRelatório de Cálculo de Rescisão Contratual",\n  "dados_rescisao": {\n    "Nome do Trabalhador": "{{ $json.NomeFuncionario }}",\n    "CPF do Trabalhador": "{{ $json.Cpf_Funcionario }}",\n    "Função": "{{ $json.funcaoFuncionario }}",\n    "CNPJ do Empregador": "{{ $json.cnpjEmpresa }}",\n    "Data Início Contrato": "{{ $json.inicioContrato }}",\n    "Data Fim Contrato": "{{ $json.Fim_contrato }}",\n    "Duração do Contrato": "...",\n    "Tipo de Rescisão": "{{ $json.tipoAviso }}",\n    "Salário Base Contratual": "{{ $json.salarioTrabalhador }}",\n    "Piso Salarial Sindicato": "{{ $json.salarioSindicato }}",\n    "Remuneração Base para Cálculo": "...",\n    "CTPS Assinada": "{{ $json.ctpsAssinada }}"\n  },\n  "proventos": [\n    {"Verba Rescisória": "Saldo de Salário", "Base de Cálculo": "...", "Valor (R$)": "..."}\n  ],\n  "descontos": [\n    {"Desconto": "INSS", "Base de Cálculo": "...", "Valor (R$)": "..."}\n  ],\n  "valor_liquido_a_receber": "R$ X.XXX,XX",\n  "observacoes_base_legal": [\n    "Base Legal Geral: ..."\n  ],\n  "saudacao_final": "Atenciosamente, Jota Contabilidade"\n}\n```',
+    inputInstructions: 'Contexto\tCampo\tValor\nEmpresa\tCNPJ\t{{ $json.cnpjEmpresa }}\nCPF Responsável\t{{ $json.cpf_Responsavel_empresa }}\nTrabalhador\tNome\t{{ $json.NomeFuncionario }}\nCPF\t{{ $json.Cpf_Funcionario }}\nFunção\t{{ $json.funcaoFuncionario }}\nContrato\tSalário Base de Cálculo\t{{ $json.salarioTrabalhador }}\nData Início Contrato\t{{ $json.inicioContrato }}\nData Fim Contrato\t{{ $json.Fim_contrato }}\nCTPS Assinada\t{{ $json.ctpsAssinada }}\nTipo Aviso Prévio\t{{ $json.tipoAviso }}\nCarga Horária\t{{ $json.CargaHoraria }}\nPiso Salarial Sindicato\t{{ $json.salarioSindicato }}\nDescontos\tDescontos Médios Informados\t{{ $json.DescontosMedios }}\nOutros/Memória\tObservação Sindicato\t{{ $json.obsSindicato }}\nID Cálculo\t{{ $json.IdCalculo }}\nData do Cálculo\t{{ $json.dataDoCalculo }}\nAcréscimos Médios\t{{ $json.AcrescimosMedios }}',
   };
 
   const renderConfigSection = (title: string, content: string, fieldName: string) => (
@@ -166,9 +107,8 @@ Aviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valor
           {renderConfigSection("Proventos", config.proventos, "Proventos")}
           {renderConfigSection("Descontos", config.descontos, "Descontos")}
           {renderConfigSection("Observações e Base Legal", config.observationsBaseLegal, "Observações e Base Legal")}
-          {renderConfigSection("Formatação de Texto - Cabeçalho", config.headerFormatting, "Formatação de Cabeçalho")}
-          {renderConfigSection("Formatação de Texto - Corpo do Texto", config.bodyFormatting, "Formatação de Corpo")}
-          {renderConfigSection("Formatação de Texto - Rodapé", config.footerFormatting, "Formatação de Rodapé")}
+          {renderConfigSection("Estrutura JSON (Modelo de Saída)", config.jsonOutputStructure, "Estrutura JSON (Modelo de Saída)")}
+          {renderConfigSection("Instruções de Entrada (Dados da Rescisão)", config.inputInstructions, "Instruções de Entrada (Dados da Rescisão)")}
         </div>
       </div>
     </MainLayout>
