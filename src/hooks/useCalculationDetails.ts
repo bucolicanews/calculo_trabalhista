@@ -4,6 +4,32 @@ import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
 import { parseMarkdownTables, ParsedTable } from '@/utils/markdownParser';
 
+interface Provento {
+  id: string;
+  id_calculo: string | null;
+  nome_provento: string;
+  valor_calculado: number;
+  natureza_da_verba: string;
+  legislacao: string | null;
+  exemplo_aplicavel: string | null;
+  formula_sugerida: string | null;
+  parametro_calculo: string | null;
+  json_completo: any | null;
+}
+
+interface Desconto {
+  id: string;
+  id_calculo: string | null;
+  nome_desconto: string;
+  valor_calculado: number;
+  natureza_da_verba: string;
+  legislacao: string | null;
+  exemplo_aplicavel: string | null;
+  formula_sugerida: string | null;
+  parametro_calculo: string | null;
+  json_completo: any | null;
+}
+
 export interface CalculationDetails {
   id: string;
   cliente_id: string;
@@ -47,6 +73,8 @@ export interface CalculationDetails {
     texto_extraido: string | null;
     data_hora: string;
   } | null;
+  proventos: Provento[] | null; // NOVO CAMPO
+  descontos: Desconto[] | null; // NOVO CAMPO
 }
 
 interface UseCalculationDetailsResult {
@@ -82,7 +110,9 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
             id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, 
             estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
           ),
-          tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
+          tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
+          proventos(*),
+          descontos(*)
         `)
         .eq('id', calculationId)
         .single();
@@ -92,13 +122,15 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
         console.error('Error fetching calculation result:', error);
         setCalculation(null);
       } else if (data) {
-        setCalculation(data as CalculationDetails);
-        const tables = data.resposta_ai ? parseMarkdownTables(data.resposta_ai) : [];
+        setCalculation(data as unknown as CalculationDetails);
+        const tables = (data as unknown as CalculationDetails).resposta_ai ? parseMarkdownTables((data as unknown as CalculationDetails).resposta_ai!) : [];
         setParsedTables(tables);
         setHasAnyResult(
-          !!data.resposta_ai || 
-          !!data.tbl_resposta_calculo?.url_documento_calculo || 
-          !!data.tbl_resposta_calculo?.texto_extraido
+          !!(data as unknown as CalculationDetails).resposta_ai || 
+          !!(data as unknown as CalculationDetails).tbl_resposta_calculo?.url_documento_calculo || 
+          !!(data as unknown as CalculationDetails).tbl_resposta_calculo?.texto_extraido ||
+          !!((data as unknown as CalculationDetails).proventos && (data as unknown as CalculationDetails).proventos!.length > 0) || 
+          !!((data as unknown as CalculationDetails).descontos && (data as unknown as CalculationDetails).descontos!.length > 0)    
         );
       } else {
         setCalculation(null);

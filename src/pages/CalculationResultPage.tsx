@@ -11,6 +11,33 @@ import { ArrowLeft } from 'lucide-react';
 import CalculationDetailsCard from '@/components/calculations/CalculationDetailsCard';
 import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
+import ProventosDescontosDisplay from '@/components/calculations/ProventosDescontosDisplay'; // NOVO IMPORT
+
+interface Provento {
+  id: string;
+  id_calculo: string | null;
+  nome_provento: string;
+  valor_calculado: number;
+  natureza_da_verba: string;
+  legislacao: string | null;
+  exemplo_aplicavel: string | null;
+  formula_sugerida: string | null;
+  parametro_calculo: string | null;
+  json_completo: any | null;
+}
+
+interface Desconto {
+  id: string;
+  id_calculo: string | null;
+  nome_desconto: string;
+  valor_calculado: number;
+  natureza_da_verba: string;
+  legislacao: string | null;
+  exemplo_aplicavel: string | null;
+  formula_sugerida: string | null;
+  parametro_calculo: string | null;
+  json_completo: any | null;
+}
 
 interface CalculationDetails {
   id: string;
@@ -55,6 +82,8 @@ interface CalculationDetails {
     texto_extraido: string | null;
     data_hora: string;
   } | null;
+  proventos: Provento[] | null; // NOVO CAMPO
+  descontos: Desconto[] | null; // NOVO CAMPO
 }
 
 const CalculationResultPage: React.FC = () => {
@@ -83,7 +112,9 @@ const CalculationResultPage: React.FC = () => {
           id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, 
           estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
         ),
-        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
+        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
+        proventos(*),
+        descontos(*)
       `)
       .eq('id', id)
       .single();
@@ -93,7 +124,7 @@ const CalculationResultPage: React.FC = () => {
       console.error('Error fetching calculation result:', error);
       navigate('/calculations');
     } else if (data) {
-      setCalculation(data as CalculationDetails);
+      setCalculation(data as unknown as CalculationDetails); // Corrigido aqui
     } else {
       setCalculation(null);
     }
@@ -118,6 +149,7 @@ const CalculationResultPage: React.FC = () => {
 
   const otherResultDetails = calculation.tbl_resposta_calculo;
   const hasAnyResult = calculation.resposta_ai || otherResultDetails?.url_documento_calculo || otherResultDetails?.texto_extraido;
+  const hasStructuredData = (calculation.proventos && calculation.proventos.length > 0) || (calculation.descontos && calculation.descontos.length > 0);
 
   return (
     <MainLayout>
@@ -133,6 +165,13 @@ const CalculationResultPage: React.FC = () => {
         </div>
 
         <CalculationDetailsCard calculation={calculation} />
+
+        {hasStructuredData && ( 
+          <ProventosDescontosDisplay
+            proventos={calculation.proventos || []}
+            descontos={calculation.descontos || []}
+          />
+        )}
 
         {hasAnyResult ? (
           <AiResponseDisplay
