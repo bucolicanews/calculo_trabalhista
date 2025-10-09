@@ -97,8 +97,8 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
                 </TableHeader>
                 <TableBody>
                   {proventos.map((provento) => (
-                    <React.Fragment key={provento.id}> {/* Fragment para agrupar as TRs */}
-                      <Collapsible> {/* Removido asChild aqui */}
+                    <React.Fragment key={provento.id}>
+                      <Collapsible>
                         <CollapsibleTrigger asChild>
                           <TableRow className="border-gray-700 hover:bg-gray-800 cursor-pointer">
                             <TableCell className="font-medium text-gray-200">{provento.nome_provento}</TableCell>
@@ -145,8 +145,8 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
                 </TableHeader>
                 <TableBody>
                   {descontos.map((desconto) => (
-                    <React.Fragment key={desconto.id}> {/* Fragment para agrupar as TRs */}
-                      <Collapsible> {/* Removido asChild aqui */}
+                    <React.Fragment key={desconto.id}>
+                      <Collapsible>
                         <CollapsibleTrigger asChild>
                           <TableRow className="border-gray-700 hover:bg-gray-800 cursor-pointer">
                             <TableCell className="font-medium text-gray-200">{desconto.nome_desconto}</TableCell>
@@ -191,8 +191,8 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
           <div className="mt-8 p-4 bg-gray-800 border border-gray-700 rounded-md">
             <h3 className="text-xl font-bold text-orange-400 mb-4 text-center">Base Legal Aplicada</h3>
             <ul className="list-disc list-inside text-gray-300 space-y-1">
-              {uniqueLegislations.map((leg, index) => (
-                <li key={index}>{leg}</li>
+              {uniqueLegislations.map((leg) => (
+                <li key={leg}>{leg}</li>
               ))}
             </ul>
           </div>

@@ -12,9 +12,10 @@ import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView'; // Importar o novo componente
 
-// MODIFIED IMPORT FOR JSPDF - Revertendo para importação padrão
-import { jsPDF } from 'jspdf'; 
-import 'jspdf-autotable'; // Importar o plugin jspdf-autotable
+// Removendo a importação estática de jsPDF e jspdf-autotable daqui
+// import { jsPDF } from 'jspdf';
+// import 'jspdf-autotable';
+
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -141,6 +142,10 @@ const CalculationResultPage: React.FC = () => {
     }
 
     showSuccess('Gerando PDF do relatório completo, aguarde...');
+
+    // Importação dinâmica de jsPDF e jspdf-autotable
+    const { jsPDF } = await import('jspdf');
+    await import('jspdf-autotable'); // Garante que o plugin seja carregado
 
     const doc = new jsPDF('p', 'mm', 'a4');
     let yPos = 15; // Posição Y inicial
