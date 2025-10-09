@@ -1,25 +1,14 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+// Removidas as importações de 'format' e 'ptBR' pois não são usadas diretamente aqui.
 
 // Importar componentes auxiliares existentes
 import CalculationDetailsCard from './CalculationDetailsCard';
 import ProventosDescontosDisplay from './ProventosDescontosDisplay';
 
-// Interfaces para os dados financeiros (Proventos/Descontos)
-interface ItemFinanceiro {
-    id: string; // Usar string para IDs do Supabase
-    nome_provento?: string; // Para proventos
-    nome_desconto?: string; // Para descontos
-    valor_calculado: number;
-    natureza_da_verba: string;
-    legislacao: string | null;
-    exemplo_aplicavel: string | null;
-    formula_sugerida: string | null;
-    parametro_calculo: string | null;
-    json_completo: any | null;
-}
+// Importar as interfaces de Provento e Desconto de um local centralizado (useCalculationDetails.ts)
+// Isso garante que os tipos sejam consistentes em toda a aplicação.
+import { Provento, Desconto } from '@/hooks/useCalculationDetails';
 
 // Interface para os dados principais do cálculo (para CalculationDetailsCard)
 interface CalculationDataForDetailsCard {
@@ -49,8 +38,8 @@ interface CalculationDataForDetailsCard {
 // Interface para o componente FullRescissionView
 interface FullRescissionViewProps {
     calculationDetails: CalculationDataForDetailsCard;
-    proventos: ItemFinanceiro[];
-    descontos: ItemFinanceiro[];
+    proventos: Provento[]; // Usando a interface importada
+    descontos: Desconto[]; // Usando a interface importada
 }
 
 export const FullRescissionView: React.FC<FullRescissionViewProps> = ({

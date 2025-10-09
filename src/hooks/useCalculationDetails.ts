@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
 import { parseMarkdownTables, ParsedTable } from '@/utils/markdownParser';
 
-interface Provento {
+export interface Provento {
   id: string;
   id_calculo: string | null;
   nome_provento: string;
@@ -17,7 +17,7 @@ interface Provento {
   json_completo: any | null;
 }
 
-interface Desconto {
+export interface Desconto {
   id: string;
   id_calculo: string | null;
   nome_desconto: string;
@@ -120,6 +120,7 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
         console.error('Error fetching calculation result:', error);
         setCalculation(null);
       } else if (data) {
+        console.log("Dados do cálculo carregados (hook):", data); // Adicionado para depuração
         setCalculation(data as unknown as CalculationDetails);
         const tables = (data as unknown as CalculationDetails).resposta_ai ? parseMarkdownTables((data as unknown as CalculationDetails).resposta_ai!) : [];
         setParsedTables(tables);

@@ -146,7 +146,7 @@ const CalculationResultPage: React.FC = () => {
 
   const otherResultDetails = calculation.tbl_resposta_calculo;
   const hasAnyResult = calculation.resposta_ai || otherResultDetails?.url_documento_calculo || otherResultDetails?.texto_extraido;
-  const hasStructuredData = (calculation.tbl_proventos && calculation.tbl_proventos.length > 0) || (calculation.tbl_descontos && calculation.tbl_descontos.length > 0);
+  // Removida a variável 'hasStructuredData' pois não é utilizada.
 
   // Preparar os dados para o FullRescissionView
   const calculationDataForDetailsCard = {
