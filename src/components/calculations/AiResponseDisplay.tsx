@@ -4,11 +4,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Download, Table } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
 import { parseMarkdownTables, convertToCsv, ParsedTable } from '@/utils/markdownParser';
-import { customMarkdownComponents } from './MarkdownComponents';
 import { showError, showSuccess } from '@/utils/toast';
 
 import jsPDF from 'jspdf';
@@ -191,9 +187,7 @@ const AiResponseDisplay: React.FC<AiResponseDisplayProps> = ({
       <CardContent className="space-y-4 text-gray-300">
         {aiResponse && (
           <div ref={markdownRef} className="prose prose-invert max-w-none overflow-x-auto px-1">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={customMarkdownComponents}>
-              {aiResponse}
-            </ReactMarkdown>
+
             <div className="flex flex-wrap gap-2 mt-4">
               {parsedTables.length > 0 && (
                 <Button

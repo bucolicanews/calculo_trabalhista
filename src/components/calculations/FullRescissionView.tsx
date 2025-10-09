@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+// Removidas as importações de 'Card' e 'CardContent' pois não são usadas diretamente aqui.
 // Removidas as importações de 'format' e 'ptBR' pois não são usadas diretamente aqui.
 
 // Importar componentes auxiliares existentes
@@ -47,12 +47,8 @@ export const FullRescissionView: React.FC<FullRescissionViewProps> = ({
     proventos,
     descontos,
 }) => {
-    // O ProventosDescontosDisplay já calcula os totais e o líquido.
-    // Para o resumo final, podemos recalcular aqui ou extrair do ProventosDescontosDisplay se ele expor.
-    // Por simplicidade, vamos recalcular para o card de resumo.
-    const totalProventos = proventos.reduce((acc, item) => acc + item.valor_calculado, 0);
-    const totalDescontos = descontos.reduce((acc, item) => acc + item.valor_calculado, 0);
-    const liquidoReceber = totalProventos - totalDescontos;
+    // As variáveis totalProventos e totalDescontos foram removidas pois não são usadas diretamente neste componente.
+    // O ProventosDescontosDisplay já calcula e exibe esses totais.
 
     return (
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -69,16 +65,7 @@ export const FullRescissionView: React.FC<FullRescissionViewProps> = ({
                 />
 
                 {/* 3. Resumo Final da Rescisão */}
-                <Card className="bg-gray-900 border-4 border-orange-500 text-white shadow-2xl">
-                    <CardContent className="flex flex-col sm:flex-row justify-between items-center p-6 space-y-4 sm:space-y-0">
-                        <h2 className="text-3xl font-extrabold text-orange-500">Valor Líquido a Receber</h2>
-                        <div className="text-4xl font-extrabold">
-                            <span className={liquidoReceber >= 0 ? 'text-green-400' : 'text-red-400'}>
-                                R$ {liquidoReceber.toFixed(2)}
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
+
             </div>
         </div>
     );
