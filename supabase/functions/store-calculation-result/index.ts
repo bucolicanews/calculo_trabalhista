@@ -1,5 +1,3 @@
-declare const Deno: any; // Adicionado para resolver 'Cannot find name Deno'
-
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -16,7 +14,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { calculationId, aiResponse } = await req.json();
+    const { calculationId, aiResponse } = await req.json(); // aiResponse é o JSON string
 
     if (!calculationId || !aiResponse) {
       return new Response(JSON.stringify({ error: 'Missing calculationId or aiResponse' }), {
@@ -26,15 +24,47 @@ serve(async (req: Request) => {
     }
 
     const supabaseClient = createClient(
+      // @ts-ignore
       Deno.env.get('SUPABASE_URL') ?? '',
+      // @ts-ignore
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for server-side operations
     );
 
-    // Atualiza diretamente a tabela tbl_calculos com a resposta da IA
+    // 1. Tenta parsear a resposta da IA como JSON.
+    let isJson = false;
+    try {
+      JSON.parse(aiResponse);
+      isJson = true;
+    } catch (e) {
+      console.warn(`AI response for calculationId ${calculationId} is not valid JSON. Skipping detailed processing.`);
+    }
+
+    // 2. Se for JSON, invoca a função para processar proventos/descontos.
+    if (isJson) {
+      console.log(`Invoking process-ai-calculation-json for calculationId: ${calculationId}`);
+      const { data: invokeData, error: invokeError } = await supabaseClient.functions.invoke(
+        'process-ai-calculation-json',
+        {
+          body: {
+            calculationId: calculationId,
+            aiResponseJson: aiResponse, // Passa a string JSON completa
+          },
+        }
+      );
+
+      if (invokeError) {
+        console.error('Error invoking process-ai-calculation-json:', invokeError);
+        // Continua, mas loga o erro de processamento secundário
+      } else {
+        console.log('process-ai-calculation-json invoked successfully:', invokeData);
+      }
+    }
+
+    // 3. Armazena a resposta original (JSON string ou Markdown) na tabela tbl_calculos.
     const { error: updateCalculoError } = await supabaseClient
       .from('tbl_calculos')
       .update({
-        resposta_ai: aiResponse,
+        resposta_ai: aiResponse, // Armazena a string JSON original
       })
       .eq('id', calculationId);
 
@@ -46,37 +76,7 @@ serve(async (req: Request) => {
       });
     }
 
-    // Tenta parsear a resposta da IA como JSON. Se for JSON, invoca a nova função Edge.
-    let isJson = false;
-    try {
-      JSON.parse(aiResponse);
-      isJson = true;
-    } catch (e) {
-      // Not a valid JSON, proceed as Markdown
-    }
-
-    if (isJson) {
-      console.log(`Invoking process-ai-calculation-json for calculationId: ${calculationId}`);
-      const { data: invokeData, error: invokeError } = await supabaseClient.functions.invoke(
-        'process-ai-calculation-json',
-        {
-          body: {
-            calculationId: calculationId,
-            aiResponseJson: aiResponse,
-          },
-          // headers: { 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` }, // Não é necessário para invocações internas
-        }
-      );
-
-      if (invokeError) {
-        console.error('Error invoking process-ai-calculation-json:', invokeError);
-        // Não falha a requisição principal, apenas loga o erro de processamento secundário
-      } else {
-        console.log('process-ai-calculation-json invoked successfully:', invokeData);
-      }
-    }
-
-    return new Response(JSON.stringify({ message: 'AI response received and updated successfully in tbl_calculos', calculationId }), {
+    return new Response(JSON.stringify({ message: 'AI response received, processed (if JSON), and updated successfully in tbl_calculos', calculationId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

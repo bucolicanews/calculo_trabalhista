@@ -1,5 +1,3 @@
-declare const Deno: any;
-
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -26,7 +24,9 @@ serve(async (req: Request) => {
     }
 
     const supabaseClient = createClient(
+      // @ts-ignore
       Deno.env.get('SUPABASE_URL') ?? '',
+      // @ts-ignore
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
@@ -51,11 +51,32 @@ serve(async (req: Request) => {
       });
     }
 
+    // Limpar proventos e descontos existentes para este cálculo antes de inserir novos
+    const { error: deleteProventosError } = await supabaseClient
+      .from('proventos')
+      .delete()
+      .eq('id_calculo', calculationId);
+
+    if (deleteProventosError) {
+      console.error('Error deleting existing proventos:', deleteProventosError);
+    }
+
+    const { error: deleteDescontosError } = await supabaseClient
+      .from('descontos')
+      .delete()
+      .eq('id_calculo', calculationId);
+
+    if (deleteDescontosError) {
+      console.error('Error deleting existing descontos:', deleteDescontosError);
+    }
+
+
     // Process Proventos
     if (Verbas_Rescisorias.Remuneracao && Array.isArray(Verbas_Rescisorias.Remuneracao)) {
       for (const proventoItem of Verbas_Rescisorias.Remuneracao) {
         const valorCalculado = parseFloat(proventoItem.Cálculo?.Valor || 0);
-        if (valorCalculado > 0) {
+        // Inserir apenas se o valor for maior que zero ou se for uma verba de irregularidade (para registrar a ausência)
+        if (valorCalculado > 0 || proventoItem.Natureza_da_Verba === 'Irregularidade_Contratual') {
           const { error: insertError } = await supabaseClient
             .from('proventos')
             .insert({
@@ -81,7 +102,8 @@ serve(async (req: Request) => {
     if (Verbas_Rescisorias.Descontos && Array.isArray(Verbas_Rescisorias.Descontos)) {
       for (const descontoItem of Verbas_Rescisorias.Descontos) {
         const valorCalculado = parseFloat(descontoItem.Cálculo?.Valor || 0);
-        if (valorCalculado > 0) {
+        // Inserir apenas se o valor for maior que zero ou se for uma verba de irregularidade
+        if (valorCalculado > 0 || descontoItem.Natureza_da_Verba === 'Irregularidade_Contratual') {
           const { error: insertError } = await supabaseClient
             .from('descontos')
             .insert({

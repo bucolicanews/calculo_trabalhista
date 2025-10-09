@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Play } from 'lucide-react'; // Adicionado Play icon
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -15,7 +15,7 @@ import CalculationWebhookSender from '@/components/calculations/CalculationWebho
 import { Badge } from '@/components/ui/badge';
 
 // Definindo os possíveis status de um cálculo
-type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed';
+type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'reprocessing'; // Adicionado 'reprocessing'
 
 interface Calculation {
   id: string;
@@ -28,9 +28,6 @@ interface Calculation {
   tbl_ai_prompt_templates: {
     id: string;
     title: string;
-    // Adicione aqui os campos do template que você precisa exibir na lista, se houver
-    // estrutura_json_modelo_saida?: string;
-    // instrucoes_entrada_dados_rescisao?: string;
   } | null;
   tbl_resposta_calculo: {
     url_documento_calculo: string | null;
@@ -59,6 +56,7 @@ const CalculationListPage = () => {
   const [isWebhookSelectionOpen, setIsWebhookSelectionOpen] = useState(false);
   const [currentCalculationIdForWebhook, setCurrentCalculationIdForWebhook] = useState<string | null>(null);
   const [countdownTimers, setCountdownTimers] = useState<Map<string, number>>(new Map());
+  const [isReprocessing, setIsReprocessing] = useState<string | null>(null); // Novo estado para reprocessamento
 
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const intervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -336,6 +334,43 @@ const CalculationListPage = () => {
     }
   };
 
+  const handleReprocessAiResponse = async (calculationId: string) => {
+    if (!user) {
+      showError('Usuário não autenticado.');
+      return;
+    }
+
+    setIsReprocessing(calculationId);
+    updateCalculationStatus(calculationId, 'reprocessing');
+    showSuccess('Reprocessando resposta da IA...');
+
+    try {
+      const response = await fetch(`https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/reprocess-calculation-ai-response`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token || (await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({ calculationId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        showError(`Falha ao reprocessar resposta da IA: ${errorData.error || response.statusText}`);
+        console.error('Reprocess AI Response Error:', errorData);
+      } else {
+        showSuccess('Resposta da IA reprocessada com sucesso! Atualizando a lista...');
+        fetchCalculations(); // Atualiza a lista para refletir as mudanças
+      }
+    } catch (error: any) {
+      showError('Erro inesperado ao reprocessar resposta da IA: ' + error.message);
+      console.error('Unexpected Reprocess AI Response Error:', error);
+    } finally {
+      setIsReprocessing(null);
+      updateCalculationStatus(calculationId, 'completed'); // Assume que o reprocessamento foi bem-sucedido
+    }
+  };
+
 
   return (
     <MainLayout>
@@ -359,6 +394,7 @@ const CalculationListPage = () => {
               const currentStatus = calculation.status || 'idle';
               const hasResult = calculation.resposta_ai;
               const remainingSeconds = countdownTimers.get(calculation.id);
+              const isProcessingAny = isSendingWebhook === calculation.id || isReprocessing === calculation.id || currentStatus === 'pending_response';
 
               return (
                 <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
@@ -382,19 +418,38 @@ const CalculationListPage = () => {
                         </Badge>
                       )}
 
+                      {currentStatus === 'reprocessing' && (
+                        <Badge variant="secondary" className="bg-purple-600 text-white flex items-center">
+                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Reprocessando...
+                        </Badge>
+                      )}
+
                       {currentStatus === 'completed' && (
                         <Badge variant="secondary" className="bg-green-600 text-white flex items-center">
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Concluído
                         </Badge>
                       )}
 
+                      {/* Botão Processar/Reprocessar */}
+                      {hasResult && currentStatus !== 'reprocessing' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-purple-700 text-white hover:bg-purple-600"
+                          onClick={() => handleReprocessAiResponse(calculation.id)}
+                          disabled={isProcessingAny}
+                        >
+                          <Play className="h-4 w-4" />
+                        </Button>
+                      )}
 
-                      {currentStatus !== 'sending' && currentStatus !== 'completed' && currentStatus !== 'pending_response' && !hasResult && (
+                      {currentStatus !== 'sending' && currentStatus !== 'completed' && currentStatus !== 'pending_response' && currentStatus !== 'reprocessing' && !hasResult && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="bg-gray-700 text-white hover:bg-gray-600"
                           onClick={() => handleProcessWait(calculation.id)}
+                          disabled={isProcessingAny}
                         >
                           Processar
                         </Button>
@@ -429,7 +484,7 @@ const CalculationListPage = () => {
                       size="sm"
                       className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
                       onClick={() => handleOpenWebhookSelection(calculation.id)}
-                      disabled={isSendingWebhook === calculation.id || currentStatus === 'pending_response'}
+                      disabled={isProcessingAny}
                     >
                       {isSendingWebhook === calculation.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
