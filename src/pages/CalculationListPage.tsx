@@ -28,7 +28,9 @@ interface Calculation {
   tbl_ai_prompt_templates: {
     id: string;
     title: string;
-    // ... outros campos
+    // Adicione aqui os campos do template que você precisa exibir na lista, se houver
+    // estrutura_json_modelo_saida?: string;
+    // instrucoes_entrada_dados_rescisao?: string;
   } | null;
   tbl_resposta_calculo: {
     url_documento_calculo: string | null;
@@ -41,7 +43,6 @@ interface Calculation {
 }
 
 const AUTO_REFRESH_DURATION = 2 * 60 * 1000; // 2 minutos em milissegundos
-// NOVO: Duração da espera do botão "Processar"
 const PROCESS_WAIT_DURATION = 1 * 60 * 1000; // 1 minuto em milissegundos
 
 const formatCountdown = (seconds: number): string => {
@@ -62,7 +63,6 @@ const CalculationListPage = () => {
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const intervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
-  // ... (funções updateCalculationStatus, clearTimeoutAndIntervalById, useEffect, fetchCalculations não mudam) ...
   const updateCalculationStatus = (id: string, newStatus: CalculationStatus) => {
     setCalculations(prevCalculations =>
       prevCalculations.map(calc =>
@@ -105,7 +105,7 @@ const CalculationListPage = () => {
         id, nome_funcionario, inicio_contrato, fim_contrato, created_at, resposta_ai, 
         tbl_clientes(nome), 
         tbl_sindicatos(nome), 
-        tbl_ai_prompt_templates(id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, formatacao_texto_cabecalho, formatacao_texto_corpo, formatacao_texto_rodape, created_at), 
+        tbl_ai_prompt_templates(id, title), -- Apenas id e title são necessários para a lista
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
       `)
       .order('created_at', { ascending: false });
@@ -137,22 +137,18 @@ const CalculationListPage = () => {
     }
   };
 
-  // NOVO: Função para iniciar a espera do botão "Processar"
   const handleProcessWait = (calculationId: string) => {
     console.log(`[CalculationListPage] Iniciando espera de 1 minuto para o cálculo ID: ${calculationId}`);
 
-    // Atualiza o status para mostrar a badge de "Aguardando Resposta"
     updateCalculationStatus(calculationId, 'pending_response');
     showSuccess('Processamento iniciado. A página será atualizada em 1 minuto.');
 
-    // Cria o temporizador para recarregar a página
     const timeoutId = setTimeout(() => {
       console.log(`Atualizando a página para o cálculo ${calculationId} após 1 minuto.`);
       window.location.reload();
     }, PROCESS_WAIT_DURATION);
     timeoutsRef.current.set(calculationId, timeoutId);
 
-    // Inicia o contador visual
     const initialSeconds = PROCESS_WAIT_DURATION / 1000;
     setCountdownTimers(prev => new Map(prev).set(calculationId, initialSeconds));
 
@@ -183,7 +179,6 @@ const CalculationListPage = () => {
   };
 
   const handleSendToWebhook = async (calculationId: string, webhookConfigIds: string[]) => {
-    // ... (esta função permanece a mesma)
     console.log(`[CalculationListPage] handleSendToWebhook called for calculationId: ${calculationId}, webhookConfigIds:`, webhookConfigIds);
 
     if (!user) {
@@ -196,7 +191,6 @@ const CalculationListPage = () => {
     showSuccess('Iniciando envio para webhooks selecionados...');
 
     try {
-      // ... (código interno do try/catch não muda)
       const { data: webhookConfigs, error: webhookError } = await supabase
         .from('tbl_webhook_configs')
         .select('*')
@@ -372,8 +366,6 @@ const CalculationListPage = () => {
                     <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
                     <div className="flex items-center justify-between mb-2">
 
-                      {/* ... (Badges 'sending', 'pending_response', 'completed' não mudam) ... */}
-
                       {currentStatus === 'sending' && (
                         <Badge variant="secondary" className="bg-yellow-600 text-white flex items-center">
                           <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Enviando...
@@ -397,7 +389,6 @@ const CalculationListPage = () => {
                       )}
 
 
-                      {/* ALTERADO: O onClick do botão "Processar" agora chama a nova função */}
                       {currentStatus !== 'sending' && currentStatus !== 'completed' && currentStatus !== 'pending_response' && !hasResult && (
                         <Button
                           variant="outline"
@@ -409,7 +400,6 @@ const CalculationListPage = () => {
                         </Button>
                       )}
                     </div>
-                    {/* ... (Restante do CardHeader não muda) ... */}
                     <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.nome || 'N/A'}</p>
                     {calculation.tbl_ai_prompt_templates?.title && (
                       <p className="text-sm text-gray-400">Modelo IA: {calculation.tbl_ai_prompt_templates.title}</p>
@@ -420,7 +410,6 @@ const CalculationListPage = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="flex justify-end space-x-2 w-full">
-                    {/* ... (Botões de ação não mudam) ... */}
                     <Button asChild variant="outline" size="sm" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
                       <Link to={`/calculations/${calculation.id}`}>
                         <Edit className="h-4 w-4" />

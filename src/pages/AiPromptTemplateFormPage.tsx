@@ -22,9 +22,8 @@ interface AiPromptTemplateState {
   proventos: string;
   descontos: string;
   observacoes_base_legal: string;
-  formatacao_texto_cabecalho: string;
-  formatacao_texto_corpo: string;
-  formatacao_texto_rodape: string;
+  estrutura_json_modelo_saida: string; // Campo do DB
+  instrucoes_entrada_dados_rescisao: string; // Campo do DB
 }
 
 const modelTemplate: AiPromptTemplateState = {
@@ -122,9 +121,8 @@ Observação CTPS	Se a CTPS não estiver assinada ({{ $json.ctpsAssinada }} seja
 Observação Sindicato	O campo {{ $json.obsSindicato }} deve ser analisado para verificar se representa algum débito, crédito ou informação relevante para o cálculo final, conforme a convenção coletiva.
 Observação FGTS	O saldo do FGTS a ser liberado para saque será o valor acumulado na conta vinculada, acrescido da multa de 40% paga pelo empregador.
 Aviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valores podem variar dependendo das especificidades do contrato de trabalho e da convenção coletiva.`,
-  formatacao_texto_cabecalho: `Gere apenas as duas linhas do cabeçalho. A primeira linha deve ser o nome da empresa, e a segunda linha deve ser o título. Não use cabeçalhos Markdown, negrito, caracteres especiais, ou qualquer pontuação extra. Saída Solicitada: Jota Contabilidade - Relatório de Cálculo de Rescisão Contratual`,
-  formatacao_texto_corpo: `Gere apenas a saudação final do relatório em uma única linha. Use o formato 'Atenciosamente, [Nome da Empresa]'. Não inclua cabeçalhos Markdown, negrito, caracteres especiais ou qualquer pontuação extra, exceto a vírgula da saudação. Saída Solicitada: Atenciosamente Jota Contabilidade, evitando quebras de linhas e espeços execesivos e mantenha sempre um formato de .json valido`,
-  formatacao_texto_rodape: `- Inclua a saudação final ("Atenciosamente, [Jota Contabilidade]").`,
+  estrutura_json_modelo_saida: ``, // Vazio por padrão
+  instrucoes_entrada_dados_rescisao: ``, // Vazio por padrão
 };
 
 const AiPromptTemplateFormPage: React.FC = () => {
@@ -141,9 +139,8 @@ const AiPromptTemplateFormPage: React.FC = () => {
     proventos: '',
     descontos: '',
     observacoes_base_legal: '',
-    formatacao_texto_cabecalho: '',
-    formatacao_texto_corpo: '',
-    formatacao_texto_rodape: '',
+    estrutura_json_modelo_saida: '',
+    instrucoes_entrada_dados_rescisao: '',
   });
   const [loading, setLoading] = useState(false);
   const isEditing = !!id;
@@ -238,12 +235,7 @@ const AiPromptTemplateFormPage: React.FC = () => {
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Button>
           <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
-            {isEditing ? 'Editar Modelo de Prompt da IA' : 'Configurções '}
-
-          </h1>
-          <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
-
-            {isEditing ? 'Editar Modelo de Prompt da IA' : 'Prompt da IA'}
+            {isEditing ? 'Editar Modelo de Prompt da IA' : 'Configurações de Prompt da IA'}
           </h1>
           <div className="w-full sm:w-24 h-0 sm:h-auto"></div> {/* Placeholder for alignment */}
         </div>
@@ -371,13 +363,13 @@ const AiPromptTemplateFormPage: React.FC = () => {
                   disabled={loading}
                 />
               </div>
-              <h3 className="text-xl font-semibold text-orange-400 mt-8 mb-4">Formatação de Texto</h3>
+              <h3 className="text-xl font-semibold text-orange-400 mt-8 mb-4">Campos de Saída e Entrada (DB)</h3>
               <div>
-                <Label htmlFor="formatacao_texto_cabecalho" className="text-gray-300">Cabeçalho</Label>
+                <Label htmlFor="estrutura_json_modelo_saida" className="text-gray-300">Estrutura JSON Modelo Saída</Label>
                 <Textarea
-                  id="formatacao_texto_cabecalho"
-                  name="formatacao_texto_cabecalho"
-                  value={template.formatacao_texto_cabecalho || ''}
+                  id="estrutura_json_modelo_saida"
+                  name="estrutura_json_modelo_saida"
+                  value={template.estrutura_json_modelo_saida || ''}
                   onChange={handleChange}
                   rows={3}
                   className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
@@ -385,23 +377,11 @@ const AiPromptTemplateFormPage: React.FC = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="formatacao_texto_corpo" className="text-gray-300">Corpo do Texto</Label>
+                <Label htmlFor="instrucoes_entrada_dados_rescisao" className="text-gray-300">Instruções Entrada Dados Rescisão</Label>
                 <Textarea
-                  id="formatacao_texto_corpo"
-                  name="formatacao_texto_corpo"
-                  value={template.formatacao_texto_corpo || ''}
-                  onChange={handleChange}
-                  rows={5}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <Label htmlFor="formatacao_texto_rodape" className="text-gray-300">Rodapé</Label>
-                <Textarea
-                  id="formatacao_texto_rodape"
-                  name="formatacao_texto_rodape"
-                  value={template.formatacao_texto_rodape || ''}
+                  id="instrucoes_entrada_dados_rescisao"
+                  name="instrucoes_entrada_dados_rescisao"
+                  value={template.instrucoes_entrada_dados_rescisao || ''}
                   onChange={handleChange}
                   rows={3}
                   className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"

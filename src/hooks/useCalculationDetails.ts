@@ -38,9 +38,8 @@ export interface CalculationDetails {
     proventos: string;
     descontos: string;
     observacoes_base_legal: string;
-    formatacao_texto_cabecalho: string;
-    formatacao_texto_corpo: string;
-    formatacao_texto_rodape: string;
+    estrutura_json_modelo_saida: string | null; // Campo do DB
+    instrucoes_entrada_dados_rescisao: string | null; // Campo do DB
     created_at: string;
   } | null;
   tbl_resposta_calculo: {
@@ -79,7 +78,10 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
           resposta_ai,
           tbl_clientes(nome),
           tbl_sindicatos(nome),
-          tbl_ai_prompt_templates(id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, formatacao_texto_cabecalho, formatacao_texto_corpo, formatacao_texto_rodape, created_at),
+          tbl_ai_prompt_templates(
+            id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, 
+            estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
+          ),
           tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
         `)
         .eq('id', calculationId)

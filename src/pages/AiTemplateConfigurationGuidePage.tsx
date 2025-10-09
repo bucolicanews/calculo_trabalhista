@@ -14,6 +14,7 @@ const AiTemplateConfigurationGuidePage: React.FC = () => {
       .catch(() => showError(`Falha ao copiar o conteúdo de '${fieldName}'.`));
   };
 
+  // Conteúdo do modelo padrão, agora refletindo os campos do DB
   const config = {
     title: "PHD em Cálculo Trabalhista",
     identification: `-agente de cálculo rescisório do brasil
@@ -109,9 +110,8 @@ Observação CTPS	Se a CTPS não estiver assinada ({{ $json.ctpsAssinada }} seja
 Observação Sindicato	O campo {{ $json.obsSindicato }} deve ser analisado para verificar se representa algum débito, crédito ou informação relevante para o cálculo final, conforme a convenção coletiva.
 Observação FGTS	O saldo do FGTS a ser liberado para saque será o valor acumulado na conta vinculada, acrescido da multa de 40% paga pelo empregador.
 Aviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valores podem variar dependendo das especificidades do contrato de trabalho e da convenção coletiva.`,
-    headerFormatting: `Jota Contabilidade - Relatório de Cálculo de Rescisão Contratual`,
-    bodyFormatting: `Atenciosamente Jota Contabilidade`,
-    footerFormatting: `- Inclua a saudação final ("Atenciosamente, [Jota Contabilidade]").`
+    estrutura_json_modelo_saida: ``, // Vazio por padrão
+    instrucoes_entrada_dados_rescisao: ``, // Vazio por padrão
   };
 
   const renderConfigSection = (title: string, content: string, fieldName: string) => (
@@ -166,9 +166,8 @@ Aviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valor
           {renderConfigSection("Proventos", config.proventos, "Proventos")}
           {renderConfigSection("Descontos", config.descontos, "Descontos")}
           {renderConfigSection("Observações e Base Legal", config.observationsBaseLegal, "Observações e Base Legal")}
-          {renderConfigSection("Formatação de Texto - Cabeçalho", config.headerFormatting, "Formatação de Cabeçalho")}
-          {renderConfigSection("Formatação de Texto - Corpo do Texto", config.bodyFormatting, "Formatação de Corpo")}
-          {renderConfigSection("Formatação de Texto - Rodapé", config.footerFormatting, "Formatação de Rodapé")}
+          {renderConfigSection("Estrutura JSON Modelo Saída", config.estrutura_json_modelo_saida, "Estrutura JSON Modelo Saída")}
+          {renderConfigSection("Instruções Entrada Dados Rescisão", config.instrucoes_entrada_dados_rescisao, "Instruções Entrada Dados Rescisão")}
         </div>
       </div>
     </MainLayout>

@@ -17,7 +17,7 @@ import RescissionTypeSelectField from '@/components/calculations/RescissionTypeS
 import SalaryAndObservationsSection from '@/components/calculations/SalaryAndObservationsSection';
 import AveragesSection from '@/components/calculations/AveragesSection';
 import ContractHistoryAndCTPS from '@/components/calculations/ContractHistoryAndCTPS';
-import AiPromptTemplateSelectField from '@/components/calculations/AiPromptTemplateSelectField'; // NOVO
+import AiPromptTemplateSelectField from '@/components/calculations/AiPromptTemplateSelectField';
 
 interface Client {
   id: string;
@@ -32,6 +32,10 @@ interface Sindicato {
 interface AiPromptTemplate {
   id: string;
   title: string;
+  // Adicione aqui os campos que você realmente precisa do template para o cálculo, se houver
+  // Por exemplo, se o n8n precisar de 'identificacao' ou 'comportamento' diretamente do template
+  // identificacao?: string;
+  // comportamento?: string;
 }
 
 // Nova lista de Tipos de Rescisão de Contrato de Trabalho com label e value para o ENUM do DB
@@ -55,7 +59,7 @@ const CalculationFormPage = () => {
   const [calculation, setCalculation] = useState({
     cliente_id: '',
     sindicato_id: '',
-    ai_template_id: '', // NOVO CAMPO
+    ai_template_id: '',
     nome_funcionario: '',
     cpf_funcionario: '',
     funcao_funcionario: '',
@@ -73,7 +77,7 @@ const CalculationFormPage = () => {
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [sindicatos, setSindicatos] = useState<Sindicato[]>([]);
-  const [aiTemplates, setAiTemplates] = useState<AiPromptTemplate[]>([]); // NOVO ESTADO
+  const [aiTemplates, setAiTemplates] = useState<AiPromptTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const isEditing = !!id;
 
@@ -112,10 +116,10 @@ const CalculationFormPage = () => {
       setSindicatos(sindicatosData || []);
     }
 
-    // NOVO: Buscar modelos de prompt de IA
+    // Buscar modelos de prompt de IA
     const { data: aiTemplatesData, error: aiTemplatesError } = await supabase
       .from('tbl_ai_prompt_templates')
-      .select('id, title')
+      .select('id, title') // Apenas id e title são necessários para o select
       .eq('user_id', user?.id);
 
     if (aiTemplatesError) {
@@ -130,7 +134,7 @@ const CalculationFormPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('tbl_calculos')
-      .select('*')
+      .select('*') // Seleciona todos os campos do cálculo
       .eq('id', id)
       .single();
 
@@ -144,7 +148,7 @@ const CalculationFormPage = () => {
         inicio_contrato: data.inicio_contrato || '',
         fim_contrato: data.fim_contrato || '',
         salario_trabalhador: data.salario_trabalhador || 0,
-        ai_template_id: data.ai_template_id || '', // Carregar o ID do modelo IA
+        ai_template_id: data.ai_template_id || '',
       });
     }
     setLoading(false);
@@ -211,10 +215,10 @@ const CalculationFormPage = () => {
       media_descontos: parseFloat(String(calculation.media_descontos)) || 0,
       media_remuneracoes: parseFloat(String(calculation.media_remuneracoes)) || 0,
       sindicato_id: calculation.sindicato_id === '' ? null : calculation.sindicato_id,
-      ai_template_id: calculation.ai_template_id === '' ? null : calculation.ai_template_id, // Salvar o ID do modelo IA
+      ai_template_id: calculation.ai_template_id === '' ? null : calculation.ai_template_id,
     };
 
-    console.log('[CalculationFormPage] Saving calculation with data:', calculationData); // NOVO LOG AQUI
+    console.log('[CalculationFormPage] Saving calculation with data:', calculationData);
 
     let response;
     if (isEditing) {
@@ -272,7 +276,7 @@ const CalculationFormPage = () => {
                 disabled={loading}
               />
 
-              <AiPromptTemplateSelectField // NOVO COMPONENTE
+              <AiPromptTemplateSelectField
                 ai_template_id={calculation.ai_template_id}
                 aiTemplates={aiTemplates}
                 onValueChange={(value) => handleSelectChange('ai_template_id', value)}

@@ -21,7 +21,11 @@ interface CalculationDetailsCardProps {
     historia: string | null;
     tbl_clientes: { nome: string } | null;
     tbl_sindicatos: { nome: string } | null;
-    tbl_ai_prompt_templates: { title: string } | null;
+    tbl_ai_prompt_templates: { 
+      title: string;
+      estrutura_json_modelo_saida: string | null; // Campo do DB
+      instrucoes_entrada_dados_rescisao: string | null; // Campo do DB
+    } | null;
   };
 }
 
@@ -31,7 +35,7 @@ const CalculationDetailsCard: React.FC<CalculationDetailsCardProps> = ({ calcula
       <CardHeader>
         <CardTitle className="text-2xl text-orange-500">Detalhes do Cálculo</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300 px-4"> {/* Adicionado px-4 */}
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300 px-4">
         <p className="break-words"><strong>Funcionário:</strong> {calculation.nome_funcionario}</p>
         <p className="break-words"><strong>Cliente:</strong> {calculation.tbl_clientes?.nome || 'N/A'}</p>
         <p className="break-words"><strong>Sindicato:</strong> {calculation.tbl_sindicatos?.nome || 'N/A'}</p>
@@ -51,6 +55,8 @@ const CalculationDetailsCard: React.FC<CalculationDetailsCardProps> = ({ calcula
         {calculation.carga_horaria && <p className="break-words"><strong>Carga Horária:</strong> {calculation.carga_horaria}</p>}
         {calculation.obs_sindicato && <p className="col-span-full break-words"><strong>Obs. Sindicato:</strong> {calculation.obs_sindicato}</p>}
         {calculation.historia && <p className="col-span-full break-words"><strong>Histórico:</strong> {calculation.historia}</p>}
+        {calculation.tbl_ai_prompt_templates?.estrutura_json_modelo_saida && <p className="col-span-full break-words"><strong>Estrutura JSON Modelo Saída:</strong> {calculation.tbl_ai_prompt_templates.estrutura_json_modelo_saida}</p>}
+        {calculation.tbl_ai_prompt_templates?.instrucoes_entrada_dados_rescisao && <p className="col-span-full break-words"><strong>Instruções Entrada Dados Rescisão:</strong> {calculation.tbl_ai_prompt_templates.instrucoes_entrada_dados_rescisao}</p>}
       </CardContent>
     </Card>
   );
