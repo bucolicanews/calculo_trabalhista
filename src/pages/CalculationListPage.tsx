@@ -105,8 +105,8 @@ const CalculationListPage = () => {
         tbl_sindicatos(nome), 
         tbl_ai_prompt_templates(id, title),
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
-        tbl_proventos(*), -- NOVO JOIN
-        tbl_descontos(*) -- NOVO JOIN
+        tbl_proventos(*),
+        tbl_descontos(*)
       `)
       .order('created_at', { ascending: false });
 
@@ -218,8 +218,8 @@ const CalculationListPage = () => {
         let clientSelectParts: Set<string> = new Set();
         let sindicatoSelectParts: Set<string> = new Set();
         let aiTemplateSelectParts: Set<string> = new Set();
-        let proventosSelectParts: Set<string> = new Set(); // NOVO
-        let descontosSelectParts: Set<string> = new Set(); // NOVO
+        let proventosSelectParts: Set<string> = new Set();
+        let descontosSelectParts: Set<string> = new Set();
 
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
@@ -232,9 +232,9 @@ const CalculationListPage = () => {
               sindicatoSelectParts.add(fieldDef.baseSupabasePath);
             } else if (fieldDef.sourceTable === 'tbl_ai_prompt_templates') {
               aiTemplateSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_proventos') { // NOVO
+            } else if (fieldDef.sourceTable === 'tbl_proventos') {
               proventosSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_descontos') { // NOVO
+            } else if (fieldDef.sourceTable === 'tbl_descontos') {
               descontosSelectParts.add(fieldDef.baseSupabasePath);
             }
           }
@@ -254,11 +254,11 @@ const CalculationListPage = () => {
           selectParts.add(aiTemplatePath);
         }
 
-        if (proventosSelectParts.size > 0) { // NOVO
+        if (proventosSelectParts.size > 0) {
           selectParts.add(`tbl_proventos(${Array.from(proventosSelectParts).join(',')})`);
         }
 
-        if (descontosSelectParts.size > 0) { // NOVO
+        if (descontosSelectParts.size > 0) {
           selectParts.add(`tbl_descontos(${Array.from(descontosSelectParts).join(',')})`);
         }
 
