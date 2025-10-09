@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, Table } from 'lucide-react';
 import { format } from 'date-fns';
@@ -186,13 +186,11 @@ const AiResponseDisplay: React.FC<AiResponseDisplayProps> = ({
   return (
     <Card className="max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white">
       <CardHeader>
-        <CardTitle className="text-2xl text-orange-500">Resposta do Webhook</CardTitle>
         {otherResultDetails?.data_hora && <p className="text-sm text-gray-400">Gerado em: {format(new Date(otherResultDetails.data_hora), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>}
       </CardHeader>
       <CardContent className="space-y-4 text-gray-300">
         {aiResponse && (
           <div ref={markdownRef} className="prose prose-invert max-w-none overflow-x-auto px-1">
-            {/* Removido o h3 com 'Resposta da IA:' */}
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={customMarkdownComponents}>
               {aiResponse}
             </ReactMarkdown>
