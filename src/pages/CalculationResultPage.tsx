@@ -1,16 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { showError } from '@/utils/toast';
-import { ArrowLeft } from 'lucide-react';
+import { showError, showSuccess } from '@/utils/toast';
+import { ArrowLeft, Download } from 'lucide-react';
 
 // Importar os novos componentes modulares
 import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView'; // Importar o novo componente
+
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface Provento {
   id: string;
@@ -89,6 +94,7 @@ const CalculationResultPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const contentRef = useRef<HTMLDivElement>(null); // Ref para o conteúdo a ser exportado
 
   useEffect(() => {
     if (user && id) {
@@ -128,6 +134,99 @@ const CalculationResultPage: React.FC = () => {
     setLoading(false);
   };
 
+  const handleDownloadFullReportAsPdf = async () => {
+    const element = contentRef.current;
+    if (!element || !calculation) {
+      showError('Conteúdo do relatório não disponível para PDF.');
+      return;
+    }
+
+    showSuccess('Gerando PDF do relatório completo, aguarde...');
+    const filename = `relatorio_calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
+
+    // Temporariamente ajustar o estilo para impressão
+    const originalBodyClass = document.body.className;
+    const originalHtmlClass = document.documentElement.className;
+    const originalBg = document.body.style.backgroundColor;
+    const originalColor = document.body.style.color;
+
+    document.body.classList.remove('dark');
+    document.documentElement.classList.remove('dark');
+    document.body.style.backgroundColor = 'white';
+    document.body.style.color = 'black';
+    element.classList.remove('prose-invert'); // Se houver markdown, garantir que não esteja invertido
+
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2, // Aumenta a resolução para melhor qualidade
+        useCORS: true,
+        backgroundColor: 'white',
+        windowWidth: element.scrollWidth, // Captura a largura total do conteúdo
+        windowHeight: element.scrollHeight, // Captura a altura total do conteúdo
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pdfWidth - 20; // Margem de 10mm de cada lado
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let position = 10; // Posição inicial com margem superior
+
+      const addHeaderAndFooter = (doc: jsPDF, pageNum: number, totalPages: number) => {
+        doc.setFontSize(10);
+        doc.setTextColor(100); // Cor cinza para o texto do cabeçalho/rodapé
+        doc.text('Relatório de Cálculo de Rescisão Trabalhista', pdfWidth / 2, 10, { align: 'center' });
+        doc.text(`Funcionário: ${calculation.nome_funcionario}`, pdfWidth / 2, 15, { align: 'center' });
+        doc.text(`Página ${pageNum} de ${totalPages}`, pdfWidth - 15, pdfHeight - 10, { align: 'right' });
+        doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 15, pdfHeight - 10, { align: 'left' });
+      };
+
+      const totalPages = Math.ceil(imgHeight / (pdfHeight - 20)); // Calcula o número total de páginas
+
+      for (let i = 0; i < totalPages; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+        addHeaderAndFooter(pdf, i + 1, totalPages);
+
+        const cropHeight = Math.min(imgHeight - (i * (pdfHeight - 20)), (pdfHeight - 20));
+        const sY = i * (pdfHeight - 20) * (canvas.width / imgWidth); // Posição Y no canvas original
+
+        (pdf as any).addImage(
+          imgData,
+          'PNG',
+          10, // Margem esquerda
+          position,
+          imgWidth,
+          cropHeight,
+          undefined,
+          'NONE',
+          0,
+          sY, // Posição de corte Y no canvas
+          canvas.width,
+          (cropHeight * canvas.width) / imgWidth // Altura de corte no canvas
+        );
+      }
+
+      pdf.save(filename);
+      showSuccess('Download do PDF do relatório completo iniciado!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF do relatório completo:', error);
+      showError('Falha ao gerar PDF do relatório completo. Verifique o console do navegador para mais detalhes.');
+    } finally {
+      // Restaurar o estilo original
+      document.body.className = originalBodyClass;
+      document.documentElement.className = originalHtmlClass;
+      document.body.style.backgroundColor = originalBg;
+      document.body.style.color = originalColor;
+      element.classList.add('prose-invert'); // Reverter se necessário
+    }
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -146,9 +245,7 @@ const CalculationResultPage: React.FC = () => {
 
   const otherResultDetails = calculation.tbl_resposta_calculo;
   const hasAnyResult = calculation.resposta_ai || otherResultDetails?.url_documento_calculo || otherResultDetails?.texto_extraido;
-  // Removida a variável 'hasStructuredData' pois não é utilizada.
 
-  // Preparar os dados para o FullRescissionView
   const calculationDataForDetailsCard = {
     nome_funcionario: calculation.nome_funcionario,
     inicio_contrato: calculation.inicio_contrato,
@@ -179,26 +276,33 @@ const CalculationResultPage: React.FC = () => {
           <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
             Resultado do Cálculo
           </h1>
-          <div className="w-full sm:w-48 h-0 sm:h-auto"></div>
+          <Button
+            onClick={handleDownloadFullReportAsPdf}
+            className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto flex items-center justify-center"
+          >
+            <Download className="h-4 w-4 mr-2" /> Baixar Relatório Completo (PDF)
+          </Button>
         </div>
 
-        {/* Usar o novo componente FullRescissionView */}
-        <FullRescissionView
-          calculationDetails={calculationDataForDetailsCard}
-          proventos={calculation.tbl_proventos || []}
-          descontos={calculation.tbl_descontos || []}
-        />
-
-        {hasAnyResult ? (
-          <AiResponseDisplay
-            calculationId={calculation.id}
-            employeeName={calculation.nome_funcionario}
-            aiResponse={calculation.resposta_ai}
-            otherResultDetails={otherResultDetails}
+        <div ref={contentRef} className="report-content"> {/* Adicionado o ref aqui */}
+          {/* Usar o novo componente FullRescissionView */}
+          <FullRescissionView
+            calculationDetails={calculationDataForDetailsCard}
+            proventos={calculation.tbl_proventos || []}
+            descontos={calculation.tbl_descontos || []}
           />
-        ) : (
-          <NoResultCard />
-        )}
+
+          {hasAnyResult ? (
+            <AiResponseDisplay
+              calculationId={calculation.id}
+              employeeName={calculation.nome_funcionario}
+              aiResponse={calculation.resposta_ai}
+              otherResultDetails={otherResultDetails}
+            />
+          ) : (
+            <NoResultCard />
+          )}
+        </div>
       </div>
     </MainLayout>
   );
