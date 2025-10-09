@@ -104,10 +104,8 @@ const CalculationListPage = () => {
         tbl_clientes(nome), 
         tbl_sindicatos(nome), 
         tbl_ai_prompt_templates(id, title),
-        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
-        tbl_proventos(*),
-        tbl_descontos(*)
-      `)
+        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
+      `) // Removidas as referências a tbl_proventos e tbl_descontos
       .order('created_at', { ascending: false });
 
     if (error) {
