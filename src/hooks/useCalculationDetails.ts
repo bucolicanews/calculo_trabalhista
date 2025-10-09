@@ -73,8 +73,8 @@ export interface CalculationDetails {
     texto_extraido: string | null;
     data_hora: string;
   } | null;
-  related_proventos: Provento[] | null; // NOME DA PROPRIEDADE ATUALIZADO
-  related_descontos: Desconto[] | null; // NOME DA PROPRIEDADE ATUALIZADO
+  related_proventos: Provento[] | null;
+  related_descontos: Desconto[] | null;
 }
 
 interface UseCalculationDetailsResult {
@@ -111,8 +111,8 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
             estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
           ),
           tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
-          related_proventos:proventos(*), -- ALIAS ADICIONADO
-          related_descontos:descontos(*) -- ALIAS ADICIONADO
+          related_proventos:proventos(*),
+          related_descontos:descontos(*)
         `)
         .eq('id', calculationId)
         .single();
