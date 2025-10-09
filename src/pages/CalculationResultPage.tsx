@@ -13,7 +13,7 @@ import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView'; // Importar o novo componente
 
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable'; // Importar o plugin jspdf-autotable
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -94,7 +94,8 @@ const CalculationResultPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const contentRef = useRef<HTMLDivElement>(null); // Ref para o conteúdo a ser exportado
+  // contentRef não é mais necessário para html2canvas, mas pode ser mantido para outras finalidades se necessário.
+  // const contentRef = useRef<HTMLDivElement>(null); 
 
   useEffect(() => {
     if (user && id) {
@@ -135,96 +136,276 @@ const CalculationResultPage: React.FC = () => {
   };
 
   const handleDownloadFullReportAsPdf = async () => {
-    const element = contentRef.current;
-    if (!element || !calculation) {
-      showError('Conteúdo do relatório não disponível para PDF.');
+    if (!calculation) {
+      showError('Dados do cálculo não disponíveis para gerar PDF.');
       return;
     }
 
     showSuccess('Gerando PDF do relatório completo, aguarde...');
-    const filename = `relatorio_calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`;
 
-    // Temporariamente ajustar o estilo para impressão
-    const originalBodyClass = document.body.className;
-    const originalHtmlClass = document.documentElement.className;
-    const originalBg = document.body.style.backgroundColor;
-    const originalColor = document.body.style.color;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    let yPos = 15; // Posição Y inicial
+    const margin = 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const lineHeight = 7; // Altura da linha para texto normal
+    const smallLineHeight = 5; // Altura da linha para texto menor
+    const tableMarginTop = 10;
 
-    document.body.classList.remove('dark');
-    document.documentElement.classList.remove('dark');
-    document.body.style.backgroundColor = 'white';
-    document.body.style.color = 'black';
-    element.classList.remove('prose-invert'); // Se houver markdown, garantir que não esteja invertido
+    const addPageHeader = (pageNumber: number, totalPages: number) => {
+      doc.setFontSize(10);
+      doc.setTextColor(100); // Cor cinza
+      doc.text('Jota Contabilidade - Relatório de Cálculo de Rescisão Trabalhista', pageWidth / 2, 10, { align: 'center' });
+      doc.text(`Funcionário: ${calculation.nome_funcionario}`, pageWidth / 2, 15, { align: 'center' });
+      doc.text(`Página ${pageNumber} de ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+      doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, margin, pageHeight - 10, { align: 'left' });
+      doc.setDrawColor(200);
+      doc.line(margin, 18, pageWidth - margin, 18); // Linha abaixo do cabeçalho
+      yPos = 25; // Reset yPos após o cabeçalho
+    };
 
-    try {
-      const canvas = await html2canvas(element, {
-        scale: 2, // Aumenta a resolução para melhor qualidade
-        useCORS: true,
-        backgroundColor: 'white',
-        windowWidth: element.scrollWidth, // Captura a largura total do conteúdo
-        windowHeight: element.scrollHeight, // Captura a altura total do conteúdo
-      });
+    let currentPage = 1;
+    let totalPagesPlaceholder = 1; // Será atualizado no final
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
+    addPageHeader(currentPage, totalPagesPlaceholder);
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+    // --- Título Principal ---
+    doc.setFontSize(20);
+    doc.setTextColor(255, 69, 0); // Laranja
+    doc.text('Demonstrativo Completo da Rescisão', pageWidth / 2, yPos, { align: 'center' });
+    yPos += lineHeight * 2;
 
-      const imgWidth = pdfWidth - 20; // Margem de 10mm de cada lado
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    // --- Detalhes do Cálculo ---
+    doc.setFontSize(16);
+    doc.setTextColor(255, 69, 0); // Laranja
+    doc.text('Detalhes do Cálculo', margin, yPos);
+    yPos += lineHeight;
+    doc.setDrawColor(255, 69, 0);
+    doc.line(margin, yPos - 2, margin + 50, yPos - 2); // Linha abaixo do título da seção
+    yPos += smallLineHeight;
 
-      let position = 10; // Posição inicial com margem superior
+    doc.setFontSize(10);
+    doc.setTextColor(0); // Preto
+    const details = [
+      `Funcionário: ${calculation.nome_funcionario}`,
+      `Cliente: ${calculation.tbl_clientes?.nome || 'N/A'}`,
+      `Sindicato: ${calculation.tbl_sindicatos?.nome || 'N/A'}`,
+      calculation.tbl_ai_prompt_templates?.title ? `Modelo IA: ${calculation.tbl_ai_prompt_templates.title}` : '',
+      `Início Contrato: ${format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy', { locale: ptBR })}`,
+      `Fim Contrato: ${format(new Date(calculation.fim_contrato), 'dd/MM/yyyy', { locale: ptBR })}`,
+      `Tipo de Rescisão: ${calculation.tipo_aviso}`,
+      `Salário Trabalhador: R$ ${calculation.salario_trabalhador.toFixed(2)}`,
+      `CTPS Assinada: ${calculation.ctps_assinada ? 'Sim' : 'Não'}`,
+      calculation.cpf_funcionario ? `CPF Funcionário: ${calculation.cpf_funcionario}` : '',
+      calculation.funcao_funcionario ? `Função: ${calculation.funcao_funcionario}` : '',
+      calculation.salario_sindicato > 0 ? `Piso Salarial Sindicato: R$ ${calculation.salario_sindicato.toFixed(2)}` : '',
+      calculation.media_descontos > 0 ? `Média Descontos: R$ ${calculation.media_descontos.toFixed(2)}` : '',
+      calculation.media_remuneracoes > 0 ? `Média Remunerações: R$ ${calculation.media_remuneracoes.toFixed(2)}` : '',
+      calculation.carga_horaria ? `Carga Horária: ${calculation.carga_horaria}` : '',
+      calculation.obs_sindicato ? `Obs. Sindicato: ${calculation.obs_sindicato}` : '',
+      calculation.historia ? `Histórico: ${calculation.historia}` : '',
+      calculation.tbl_ai_prompt_templates?.instrucoes_entrada_dados_rescisao ? `Instruções Entrada Dados Rescisão: ${calculation.tbl_ai_prompt_templates.instrucoes_entrada_dados_rescisao}` : '',
+    ].filter(Boolean); // Remove strings vazias
 
-      const addHeaderAndFooter = (doc: jsPDF, pageNum: number, totalPages: number) => {
-        doc.setFontSize(10);
-        doc.setTextColor(100); // Cor cinza para o texto do cabeçalho/rodapé
-        doc.text('Relatório de Cálculo de Rescisão Trabalhista', pdfWidth / 2, 10, { align: 'center' });
-        doc.text(`Funcionário: ${calculation.nome_funcionario}`, pdfWidth / 2, 15, { align: 'center' });
-        doc.text(`Página ${pageNum} de ${totalPages}`, pdfWidth - 15, pdfHeight - 10, { align: 'right' });
-        doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 15, pdfHeight - 10, { align: 'left' });
-      };
-
-      const totalPages = Math.ceil(imgHeight / (pdfHeight - 20)); // Calcula o número total de páginas
-
-      for (let i = 0; i < totalPages; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-        addHeaderAndFooter(pdf, i + 1, totalPages);
-
-        const cropHeight = Math.min(imgHeight - (i * (pdfHeight - 20)), (pdfHeight - 20));
-        const sY = i * (pdfHeight - 20) * (canvas.width / imgWidth); // Posição Y no canvas original
-
-        (pdf as any).addImage(
-          imgData,
-          'PNG',
-          10, // Margem esquerda
-          position,
-          imgWidth,
-          cropHeight,
-          undefined,
-          'NONE',
-          0,
-          sY, // Posição de corte Y no canvas
-          canvas.width,
-          (cropHeight * canvas.width) / imgWidth // Altura de corte no canvas
-        );
+    details.forEach(detail => {
+      if (yPos + smallLineHeight > pageHeight - margin) {
+        doc.addPage();
+        currentPage++;
+        addPageHeader(currentPage, totalPagesPlaceholder);
       }
+      doc.text(detail, margin, yPos);
+      yPos += smallLineHeight;
+    });
+    yPos += lineHeight; // Espaço após os detalhes
 
-      pdf.save(filename);
-      showSuccess('Download do PDF do relatório completo iniciado!');
-    } catch (error) {
-      console.error('Erro ao gerar PDF do relatório completo:', error);
-      showError('Falha ao gerar PDF do relatório completo. Verifique o console do navegador para mais detalhes.');
-    } finally {
-      // Restaurar o estilo original
-      document.body.className = originalBodyClass;
-      document.documentElement.className = originalHtmlClass;
-      document.body.style.backgroundColor = originalBg;
-      document.body.style.color = originalColor;
-      element.classList.add('prose-invert'); // Reverter se necessário
+    // --- Resumo Financeiro Detalhado (Proventos) ---
+    const proventos = calculation.tbl_proventos || [];
+    const totalProventos = proventos.reduce((sum, p) => sum + p.valor_calculado, 0);
+
+    if (proventos.length > 0) {
+      if (yPos + lineHeight * 2 + tableMarginTop > pageHeight - margin) {
+        doc.addPage();
+        currentPage++;
+        addPageHeader(currentPage, totalPagesPlaceholder);
+      }
+      doc.setFontSize(16);
+      doc.setTextColor(255, 69, 0); // Laranja
+      doc.text('Proventos', margin, yPos);
+      yPos += lineHeight;
+      doc.setDrawColor(255, 69, 0);
+      doc.line(margin, yPos - 2, margin + 30, yPos - 2);
+      yPos += smallLineHeight;
+
+      const proventosTableData = proventos.map(p => [
+        p.nome_provento,
+        p.natureza_da_verba,
+        `R$ ${p.valor_calculado.toFixed(2)}`,
+        [
+          p.formula_sugerida ? `Fórmula: ${p.formula_sugerida}` : '',
+          p.parametro_calculo ? `Parâmetro: ${p.parametro_calculo}` : '',
+          p.exemplo_aplicavel ? `Exemplo: ${p.exemplo_aplicavel}` : '',
+          p.legislacao ? `Legislação: ${p.legislacao}` : '',
+        ].filter(Boolean).join('\n')
+      ]);
+
+      (doc as any).autoTable({
+        startY: yPos,
+        head: [['Verba', 'Natureza', 'Valor', 'Detalhes']],
+        body: proventosTableData,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 2, textColor: 0, lineColor: 200 },
+        headStyles: { fillColor: [240, 240, 240], textColor: [255, 69, 0], fontStyle: 'bold' },
+        columnStyles: {
+          2: { halign: 'right', textColor: [34, 139, 34] }, // Valor (verde)
+          3: { fontSize: 7, textColor: [100, 100, 100] } // Detalhes (menor e cinza)
+        },
+        didDrawPage: (data: any) => {
+          // Adiciona cabeçalho e rodapé em cada nova página da tabela
+          if (data.pageNumber > 1) {
+            addPageHeader(currentPage, totalPagesPlaceholder);
+          }
+        },
+        margin: { left: margin, right: margin },
+      });
+      yPos = (doc as any).autoTable.previous.finalY + tableMarginTop;
+
+      // Total Proventos
+      if (yPos + lineHeight > pageHeight - margin) {
+        doc.addPage();
+        currentPage++;
+        addPageHeader(currentPage, totalPagesPlaceholder);
+      }
+      doc.setFontSize(12);
+      doc.setTextColor(255, 69, 0); // Laranja
+      doc.text(`Total Proventos: R$ ${totalProventos.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
+      yPos += lineHeight * 1.5;
     }
+
+    // --- Resumo Financeiro Detalhado (Descontos) ---
+    const descontos = calculation.tbl_descontos || [];
+    const totalDescontos = descontos.reduce((sum, d) => sum + d.valor_calculado, 0);
+
+    if (descontos.length > 0) {
+      if (yPos + lineHeight * 2 + tableMarginTop > pageHeight - margin) {
+        doc.addPage();
+        currentPage++;
+        addPageHeader(currentPage, totalPagesPlaceholder);
+      }
+      doc.setFontSize(16);
+      doc.setTextColor(255, 69, 0); // Laranja
+      doc.text('Descontos', margin, yPos);
+      yPos += lineHeight;
+      doc.setDrawColor(255, 69, 0);
+      doc.line(margin, yPos - 2, margin + 30, yPos - 2);
+      yPos += smallLineHeight;
+
+      const descontosTableData = descontos.map(d => [
+        d.nome_desconto,
+        d.natureza_da_verba,
+        `-R$ ${d.valor_calculado.toFixed(2)}`,
+        [
+          d.formula_sugerida ? `Fórmula: ${d.formula_sugerida}` : '',
+          d.parametro_calculo ? `Parâmetro: ${d.parametro_calculo}` : '',
+          d.exemplo_aplicavel ? `Exemplo: ${d.exemplo_aplicavel}` : '',
+          d.legislacao ? `Legislação: ${d.legislacao}` : '',
+        ].filter(Boolean).join('\n')
+      ]);
+
+      (doc as any).autoTable({
+        startY: yPos,
+        head: [['Verba', 'Natureza', 'Valor', 'Detalhes']],
+        body: descontosTableData,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 2, textColor: 0, lineColor: 200 },
+        headStyles: { fillColor: [240, 240, 240], textColor: [255, 69, 0], fontStyle: 'bold' },
+        columnStyles: {
+          2: { halign: 'right', textColor: [220, 20, 60] }, // Valor (vermelho)
+          3: { fontSize: 7, textColor: [100, 100, 100] } // Detalhes (menor e cinza)
+        },
+        didDrawPage: (data: any) => {
+          if (data.pageNumber > 1) {
+            addPageHeader(currentPage, totalPagesPlaceholder);
+          }
+        },
+        margin: { left: margin, right: margin },
+      });
+      yPos = (doc as any).autoTable.previous.finalY + tableMarginTop;
+
+      // Total Descontos
+      if (yPos + lineHeight > pageHeight - margin) {
+        doc.addPage();
+        currentPage++;
+        addPageHeader(currentPage, totalPagesPlaceholder);
+      }
+      doc.setFontSize(12);
+      doc.setTextColor(255, 69, 0); // Laranja
+      doc.text(`Total Descontos: -R$ ${totalDescontos.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
+      yPos += lineHeight * 1.5;
+    }
+
+    // --- Valor Líquido a Receber ---
+    const valorLiquido = totalProventos - totalDescontos;
+    if (yPos + lineHeight * 3 > pageHeight - margin) {
+      doc.addPage();
+      currentPage++;
+      addPageHeader(currentPage, totalPagesPlaceholder);
+    }
+    doc.setFontSize(18);
+    doc.setTextColor(255, 69, 0); // Laranja
+    doc.text('Valor Líquido a Receber', margin, yPos);
+    yPos += lineHeight;
+    doc.setFontSize(24);
+    doc.setTextColor(34, 139, 34); // Verde
+    doc.text(`R$ ${valorLiquido.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
+    yPos += lineHeight * 2;
+
+    // --- Base Legal Aplicada ---
+    const allLegislations = new Set<string>();
+    proventos.forEach(p => { if (p.legislacao) allLegislations.add(p.legislacao); });
+    descontos.forEach(d => { if (d.legislacao) allLegislations.add(d.legislacao); });
+    const uniqueLegislations = Array.from(allLegislations);
+
+    if (uniqueLegislations.length > 0) {
+      if (yPos + lineHeight * 2 > pageHeight - margin) {
+        doc.addPage();
+        currentPage++;
+        addPageHeader(currentPage, totalPagesPlaceholder);
+      }
+      doc.setFontSize(16);
+      doc.setTextColor(255, 69, 0); // Laranja
+      doc.text('Base Legal Aplicada', margin, yPos);
+      yPos += lineHeight;
+      doc.setDrawColor(255, 69, 0);
+      doc.line(margin, yPos - 2, margin + 60, yPos - 2);
+      yPos += smallLineHeight;
+
+      doc.setFontSize(10);
+      doc.setTextColor(0); // Preto
+      uniqueLegislations.forEach((leg, index) => {
+        const textLines = doc.splitTextToSize(`- ${leg}`, pageWidth - 2 * margin);
+        textLines.forEach((line: string) => {
+          if (yPos + smallLineHeight > pageHeight - margin) {
+            doc.addPage();
+            currentPage++;
+            addPageHeader(currentPage, totalPagesPlaceholder);
+          }
+          doc.text(line, margin, yPos);
+          yPos += smallLineHeight;
+        });
+      });
+    }
+
+    // Atualizar o número total de páginas no cabeçalho/rodapé de todas as páginas
+    const finalPageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= finalPageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Página ${i} de ${finalPageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+    }
+
+    doc.save(`relatorio_calculo_${calculation.nome_funcionario.replace(/\s/g, '_')}_${calculation.id.substring(0, 8)}.pdf`);
+    showSuccess('Download do PDF do relatório completo iniciado!');
   };
 
   if (loading) {
@@ -284,7 +465,7 @@ const CalculationResultPage: React.FC = () => {
           </Button>
         </div>
 
-        <div ref={contentRef} className="report-content"> {/* Adicionado o ref aqui */}
+        <div /* ref={contentRef} */ className="report-content"> {/* contentRef não é mais usado para html2canvas */}
           {/* Usar o novo componente FullRescissionView */}
           <FullRescissionView
             calculationDetails={calculationDataForDetailsCard}

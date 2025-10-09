@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@9.6.0",
   "scripts": {
-   "dev": "vite",
+    "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -53,6 +53,7 @@
     "html2pdf.js": "^0.12.1",
     "input-otp": "^1.2.4",
     "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
@@ -65,13 +66,13 @@
     "recharts": "^2.12.7",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
+    "serve": "^14.2.3",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-     "serve": "^14.2.3",
     "vaul": "^0.9.3",
-    "zod": "^3.23.8",
-    "vite": "^6.3.4"
+    "vite": "^6.3.4",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@dyad-sh/react-vite-component-tagger": "^0.8.0",
