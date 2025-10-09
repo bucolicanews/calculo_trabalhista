@@ -61,8 +61,8 @@ export interface CalculationDetails {
     restricoes: string;
     atribuicoes: string;
     leis: string;
-    proventos: string;
-    descontos: string;
+    // proventos: string; // Removido para evitar conflito
+    // descontos: string; // Removido para evitar conflito
     observacoes_base_legal: string;
     estrutura_json_modelo_saida: string | null; // Campo do DB
     instrucoes_entrada_dados_rescisao: string | null; // Campo do DB
@@ -107,7 +107,7 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
           tbl_clientes(nome),
           tbl_sindicatos(nome),
           tbl_ai_prompt_templates(
-            id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, 
+            id, title, identificacao, comportamento, restricoes, atribuicoes, leis, observacoes_base_legal, 
             estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
           ),
           tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
