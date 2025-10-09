@@ -73,8 +73,8 @@ export interface CalculationDetails {
     texto_extraido: string | null;
     data_hora: string;
   } | null;
-  proventos: Provento[] | null; // NOVO CAMPO
-  descontos: Desconto[] | null; // NOVO CAMPO
+  related_proventos: Provento[] | null; // NOME DA PROPRIEDADE ATUALIZADO
+  related_descontos: Desconto[] | null; // NOME DA PROPRIEDADE ATUALIZADO
 }
 
 interface UseCalculationDetailsResult {
@@ -111,8 +111,8 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
             estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
           ),
           tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
-          proventos(*),
-          descontos(*)
+          related_proventos:proventos(*), -- ALIAS ADICIONADO
+          related_descontos:descontos(*) -- ALIAS ADICIONADO
         `)
         .eq('id', calculationId)
         .single();
@@ -129,8 +129,8 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
           !!(data as unknown as CalculationDetails).resposta_ai || 
           !!(data as unknown as CalculationDetails).tbl_resposta_calculo?.url_documento_calculo || 
           !!(data as unknown as CalculationDetails).tbl_resposta_calculo?.texto_extraido ||
-          !!((data as unknown as CalculationDetails).proventos && (data as unknown as CalculationDetails).proventos!.length > 0) || 
-          !!((data as unknown as CalculationDetails).descontos && (data as unknown as CalculationDetails).descontos!.length > 0)    
+          !!((data as unknown as CalculationDetails).related_proventos && (data as unknown as CalculationDetails).related_proventos!.length > 0) || 
+          !!((data as unknown as CalculationDetails).related_descontos && (data as unknown as CalculationDetails).related_descontos!.length > 0)    
         );
       } else {
         setCalculation(null);

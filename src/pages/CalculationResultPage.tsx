@@ -11,7 +11,7 @@ import { ArrowLeft } from 'lucide-react';
 import CalculationDetailsCard from '@/components/calculations/CalculationDetailsCard';
 import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
-import ProventosDescontosDisplay from '@/components/calculations/ProventosDescontosDisplay'; // NOVO IMPORT
+import ProventosDescontosDisplay from '@/components/calculations/ProventosDescontosDisplay';
 
 interface Provento {
   id: string;
@@ -82,8 +82,8 @@ interface CalculationDetails {
     texto_extraido: string | null;
     data_hora: string;
   } | null;
-  proventos: Provento[] | null; // NOVO CAMPO
-  descontos: Desconto[] | null; // NOVO CAMPO
+  related_proventos: Provento[] | null; // NOME DA PROPRIEDADE ATUALIZADO
+  related_descontos: Desconto[] | null; // NOME DA PROPRIEDADE ATUALIZADO
 }
 
 const CalculationResultPage: React.FC = () => {
@@ -113,8 +113,8 @@ const CalculationResultPage: React.FC = () => {
           estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
         ),
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
-        proventos(*),
-        descontos(*)
+        related_proventos:proventos(*), -- ALIAS ADICIONADO
+        related_descontos:descontos(*) -- ALIAS ADICIONADO
       `)
       .eq('id', id)
       .single();
@@ -124,7 +124,7 @@ const CalculationResultPage: React.FC = () => {
       console.error('Error fetching calculation result:', error);
       navigate('/calculations');
     } else if (data) {
-      setCalculation(data as unknown as CalculationDetails); // Corrigido aqui
+      setCalculation(data as unknown as CalculationDetails);
     } else {
       setCalculation(null);
     }
@@ -149,7 +149,7 @@ const CalculationResultPage: React.FC = () => {
 
   const otherResultDetails = calculation.tbl_resposta_calculo;
   const hasAnyResult = calculation.resposta_ai || otherResultDetails?.url_documento_calculo || otherResultDetails?.texto_extraido;
-  const hasStructuredData = (calculation.proventos && calculation.proventos.length > 0) || (calculation.descontos && calculation.descontos.length > 0);
+  const hasStructuredData = (calculation.related_proventos && calculation.related_proventos.length > 0) || (calculation.related_descontos && calculation.related_descontos.length > 0);
 
   return (
     <MainLayout>
@@ -168,8 +168,8 @@ const CalculationResultPage: React.FC = () => {
 
         {hasStructuredData && ( 
           <ProventosDescontosDisplay
-            proventos={calculation.proventos || []}
-            descontos={calculation.descontos || []}
+            proventos={calculation.related_proventos || []}
+            descontos={calculation.related_descontos || []}
           />
         )}
 
