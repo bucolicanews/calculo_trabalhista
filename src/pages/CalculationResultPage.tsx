@@ -8,10 +8,9 @@ import { showError } from '@/utils/toast';
 import { ArrowLeft } from 'lucide-react';
 
 // Importar os novos componentes modulares
-import CalculationDetailsCard from '@/components/calculations/CalculationDetailsCard';
 import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
-import ProventosDescontosDisplay from '@/components/calculations/ProventosDescontosDisplay';
+import FullRescissionView from '@/components/calculations/FullRescissionView'; // Importar o novo componente
 
 interface Provento {
   id: string;
@@ -80,8 +79,8 @@ interface CalculationDetails {
     texto_extraido: string | null;
     data_hora: string;
   } | null;
-  related_proventos: Provento[] | null;
-  related_descontos: Desconto[] | null;
+  tbl_proventos: Provento[] | null; // Usar o nome da tabela diretamente
+  tbl_descontos: Desconto[] | null; // Usar o nome da tabela diretamente
 }
 
 const CalculationResultPage: React.FC = () => {
@@ -147,7 +146,28 @@ const CalculationResultPage: React.FC = () => {
 
   const otherResultDetails = calculation.tbl_resposta_calculo;
   const hasAnyResult = calculation.resposta_ai || otherResultDetails?.url_documento_calculo || otherResultDetails?.texto_extraido;
-  const hasStructuredData = (calculation.related_proventos && calculation.related_proventos.length > 0) || (calculation.related_descontos && calculation.related_descontos.length > 0);
+  const hasStructuredData = (calculation.tbl_proventos && calculation.tbl_proventos.length > 0) || (calculation.tbl_descontos && calculation.tbl_descontos.length > 0);
+
+  // Preparar os dados para o FullRescissionView
+  const calculationDataForDetailsCard = {
+    nome_funcionario: calculation.nome_funcionario,
+    inicio_contrato: calculation.inicio_contrato,
+    fim_contrato: calculation.fim_contrato,
+    tipo_aviso: calculation.tipo_aviso,
+    salario_trabalhador: calculation.salario_trabalhador,
+    ctps_assinada: calculation.ctps_assinada,
+    cpf_funcionario: calculation.cpf_funcionario,
+    funcao_funcionario: calculation.funcao_funcionario,
+    salario_sindicato: calculation.salario_sindicato,
+    media_descontos: calculation.media_descontos,
+    media_remuneracoes: calculation.media_remuneracoes,
+    carga_horaria: calculation.carga_horaria,
+    obs_sindicato: calculation.obs_sindicato,
+    historia: calculation.historia,
+    tbl_clientes: calculation.tbl_clientes,
+    tbl_sindicatos: calculation.tbl_sindicatos,
+    tbl_ai_prompt_templates: calculation.tbl_ai_prompt_templates,
+  };
 
   return (
     <MainLayout>
@@ -162,14 +182,12 @@ const CalculationResultPage: React.FC = () => {
           <div className="w-full sm:w-48 h-0 sm:h-auto"></div>
         </div>
 
-        <CalculationDetailsCard calculation={calculation} />
-
-        {hasStructuredData && ( 
-          <ProventosDescontosDisplay
-            proventos={calculation.related_proventos || []}
-            descontos={calculation.related_descontos || []}
-          />
-        )}
+        {/* Usar o novo componente FullRescissionView */}
+        <FullRescissionView
+          calculationDetails={calculationDataForDetailsCard}
+          proventos={calculation.tbl_proventos || []}
+          descontos={calculation.tbl_descontos || []}
+        />
 
         {hasAnyResult ? (
           <AiResponseDisplay

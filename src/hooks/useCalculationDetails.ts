@@ -71,8 +71,8 @@ export interface CalculationDetails {
     texto_extraido: string | null;
     data_hora: string;
   } | null;
-  related_proventos: Provento[] | null;
-  related_descontos: Desconto[] | null;
+  tbl_proventos: Provento[] | null; // Usar o nome da tabela diretamente
+  tbl_descontos: Desconto[] | null; // Usar o nome da tabela diretamente
 }
 
 interface UseCalculationDetailsResult {
@@ -127,8 +127,8 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
           !!(data as unknown as CalculationDetails).resposta_ai || 
           !!(data as unknown as CalculationDetails).tbl_resposta_calculo?.url_documento_calculo || 
           !!(data as unknown as CalculationDetails).tbl_resposta_calculo?.texto_extraido ||
-          !!((data as unknown as CalculationDetails).related_proventos && (data as unknown as CalculationDetails).related_proventos!.length > 0) || 
-          !!((data as unknown as CalculationDetails).related_descontos && (data as unknown as CalculationDetails).related_descontos!.length > 0)    
+          !!((data as unknown as CalculationDetails).tbl_proventos && (data as unknown as CalculationDetails).tbl_proventos!.length > 0) || 
+          !!((data as unknown as CalculationDetails).tbl_descontos && (data as unknown as CalculationDetails).tbl_descontos!.length > 0)    
         );
       } else {
         setCalculation(null);
