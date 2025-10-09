@@ -55,7 +55,7 @@ const CalculationDetailsCard: React.FC<CalculationDetailsCardProps> = ({ calcula
         {calculation.carga_horaria && <p className="break-words"><strong>Carga Horária:</strong> {calculation.carga_horaria}</p>}
         {calculation.obs_sindicato && <p className="col-span-full break-words"><strong>Obs. Sindicato:</strong> {calculation.obs_sindicato}</p>}
         {calculation.historia && <p className="col-span-full break-words"><strong>Histórico:</strong> {calculation.historia}</p>}
-        {calculation.tbl_ai_prompt_templates?.estrutura_json_modelo_saida && <p className="col-span-full break-words"><strong>Estrutura JSON Modelo Saída:</strong> {calculation.tbl_ai_prompt_templates.estrutura_json_modelo_saida}</p>}
+        {/* Removido o campo estrutura_json_modelo_saida */}
         {calculation.tbl_ai_prompt_templates?.instrucoes_entrada_dados_rescisao && <p className="col-span-full break-words"><strong>Instruções Entrada Dados Rescisão:</strong> {calculation.tbl_ai_prompt_templates.instrucoes_entrada_dados_rescisao}</p>}
       </CardContent>
     </Card>
