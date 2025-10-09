@@ -12,9 +12,10 @@ import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView'; // Importar o novo componente
 
-// Importações estáticas para jsPDF e jspdf-autotable
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable'; 
+// MODIFIED IMPORT FOR JSPDF - Usando importação de namespace para garantir o carregamento completo
+import * as JsPDFModule from 'jspdf';
+const jsPDF = JsPDFModule.default; // Acessa o export default após a importação do namespace
+import 'jspdf-autotable'; // Importar o plugin jspdf-autotable
 
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
