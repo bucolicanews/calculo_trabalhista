@@ -97,8 +97,8 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
                 </TableHeader>
                 <TableBody>
                   {proventos.map((provento) => (
-                    <Collapsible asChild key={provento.id}>
-                      <>
+                    <React.Fragment key={provento.id}> {/* Fragment para agrupar as TRs */}
+                      <Collapsible> {/* Removido asChild aqui */}
                         <CollapsibleTrigger asChild>
                           <TableRow className="border-gray-700 hover:bg-gray-800 cursor-pointer">
                             <TableCell className="font-medium text-gray-200">{provento.nome_provento}</TableCell>
@@ -116,8 +116,8 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
                             </TableCell>
                           </TableRow>
                         </CollapsibleContent>
-                      </>
-                    </Collapsible>
+                      </Collapsible>
+                    </React.Fragment>
                   ))}
                   <TableRow className="bg-gray-800 hover:bg-gray-800 font-bold text-lg border-t-2 border-orange-500">
                     <TableCell colSpan={2} className="text-orange-400">Total Proventos</TableCell>
@@ -145,8 +145,8 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
                 </TableHeader>
                 <TableBody>
                   {descontos.map((desconto) => (
-                    <Collapsible asChild key={desconto.id}>
-                      <>
+                    <React.Fragment key={desconto.id}> {/* Fragment para agrupar as TRs */}
+                      <Collapsible> {/* Removido asChild aqui */}
                         <CollapsibleTrigger asChild>
                           <TableRow className="border-gray-700 hover:bg-gray-800 cursor-pointer">
                             <TableCell className="font-medium text-gray-200">{desconto.nome_desconto}</TableCell>
@@ -164,8 +164,8 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
                             </TableCell>
                           </TableRow>
                         </CollapsibleContent>
-                      </>
-                    </Collapsible>
+                      </Collapsible>
+                    </React.Fragment>
                   ))}
                   <TableRow className="bg-gray-800 hover:bg-gray-800 font-bold text-lg border-t-2 border-orange-500">
                     <TableCell colSpan={2} className="text-orange-400">Total Descontos</TableCell>
