@@ -46,6 +46,36 @@ serve(async (req: Request) => {
       });
     }
 
+    // Tenta parsear a resposta da IA como JSON. Se for JSON, invoca a nova função Edge.
+    let isJson = false;
+    try {
+      JSON.parse(aiResponse);
+      isJson = true;
+    } catch (e) {
+      // Not a valid JSON, proceed as Markdown
+    }
+
+    if (isJson) {
+      console.log(`Invoking process-ai-calculation-json for calculationId: ${calculationId}`);
+      const { data: invokeData, error: invokeError } = await supabaseClient.functions.invoke(
+        'process-ai-calculation-json',
+        {
+          body: {
+            calculationId: calculationId,
+            aiResponseJson: aiResponse,
+          },
+          // headers: { 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` }, // Não é necessário para invocações internas
+        }
+      );
+
+      if (invokeError) {
+        console.error('Error invoking process-ai-calculation-json:', invokeError);
+        // Não falha a requisição principal, apenas loga o erro de processamento secundário
+      } else {
+        console.log('process-ai-calculation-json invoked successfully:', invokeData);
+      }
+    }
+
     return new Response(JSON.stringify({ message: 'AI response received and updated successfully in tbl_calculos', calculationId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
