@@ -345,11 +345,21 @@ const CalculationListPage = () => {
     showSuccess('Reprocessando resposta da IA...');
 
     try {
+      const session = await supabase.auth.getSession();
+      const accessToken = session.data.session?.access_token;
+
+      if (!accessToken) {
+        showError('Sessão de usuário não encontrada. Por favor, faça login novamente.');
+        setIsReprocessing(null);
+        updateCalculationStatus(calculationId, 'completed');
+        return;
+      }
+
       const response = await fetch(`https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/reprocess-calculation-ai-response`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token || (await supabase.auth.getSession()).data.session?.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ calculationId }),
       });
@@ -367,7 +377,7 @@ const CalculationListPage = () => {
       console.error('Unexpected Reprocess AI Response Error:', error);
     } finally {
       setIsReprocessing(null);
-      updateCalculationStatus(calculationId, 'completed'); // Assume que o reprocessamento foi bem-sucedido
+      // Não define como 'completed' aqui, pois fetchCalculations irá atualizar o status
     }
   };
 

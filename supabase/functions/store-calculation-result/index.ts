@@ -1,6 +1,19 @@
+// deno-lint-ignore-file
 // @ts-ignore
+// Deno configuration for this Edge Function
+// This block is usually in deno.json, but moved here to avoid deployment issues.
+// {
+//   "compilerOptions": {
+//     "lib": ["deno.ns", "deno.unstable"],
+//     "types": ["https://deno.land/std@0.190.0/http/server.ts", "https://esm.sh/@supabase/supabase-js@2.45.0"]
+//   },
+//   "imports": {
+//     "https://deno.land/std@0.190.0/http/server.ts": "https://deno.land/std@0.190.0/http/server.ts",
+//     "https://esm.sh/@supabase/supabase-js@2.45.0": "https://esm.sh/@supabase/supabase-js@2.45.0"
+//   }
+// }
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
@@ -24,9 +37,7 @@ serve(async (req: Request) => {
     }
 
     const supabaseClient = createClient(
-      // @ts-ignore
       Deno.env.get('SUPABASE_URL') ?? '',
-      // @ts-ignore
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for server-side operations
     );
 

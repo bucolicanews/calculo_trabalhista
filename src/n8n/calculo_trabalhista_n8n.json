@@ -1,599 +1,497 @@
-` e importe-o na sua instância n8n. **É fundamental que o nó "AI Agent" agora gere JSON, não Markdown.**
-2.  **Aguarde a Implantação das Funções Edge**: As funções `process-ai-calculation-json`, `store-calculation-result` e `reprocess-calculation-ai-response` serão implantadas automaticamente.
-3.  **Teste o Fluxo Completo**:
-    *   Crie um novo cálculo e envie-o. Verifique se as tabelas `proventos` e `descontos` são populadas.
-    *   Use o novo botão "Processar" em um cálculo existente (que tenha JSON na `resposta_ai`) para ver se ele reprocessa os itens.
-
-Com essas mudanças, o fluxo de processamento do JSON da IA deve estar completo e funcional, e você terá a flexibilidade de reprocessar os dados quando necessário.
-
-<dyad-command type="refresh"></dyad-command>
-Corrigi os erros de implantação das Funções Edge, ajustei a lógica de processamento do JSON da IA, atualizei o fluxo de trabalho n8n para gerar JSON e adicionei um botão "Processar" no frontend.<dyad-problem-report summary="7 problems">
-<problem file="src/pages/CalculationListPage.tsx" line="352" column="43" code="2339">Property 'token' does not exist on type 'User'.</problem>
-<problem file="supabase/functions/process-ai-calculation-json/index.ts" line="27" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/process-ai-calculation-json/index.ts" line="28" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/store-calculation-result/index.ts" line="27" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/store-calculation-result/index.ts" line="28" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/reprocess-calculation-ai-response/index.ts" line="27" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/reprocess-calculation-ai-response/index.ts" line="28" column="7" code="2304">Cannot find name 'Deno'.</problem>
-</dyad-problem-report><dyad-problem-report summary="7 problems">
-<problem file="src/pages/CalculationListPage.tsx" line="352" column="43" code="2339">Property 'token' does not exist on type 'User'.</problem>
-<problem file="supabase/functions/process-ai-calculation-json/index.ts" line="27" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/process-ai-calculation-json/index.ts" line="28" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/store-calculation-result/index.ts" line="27" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/store-calculation-result/index.ts" line="28" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/reprocess-calculation-ai-response/index.ts" line="27" column="7" code="2304">Cannot find name 'Deno'.</problem>
-<problem file="supabase/functions/reprocess-calculation-ai-response/index.ts" line="28" column="7" code="2304">Cannot find name 'Deno'.</problem>
-</dyad-problem-report><think>**Resolving Type Mismatch**
-
-I'm currently focused on resolving the type mismatch error in CalculationListPage.tsx. Specifically, the 'token' property is not recognized within the User type. I'm investigating how the User type is defined and ensuring the 'token' property is correctly included, or if the property is named differently. I am also determining whether this is a simple typo or if there's a problem with the intended data structure of user authentication.
-
-
-**Fixing Authentication Flow**
-
-My focus is shifting to refining the authentication flow after addressing the initial type mismatch. The 'token' issue now points to a broader problem in how we're managing access tokens. It's clear that the access token should consistently come from the `supabase.auth.getSession()` method, and not rely on potentially stale user data from the `useAuth()` hook. This simplifies the approach and aligns with Supabase's recommended practices.
-
-
-**Addressing Compilation Issues**
-
-I've tackled the remaining errors in the Supabase Edge Functions. The `Deno` errors persisted despite the initial attempt. Now, I've placed `declare const Deno: any;` at the very top of each affected file and strategically added `// @ts-ignore` before each `Deno.env.get` call. This approach provides a fail-safe compilation in their specific setup. Furthermore, in `CalculationListPage.tsx`, I simplified the token retrieval to consistently use `supabase.auth.getSession()` , discarding the reliance on potentially outdated user data.
-
-
-**Refining Error Handling**
-
-I'm now prioritizing resolving the remaining compile-time errors within the Supabase Edge Functions, ensuring they compile successfully. While `declare const Deno: any;` was added, I've now added `// @ts-ignore` to silence the `Deno` errors. Regarding CalculationListPage.tsx, I simplified the token retrieval to always use `supabase.auth.getSession()` to maintain token accuracy. I believe these modifications represent the most direct paths to compilation success.
-
-
-</think>Com certeza! Vamos corrigir esses erros de TypeScript de forma concisa.
-
-### Correções:
-
-1.  **`src/pages/CalculationListPage.tsx`**: O objeto `user` do Supabase não possui uma propriedade `token` diretamente. O `access_token` deve ser obtido da sessão. Vou ajustar para sempre buscar o `access_token` da sessão.
-2.  **Funções Edge (`supabase/functions/.../index.ts`)**: Os erros `Cannot find name 'Deno'` ocorrem porque `Deno` é um global do ambiente Deno, não reconhecido pelo TypeScript padrão. Embora `declare const Deno: any;` ajude, em alguns setups, é necessário um `@ts-ignore` direto para suprimir o erro de compilação sem alterar o comportamento em tempo de execução (que está correto no Deno).
-
----
-
-<dyad-write path="src/pages/CalculationListPage.tsx" description="Fixing TypeScript error: Property 'token' does not exist on type 'User'.">
-import { useEffect, useState, useRef } from 'react';
-import MainLayout from '@/components/layout/MainLayout';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Play } from 'lucide-react'; // Adicionado Play icon
-import { Link } from 'react-router-dom';
-import { showError, showSuccess } from '@/utils/toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { format } from 'date-fns';
-import { allAvailableFieldsDefinition, getFullSupabasePath } from '@/utils/webhookFields';
-import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
-import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender';
-import { Badge } from '@/components/ui/badge';
-
-// Definindo os possíveis status de um cálculo
-type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'reprocessing'; // Adicionado 'reprocessing'
-
-interface Calculation {
-  id: string;
-  nome_funcionario: string;
-  inicio_contrato: string;
-  fim_contrato: string;
-  resposta_ai: string | null;
-  tbl_clientes: { nome: string } | null;
-  tbl_sindicatos: { nome: string } | null;
-  tbl_ai_prompt_templates: {
-    id: string;
-    title: string;
-  } | null;
-  tbl_resposta_calculo: {
-    url_documento_calculo: string | null;
-    texto_extraido: string | null;
-    data_hora: string;
-  } | null;
-  created_at: string;
-  status?: CalculationStatus;
-  [key: string]: any;
-}
-
-const AUTO_REFRESH_DURATION = 2 * 60 * 1000; // 2 minutos em milissegundos
-const PROCESS_WAIT_DURATION = 1 * 60 * 1000; // 1 minuto em milissegundos
-
-const formatCountdown = (seconds: number): string => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-};
-
-const CalculationListPage = () => {
-  const { user } = useAuth();
-  const [calculations, setCalculations] = useState<Calculation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isSendingWebhook, setIsSendingWebhook] = useState<string | null>(null);
-  const [isWebhookSelectionOpen, setIsWebhookSelectionOpen] = useState(false);
-  const [currentCalculationIdForWebhook, setCurrentCalculationIdForWebhook] = useState<string | null>(null);
-  const [countdownTimers, setCountdownTimers] = useState<Map<string, number>>(new Map());
-  const [isReprocessing, setIsReprocessing] = useState<string | null>(null); // Novo estado para reprocessamento
-
-  const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
-  const intervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
-
-  const updateCalculationStatus = (id: string, newStatus: CalculationStatus) => {
-    setCalculations(prevCalculations =>
-      prevCalculations.map(calc =>
-        calc.id === id ? { ...calc, status: newStatus } : calc
-      )
-    );
-  };
-
-  const clearTimeoutAndIntervalById = (id: string) => {
-    const timeout = timeoutsRef.current.get(id);
-    if (timeout) {
-      clearTimeout(timeout);
-      timeoutsRef.current.delete(id);
-    }
-    const interval = intervalsRef.current.get(id);
-    if (interval) {
-      clearInterval(interval);
-      intervalsRef.current.delete(id);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchCalculations();
-    }
-
-    return () => {
-      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-      timeoutsRef.current.clear();
-      intervalsRef.current.forEach(interval => clearInterval(interval));
-      intervalsRef.current.clear();
-    };
-  }, [user]);
-
-  const fetchCalculations = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('tbl_calculos')
-      .select(`
-        id, nome_funcionario, inicio_contrato, fim_contrato, created_at, resposta_ai, 
-        tbl_clientes(nome), 
-        tbl_sindicatos(nome), 
-        tbl_ai_prompt_templates(id, title),
-        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      showError('Erro ao carregar cálculos: ' + error.message);
-      console.error('Error fetching calculations:', error);
-    } else {
-      const initialCalculations: Calculation[] = (data as unknown as Calculation[] || []).map(calc => {
-        return {
-          ...calc,
-          status: calc.resposta_ai ? 'completed' : 'idle',
-        };
-      });
-      setCalculations(initialCalculations);
-    }
-    setLoading(false);
-  };
-
-
-  const handleDeleteCalculation = async (id: string) => {
-    const { error } = await supabase.from('tbl_calculos').delete().eq('id', id);
-    if (error) {
-      showError('Erro ao deletar cálculo: ' + error.message);
-    } else {
-      showSuccess('Cálculo deletado com sucesso!');
-      clearTimeoutAndIntervalById(id);
-      fetchCalculations();
-    }
-  };
-
-  const handleProcessWait = (calculationId: string) => {
-    console.log(`[CalculationListPage] Iniciando espera de 1 minuto para o cálculo ID: ${calculationId}`);
-
-    updateCalculationStatus(calculationId, 'pending_response');
-    showSuccess('Processamento iniciado. A página será atualizada em 1 minuto.');
-
-    const timeoutId = setTimeout(() => {
-      console.log(`Atualizando a página para o cálculo ${calculationId} após 1 minuto.`);
-      window.location.reload();
-    }, PROCESS_WAIT_DURATION);
-    timeoutsRef.current.set(calculationId, timeoutId);
-
-    const initialSeconds = PROCESS_WAIT_DURATION / 1000;
-    setCountdownTimers(prev => new Map(prev).set(calculationId, initialSeconds));
-
-    const intervalId = setInterval(() => {
-      setCountdownTimers(prev => {
-        const newTimers = new Map(prev);
-        const currentSeconds = newTimers.get(calculationId);
-
-        if (currentSeconds !== undefined && currentSeconds > 1) {
-          newTimers.set(calculationId, currentSeconds - 1);
-          return newTimers;
-        } else {
-          clearInterval(intervalId);
-          intervalsRef.current.delete(calculationId);
-          newTimers.delete(calculationId);
-          return newTimers;
+{
+  "name": "calculo_trabalhista",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resumo",
+        "options": {
+          "allowedOrigins": "*"
         }
-      });
-    }, 1000);
-    intervalsRef.current.set(calculationId, intervalId);
-  };
-
-
-  const handleOpenWebhookSelection = (calculationId: string) => {
-    console.log(`[CalculationListPage] Abrindo seleção de webhook para cálculo ID: ${calculationId}`);
-    setCurrentCalculationIdForWebhook(calculationId);
-    setIsWebhookSelectionOpen(true);
-  };
-
-  const handleSendToWebhook = async (calculationId: string, webhookConfigIds: string[]) => {
-    console.log(`[CalculationListPage] handleSendToWebhook called for calculationId: ${calculationId}, webhookConfigIds:`, webhookConfigIds);
-
-    if (!user) {
-      showError('Usuário não autenticado.');
-      return;
-    }
-
-    setIsSendingWebhook(calculationId);
-    updateCalculationStatus(calculationId, 'sending');
-    showSuccess('Iniciando envio para webhooks selecionados...');
-
-    try {
-      const { data: webhookConfigs, error: webhookError } = await supabase
-        .from('tbl_webhook_configs')
-        .select('*')
-        .in('id', webhookConfigIds);
-
-      if (webhookError) {
-        showError('Erro ao buscar configurações de webhook: ' + webhookError.message);
-        console.error('[Webhook Sender] Erro ao buscar configurações de webhook:', webhookError);
-        updateCalculationStatus(calculationId, 'idle');
-        setIsSendingWebhook(null);
-        return;
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -272,
+        -96
+      ],
+      "id": "7a34f1c8-6dad-4320-9fed-0c7274e75d1b",
+      "name": "Webhook",
+      "webhookId": "95378f01-d475-477e-9879-92f3c3b3947f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/store-calculation-result",
+        "sendHeaders": false,
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        -96
+      ],
+      "id": "7b0877c1-3475-487b-8c53-d33f8ea3190a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Contexto\tCampo\tValor\nEmpresa\tCNPJ\t{{ $json.cnpjEmpresa }}\nCPF Responsável\t{{ $json.cpf_Responsavel_empresa }}\nTrabalhador\tNome\t{{ $json.NomeFuncionario }}\nCPF\t{{ $json.Cpf_Funcionario }}\nFunção\t{{ $json.funcaoFuncionario }}\nContrato\tSalário Base de Cálculo\t{{ $json.salarioTrabalhador }}\nData Início Contrato\t{{ $json.inicioContrato }}\nData Fim Contrato\t{{ $json.Fim_contrato }}\nCTPS Assinada\t{{ $json.ctpsAssinada }}\nTipo Aviso Prévio\t{{ $json.tipoAviso }}\nCarga Horária\t{{ $json.CargaHoraria }}\nPiso Salarial Sindicato\t{{ $json.salarioSindicato }}\nDescontos\tDescontos Médios Informados\t{{ $json.DescontosMedios }}\nOutros/Memória\tObservação Sindicato\t{{ $json.obsSindicato }}\nID Cálculo\t{{ $json.IdCalculo }}\nData do Cálculo\t{{ $json.dataDoCalculo }}\nAcréscimos Médios\t{{ $json.AcrescimosMedios }}",
+        "options": {
+          "systemMessage": "Você é um agente de cálculo rescisório do Brasil, especialista em direito trabalhista. Sua tarefa é analisar os dados fornecidos e gerar um JSON com a estrutura de 'Verbas_Rescisorias' contendo 'Remuneracao' e 'Descontos'. Para cada item, inclua 'Provento'/'Desconto', 'Cálculo' (com 'Parametro', 'Valor', 'Fórmula_Sugerida'), 'Memoria_de_Calculo', 'Legislação', 'Exemplos_Aplicaveis', 'Natureza_da_Verba'. O 'Valor' deve ser numérico. Inclua apenas proventos e descontos com valor calculado maior que zero, a menos que seja uma verba de irregularidade que deve ser listada mesmo com valor zero para indicar ausência de pagamento. A saída deve ser EXCLUSIVAMENTE um objeto JSON válido, sem qualquer texto adicional ou formatação Markdown fora do JSON. Use os seguintes detalhes para guiar sua resposta:\n\natribuicoes : {{ $json.atribuicoes }}\ncomportamento : {{ $json.comportamento }}\ndescontos : {{ $json.descontos_template}}\nidentificação:{{ $json['identificação'] }}\nleis :{{ $json.leis_templates }}\nbase_legal : {{ $json.base_legal_templates }}\nESPECIALIDADE :{{ $json.title_tempalte }}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        -96
+      ],
+      "id": "d2e364dd-cbb7-4c52-89f9-e37fcd57020d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        96
+      ],
+      "id": "87cf375c-8c76-4954-a335-e97928a0a731",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FlYgz578AkLOeocc",
+          "name": "jmoka"
+        }
       }
-
-      if (!webhookConfigs || webhookConfigs.length === 0) {
-        showError('Nenhum webhook selecionado ou configurado encontrado.');
-        console.warn('[Webhook Sender] Nenhum webhook selecionado ou configurado encontrado.');
-        updateCalculationStatus(calculationId, 'idle');
-        setIsSendingWebhook(null);
-        return;
-      }
-
-      let sentCount = 0;
-      for (const config of webhookConfigs) {
-        let selectParts: Set<string> = new Set(['id']);
-        let clientSelectParts: Set<string> = new Set();
-        let sindicatoSelectParts: Set<string> = new Set();
-        let aiTemplateSelectParts: Set<string> = new Set();
-
-        config.selected_fields.forEach((fieldKey: string) => {
-          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
-          if (fieldDef) {
-            if (fieldDef.sourceTable === 'tbl_calculos') {
-              selectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_clientes') {
-              clientSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_sindicatos') {
-              sindicatoSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_ai_prompt_templates') {
-              aiTemplateSelectParts.add(fieldDef.baseSupabasePath);
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "Jota1@@jota79",
+        "contextWindowLength": 30
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        112
+      ],
+      "id": "a73f5dd1-5f6a-40ba-b4a2-b8b39708a84b",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "41f2da9b-803c-4027-8534-06435ff91873",
+              "name": "CargaHoraria",
+              "value": "={{ $json.body.body.calculo_carga_horaria }}",
+              "type": "string"
+            },
+            {
+              "id": "2bf1d3bb-5475-486b-b242-4f0b197e224f",
+              "name": "Cpf_Funcionario",
+              "value": "={{ $json.body.body.calculo_cpf_funcionario }}",
+              "type": "string"
+            },
+            {
+              "id": "dc7d39ac-9fd9-4652-97ef-41b9c8544a74",
+              "name": "dataDoCalculo",
+              "value": "={{ $json.body.body.calculo_created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "a6bbc027-5fb2-4b9a-bb4a-5f6470113ad4",
+              "name": "ctpsAssinada",
+              "value": "={{ $json.body.body.calculo_ctps_assinada }}",
+              "type": "string"
+            },
+            {
+              "id": "0e43d029-7d70-4aa8-a71a-dafbfdbd7f17",
+              "name": "Fim_contrato",
+              "value": "={{ $json.body.body.calculo_fim_contrato }}",
+              "type": "string"
+            },
+            {
+              "id": "2b60c3c7-4da6-4c3b-a2ea-26b6a4ca2a6c",
+              "name": "funcaoFuncionario",
+              "value": "={{ $json.body.body.calculo_funcao_funcionario }}",
+              "type": "string"
+            },
+            {
+              "id": "f8ad4615-cb4c-48dd-9c6e-f0bd1c70cf22",
+              "name": "HistorioCalculo",
+              "value": "={{ $json.body.body.calculo_historia }}",
+              "type": "string"
+            },
+            {
+              "id": "5fe95c80-7a05-4cd1-8f99-eb6098888fc8",
+              "name": "IdCalculo",
+              "value": "={{ $json.body.body.calculo_id }}",
+              "type": "string"
+            },
+            {
+              "id": "9235c237-33ed-4a0d-b6b0-b6f30a043919",
+              "name": "inicioContrato",
+              "value": "={{ $json.body.body.calculo_inicio_contrato }}",
+              "type": "string"
+            },
+            {
+              "id": "1fd5ee2e-837f-4786-80fb-2fb947f596c7",
+              "name": "DescontosMedios",
+              "value": "={{ $json.body.body.calculo_media_descontos }}",
+              "type": "string"
+            },
+            {
+              "id": "90991da2-9b02-473d-ba26-73765f0539fe",
+              "name": "AcrescimosMedios",
+              "value": "={{ $json.body.body.calculo_media_remuneracoes }}",
+              "type": "string"
+            },
+            {
+              "id": "357fbf6a-4077-4edd-98cb-e2c9f8733a79",
+              "name": "NomeFuncionario",
+              "value": "={{ $json.body.body.calculo_nome_funcionario }}",
+              "type": "string"
+            },
+            {
+              "id": "c280b3c0-4eab-4acf-9747-c899a8c47c3b",
+              "name": "obsSindicato",
+              "value": "={{ $json.body.body.calculo_obs_sindicato }}",
+              "type": "string"
+            },
+            {
+              "id": "ce47f6ac-5664-4b66-bc2b-d328cff08078",
+              "name": "salarioSindicato",
+              "value": "={{ $json.body.body.calculo_salario_sindicato }}",
+              "type": "string"
+            },
+            {
+              "id": "2bf9d94e-8bc0-4d3e-9b32-e5212743765d",
+              "name": "salarioTrabalhador",
+              "value": "={{ $json.body.body.calculo_salario_trabalhador }}",
+              "type": "string"
+            },
+            {
+              "id": "8ecfe1dc-b3d9-4f10-99df-5d884b143fcc",
+              "name": "tipoAviso",
+              "value": "={{ $json.body.body.calculo_tipo_aviso }}",
+              "type": "string"
+            },
+            {
+              "id": "ffd28b2e-c868-44d5-b360-f00c52e1497c",
+              "name": "cnpjEmpresa",
+              "value": "={{ $json.body.body.cliente_cnpj }}",
+              "type": "string"
+            },
+            {
+              "id": "a9d23bfe-5c24-44f2-bc6f-3ca10644bd26",
+              "name": "cpf_Responsavel_empresa",
+              "value": "={{ $json.body.body.cliente_cpf_responsavel }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c298fa-3c1b-4d8b-a51c-da5d817634db",
+              "name": "cpf?",
+              "value": "={{ $json.body.body.cliente_cpf }}",
+              "type": "string"
+            },
+            {
+              "id": "473dff85-8431-4ba9-a8f3-004c6c9c17a3",
+              "name": "nome_cliente",
+              "value": "={{ $json.body.body.cliente_nome }}",
+              "type": "string"
+            },
+            {
+              "id": "cac35fb1-e53e-4869-b6e3-aaf011496bcb",
+              "name": "responsavel_empresa",
+              "value": "={{ $json.body.body.cliente_responsavel }}",
+              "type": "string"
+            },
+            {
+              "id": "55bb625a-e80d-4c09-b875-9d74f1ce16c6",
+              "name": "atribuicoes",
+              "value": "={{ $json.body.body.ai_template_atribuicoes }}",
+              "type": "string"
+            },
+            {
+              "id": "ea3dce2c-f7da-4480-a776-1a187eb7e3de",
+              "name": "comportamento",
+              "value": "={{ $json.body.body.ai_template_comportamento }}",
+              "type": "string"
+            },
+            {
+              "id": "17c1de58-3033-4104-b6b4-98be23bde75b",
+              "name": "descontos_template",
+              "value": "={{ $json.body.body.ai_template_descontos }}",
+              "type": "string"
+            },
+            {
+              "id": "8c980633-245e-49cd-b96f-b477b91b1785",
+              "name": "estrutura_json_modelo_saida",
+              "value": "={{ $json.body.body.ai_template_estrutura_json_modelo_saida }}",
+              "type": "string"
+            },
+            {
+              "id": "8eb81960-7924-451c-a49b-4e60599262c4",
+              "name": "instrucoes_entrada_dados_rescisao",
+              "value": "={{ $json.body.body.ai_template_instrucoes_entrada_dados_rescisao }}",
+              "type": "string"
+            },
+            {
+              "id": "2cbe6dba-4e3f-4b08-85d2-fb711e29bd53",
+              "name": "rodape_template",
+              "value": "={{ $json.body.body.ai_template_formatacao_texto_rodape }}",
+              "type": "string"
+            },
+            {
+              "id": "342c93d3-07ed-4e2c-a8c6-5edaab66a50f",
+              "name": "identificação",
+              "value": "={{ $json.body.body.ai_template_identificacao }}",
+              "type": "string"
+            },
+            {
+              "id": "9cee148e-37d2-4426-a21a-60edba476a33",
+              "name": "leis_templates",
+              "value": "={{ $json.body.body.ai_template_leis }}",
+              "type": "string"
+            },
+            {
+              "id": "c53daeb0-f02f-4d57-899e-9bf361ba6f9f",
+              "name": "base_legal_templates",
+              "value": "={{ $json.body.body.ai_template_observacoes_base_legal }}",
+              "type": "string"
+            },
+            {
+              "id": "4fd4b9a9-d172-40e6-b3dd-f3f26e5a4719",
+              "name": "title_tempalte",
+              "value": "={{ $json.body.body.ai_template_title }}",
+              "type": "string"
+            },
+            {
+              "id": "d9a25452-e54e-40d1-bfd6-d3a8c36cd73e",
+              "name": "",
+              "value": "",
+              "type": "string"
             }
-          }
-        });
-
-        if (clientSelectParts.size > 0) {
-          selectParts.add(`tbl_clientes(${Array.from(clientSelectParts).join(',')})`);
-        }
-
-        if (sindicatoSelectParts.size > 0) {
-          let sindicatoPath = `tbl_sindicatos(${Array.from(sindicatoSelectParts).join(',')})`;
-          selectParts.add(sindicatoPath);
-        }
-
-        if (aiTemplateSelectParts.size > 0) {
-          let aiTemplatePath = `tbl_ai_prompt_templates(${Array.from(aiTemplateSelectParts).join(',')})`;
-          selectParts.add(aiTemplatePath);
-        }
-
-        const finalSelectString = Array.from(selectParts).join(', ');
-        const { data: specificCalculationData, error: fetchError } = await supabase
-          .from('tbl_calculos')
-          .select(finalSelectString)
-          .eq('id', calculationId)
-          .single();
-
-        if (fetchError) {
-          showError(`Erro ao buscar dados do cálculo para webhook: ${fetchError.message}`);
-          continue;
-        }
-
-        if (!specificCalculationData) {
-          showError('Dados do cálculo não encontrados para o webhook.');
-          continue;
-        }
-
-        const payload: { [key: string]: any } = {};
-        config.selected_fields.forEach((fieldKey: string) => {
-          const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
-          if (fieldDef) {
-            const extractionPath = getFullSupabasePath('tbl_calculos', fieldDef);
-            payload[fieldKey] = extractValueFromPath(specificCalculationData, extractionPath);
-          }
-        });
-
-        const finalPayload = {
-          body: payload
-        };
-
-        const response = await fetch(config.webhook_url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalPayload),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
-        } else {
-          sentCount++;
-        }
-      }
-
-      if (sentCount > 0) {
-        showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso! A página será atualizada em ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
-        updateCalculationStatus(calculationId, 'pending_response');
-
-        const timeoutId = setTimeout(() => {
-          window.location.reload();
-        }, AUTO_REFRESH_DURATION);
-        timeoutsRef.current.set(calculationId, timeoutId);
-
-        const initialSeconds = AUTO_REFRESH_DURATION / 1000;
-        setCountdownTimers(prev => new Map(prev).set(calculationId, initialSeconds));
-
-        const intervalId = setInterval(() => {
-          setCountdownTimers(prev => {
-            const newTimers = new Map(prev);
-            const currentSeconds = newTimers.get(calculationId);
-
-            if (currentSeconds !== undefined && currentSeconds > 1) {
-              newTimers.set(calculationId, currentSeconds - 1);
-              return newTimers;
-            } else {
-              clearInterval(intervalId);
-              intervalsRef.current.delete(calculationId);
-              newTimers.delete(calculationId);
-              return newTimers;
-            }
-          });
-        }, 1000);
-        intervalsRef.current.set(calculationId, intervalId);
-
-      } else {
-        showError('Nenhum webhook foi enviado com sucesso.');
-        updateCalculationStatus(calculationId, 'idle');
-      }
-
-    } catch (error: any) {
-      showError('Erro inesperado ao enviar cálculo para webhook: ' + error.message);
-      console.error('[Webhook Sender] Erro inesperado:', error);
-      updateCalculationStatus(calculationId, 'idle');
-    } finally {
-      setIsSendingWebhook(null);
-    }
-  };
-
-  const handleReprocessAiResponse = async (calculationId: string) => {
-    if (!user) {
-      showError('Usuário não autenticado.');
-      return;
-    }
-
-    setIsReprocessing(calculationId);
-    updateCalculationStatus(calculationId, 'reprocessing');
-    showSuccess('Reprocessando resposta da IA...');
-
-    try {
-      const session = await supabase.auth.getSession();
-      const accessToken = session.data.session?.access_token;
-
-      if (!accessToken) {
-        showError('Sessão de usuário não encontrada. Por favor, faça login novamente.');
-        setIsReprocessing(null);
-        updateCalculationStatus(calculationId, 'completed');
-        return;
-      }
-
-      const response = await fetch(`https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/reprocess-calculation-ai-response`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          ]
         },
-        body: JSON.stringify({ calculationId }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        showError(`Falha ao reprocessar resposta da IA: ${errorData.error || response.statusText}`);
-        console.error('Reprocess AI Response Error:', errorData);
-      } else {
-        showSuccess('Resposta da IA reprocessada com sucesso! Atualizando a lista...');
-        fetchCalculations(); // Atualiza a lista para refletir as mudanças
-      }
-    } catch (error: any) {
-      showError('Erro inesperado ao reprocessar resposta da IA: ' + error.message);
-      console.error('Unexpected Reprocess AI Response Error:', error);
-    } finally {
-      setIsReprocessing(null);
-      updateCalculationStatus(calculationId, 'completed'); // Assume que o reprocessamento foi bem-sucedido
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        -96
+      ],
+      "id": "609ec50a-3bf8-43fe-aaaf-584ce307e19f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtém os dados dos nós anteriores\nconst idCalculo = $json.IdCalculo; // O valor deve estar no item anterior que você está processando\nconst aiResponse = $('AI Agent').item.json.output;\n\n// Cria o objeto de dados garantindo que aiResponse é uma string escapada\nconst body = {\n  calculationId: idCalculo,\n  aiResponse: aiResponse // aiResponse deve ser a string JSON gerada pela IA\n};\n\n// Retorna o objeto (O n8n o transformará em JSON para o nó HTTP Request)\nreturn [{ json: body }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -96
+      ],
+      "id": "67982a01-bdf4-4786-b7b4-19592820ce89",
+      "name": "Code in JavaScript"
     }
-  };
-
-
-  return (
-    <MainLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-orange-500 mb-4 md:mb-0">Cálculos</h1>
-          <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white w-full md:w-auto">
-            <Link to="/calculations/new">
-              <PlusCircle className="mr-2 h-4 w-4" /> Novo Cálculo
-            </Link>
-          </Button>
-        </div>
-
-        {loading ? (
-          <p className="text-gray-400">Carregando cálculos...</p>
-        ) : calculations.length === 0 ? (
-          <p className="text-gray-400">Nenhum cálculo cadastrado ainda. Crie um novo para começar!</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {calculations.map((calculation) => {
-              const currentStatus = calculation.status || 'idle';
-              const hasResult = calculation.resposta_ai;
-              const remainingSeconds = countdownTimers.get(calculation.id);
-              const isProcessingAny = isSendingWebhook === calculation.id || isReprocessing === calculation.id || currentStatus === 'pending_response';
-
-              return (
-                <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
-                  <CardHeader>
-                    <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
-                    <div className="flex items-center justify-between mb-2">
-
-                      {currentStatus === 'sending' && (
-                        <Badge variant="secondary" className="bg-yellow-600 text-white flex items-center">
-                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Enviando...
-                        </Badge>
-                      )}
-
-                      {currentStatus === 'pending_response' && (
-                        <Badge variant="secondary" className="bg-blue-600 text-white flex items-center">
-                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                          Aguardando Resposta...
-                          {remainingSeconds !== undefined && (
-                            <span className="ml-2 font-mono">({formatCountdown(remainingSeconds)})</span>
-                          )}
-                        </Badge>
-                      )}
-
-                      {currentStatus === 'reprocessing' && (
-                        <Badge variant="secondary" className="bg-purple-600 text-white flex items-center">
-                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Reprocessando...
-                        </Badge>
-                      )}
-
-                      {currentStatus === 'completed' && (
-                        <Badge variant="secondary" className="bg-green-600 text-white flex items-center">
-                          <CheckCircle2 className="h-3 w-3 mr-1" /> Concluído
-                        </Badge>
-                      )}
-
-                      {/* Botão Processar/Reprocessar */}
-                      {hasResult && currentStatus !== 'reprocessing' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-purple-700 text-white hover:bg-purple-600"
-                          onClick={() => handleReprocessAiResponse(calculation.id)}
-                          disabled={isProcessingAny}
-                        >
-                          <Play className="h-4 w-4" />
-                        </Button>
-                      )}
-
-                      {currentStatus !== 'sending' && currentStatus !== 'completed' && currentStatus !== 'pending_response' && currentStatus !== 'reprocessing' && !hasResult && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-gray-700 text-white hover:bg-gray-600"
-                          onClick={() => handleProcessWait(calculation.id)}
-                          disabled={isProcessingAny}
-                        >
-                          Processar
-                        </Button>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.nome || 'N/A'}</p>
-                    {calculation.tbl_ai_prompt_templates?.title && (
-                      <p className="text-sm text-gray-400">Modelo IA: {calculation.tbl_ai_prompt_templates.title}</p>
-                    )}
-                    <div className="text-xs text-gray-500 mt-2 space-y-1">
-                      <p>Início Contrato: {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy')}</p>
-                      <p>Fim Contrato: {format(new Date(calculation.fim_contrato), 'dd/MM/yyyy')}</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex justify-end space-x-2 w-full">
-                    <Button asChild variant="outline" size="sm" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
-                      <Link to={`/calculations/${calculation.id}`}>
-                        <Edit className="h-4 w-4" />
-                      </Link>
-                    </Button>
-
-                    {hasResult && (
-                      <Button asChild variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
-                        <Link to={`/calculations/${calculation.id}/result`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    )}
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-                      onClick={() => handleOpenWebhookSelection(calculation.id)}
-                      disabled={isProcessingAny}
-                    >
-                      {isSendingWebhook === calculation.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    </Button>
-
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-gray-900 border-red-600 text-white">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-red-500">Tem certeza?</AlertDialogTitle>
-                          <AlertDialogDescription className="text-gray-300">
-                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o cálculo de "{calculation.nome_funcionario}".
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteCalculation(calculation.id)} className="bg-red-600 hover:bg-red-700 text-white">
-                            Deletar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {currentCalculationIdForWebhook && (
-        <CalculationWebhookSender
-          calculationId={currentCalculationIdForWebhook}
-          isOpen={isWebhookSelectionOpen}
-          onOpenChange={setIsWebhookSelectionOpen}
-          onSend={handleSendToWebhook}
-          isSending={!!isSendingWebhook}
-        />
-      )}
-    </MainLayout>
-  );
-};
-
-export default CalculationListPage;
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "jota-empresas-n8n.ubjifz.easypanel.host",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+            "content-length": "14402",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "pt-PT,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "content-type": "application/json",
+            "origin": "http://localhost:8080",
+            "priority": "u=1, i",
+            "referer": "http://localhost:8080/",
+            "sec-ch-ua": "\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Google Chrome\";v=\"140\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "45.176.47.39",
+            "x-forwarded-host": "jota-empresas-n8n.ubjifz.easypanel.host",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "c33a9392550e",
+            "x-real-ip": "45.176.47.39"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "body": {
+              "calculo_carga_horaria": "08:00 as 12 e de 14:00 as 18",
+              "calculo_cpf_funcionario": "657982112300",
+              "calculo_created_at": "2025-10-04T15:20:40.455495+00:00",
+              "calculo_ctps_assinada": null,
+              "calculo_fim_contrato": "2025-10-01",
+              "calculo_funcao_funcionario": "AÇOUGUEIRO",
+              "calculo_historia": "mandou o funcionario esperar em casa o aviso e não deu nada para assinar",
+              "calculo_ai_template_id": "4763eeea-1715-44f6-8265-d2ac3d5dabca",
+              "calculo_id": "40cb4015-6ac3-4e19-8fcb-bf8784bea1b2",
+              "calculo_inicio_contrato": "2023-11-01",
+              "calculo_media_descontos": 33,
+              "calculo_media_remuneracoes": null,
+              "calculo_nome_funcionario": "JOÃO LUIZ SILVA TAVARES teste",
+              "calculo_obs_sindicato": "cesta basica valor de 150 por mes",
+              "calculo_salario_sindicato": 1600,
+              "calculo_resposta_ai": "Jota Contabilidade\n\n## Relatório de Cálculo de Rescisão de Contrato de Trabalho por Prazo Determinado\n\n**Agente de Cálculo Rescisório do Brasil, Professor e Doutor em Direito Trabalhista**\n\nID Cálculo: 40cb4015-6ac3-4e19-8fcb-bf8784bea1b2\nData do Cálculo: 2025-10-04\n\n## DADOS DA RESCISÃO\n\n| **Campo** | **Detalhe** |\n| :--- | :--- |\
+| **Nome do Trabalhador** | JOÃO LUIZ SILVA TAVARES teste |\n| **CPF do Trabalhador** | 657982112300 |\n| **Função** | AÇOUGUEIRO |\n| **CNPJ do Empregador** | 23.802.364/0001-90 |\n| **Data Início Contrato** | 2023-11-01 |\n| **Data Fim Contrato** | 2025-10-01 |\n| **Duração do Contrato** | 1 ano, 11 meses e 1 dia |\n| **Tipo de Rescisão** | Término Natural de Contrato por Prazo Determinado |\n| **Salário Base Contratual** | R$ 1.500,00 |\n| **Piso Salarial Sindicato** | R$ 1.600,00 |\n| **Remuneração Base para Cálculo** | R$ 1.750,00 (Piso Salarial + Cesta Básica) |\n| **CTPS Assinada** | Sim (Presumido) |\n\nRESUMO FINANCEIRO\n\n#### PROVENTOS\n\n| **Verba Rescisória** | **Base de Cálculo** | **Valor (R$)** |\n| :--- | :--- | :--- |\
+| Saldo de Salário (1 dia de Outubro/2025) | R$ 1.750,00 / 30 * 1 | 58,33 |\n| 13º Salário Proporcional (9/12 avos) | (R$ 1.750,00 / 12) * 9 | 1.312,50 |\n| Férias Vencidas (2023-11-01 a 2024-10-31) | R$ 1.750,00 | 1.750,00 |\n| Adicional 1/3 Férias Vencidas | R$ 1.750,00 / 3 | 583,33 |\n| Férias Proporcionais (11/12 avos) | (R$ 1.750,00 / 12) * 11 | 1.604,17 |\n| Adicional 1/3 Férias Proporcionais | (R$ 1.604,17 / 3) | 534,72 |\n| Multa de 40% sobre o Saldo do FGTS¹ | R$ 3.220,00 (FGTS Estimado) * 0,40 | 1.288,00 |\n| **TOTAL BRUTO** | | **7.131,05** |\n\n#### DESCONTOS\n\n| **Desconto** | **Base de Cálculo** | **Valor (R$)** |\n| :--- | :--- | :--- |\
+| INSS sobre Saldo de Salário | R$ 58,33 * 7,5% | 4,37 |\n| INSS sobre 13º Salário Proporcional | R$ 1.312,50 * 7,5% | 98,44 |\n| IRRF sobre Verbas Remuneratórias² | (R$ 3.412,50 * 15%) - R$ 370,40 | 141,47 |\n| Outros Descontos Informados | | 33,00 |\n| **TOTAL DE DESCONTOS** | | **277,28** |\n\n## VALOR LÍQUIDO A RECEBER\n# **R$ 6.853,77**\n\n### OBSERVAÇÕES E BASE LEGAL\n\n1.  **Base Legal Geral:** Cálculo realizado em conformidade com o Decreto-Lei nº 5.452/43 (Consolidação das Leis do Trabalho - CLT), Constituição Federal de 1988 (Art. 7º) e legislação complementar pertinente.\n2.  **Remuneração Base:** O salário de cálculo foi ajustado para R$ 1.600,00, conforme o Piso Salarial do Sindicato, que é superior ao salário contratual de R$ 1.500,00. A Cesta Básica no valor de R$ 150,00 por mês foi integrada à remuneração para fins de cálculo de verbas rescisórias, por ter natureza salarial, totalizando R$ 1.750,00 como remuneração base para os cálculos de férias, 13º salário e FGTS (Jurisprudência consolidada, como Súmula 209 do TST - embora a natureza da cesta básica possa ser discutida em CCT, presume-se salarial na ausência de prova em contrário).\n3.  **Observação CTPS:** Presume-se que a Carteira de Trabalho e Previdência Social (CTPS) esteja devidamente assinada. Caso contrário, é fundamental que o empregador regularize o vínculo empregatício e realize o recolhimento de todos os encargos devidos, sob pena de infração à CLT (Art. 29).\n4.  **Observação FGTS:** O valor da multa de 40% do FGTS (Lei nº 8.036/90) apresentado é uma estimativa baseada nos depósitos mensais sobre a remuneração base. O valor final a ser liberado para saque será calculado sobre o saldo atualizado de todos os depósitos na conta vinculada do trabalhador.\n5.  **Término de Contrato por Prazo Determinado:** Por se tratar de término natural de contrato por prazo determinado, não há aviso prévio a ser cumprido ou indenizado (CLT, Art. 478). O seguro-desemprego **não** é devido nesta modalidade de rescisão, conforme Lei nº 7.998/90.\n6.  **IRRF (Imposto de Renda Retido na Fonte):** O cálculo do IRRF segue a tabela progressiva vigente para o ano de 2025, considerando as deduções legais aplicáveis. As férias indenizadas (terço constitucional) são isentas de Imposto de Renda, conforme Art. 6º, V da Lei nº 7.713/88.\n\nAtenciosamente, Jota Contabilidade",
+              "calculo_salario_trabalhador": 1500,
+              "calculo_tipo_aviso": "rescisao_sem_justa_causa",
+              "cliente_cnpj": "23.802.364/0001-90",
+              "cliente_cpf_responsavel": "00429988249",
+              "cliente_cpf": null,
+              "cliente_created_at": "2025-10-04T09:49:26.319698+00:00",
+              "cliente_user_id": "10599047-4bb5-4003-9319-773476a44ef0",
+              "cliente_id": "5fc9a0fb-fbe5-4b42-b459-0589a4710274",
+              "cliente_nome": "BARÉ",
+              "cliente_responsavel": "J COSME",
+              "cliente_tipo_empregador": "Empresa",
+              "ai_template_atribuicoes": "-especialista em direito trabalhista\n-especialista na consolidação das leis trabalhistas\n-especialista em cada sindicado e seus dissídios\n-phd em leis trabalhistas\n-professor de cálculo trabalhista e rescisões",
+              "ai_template_comportamento": "-cordialmente profissional\n-resposta precisa, **metódica e embasada na CLT**, **Jurisprudências já proferidas** e no **direito trabalhistas**\n-conhecedor do assunto e de toda a legislação trabalhista (CLT, jurisprudência, CCTs/Dissídios)\n-extremamente metódico\n-**A saída final deve ser formatada EXCLUSIVAMENTE**  no formato MARKDOWN SEM TRAÇOS SEM BARARS , BEM FORMTADO \nINSTRUÇÕES DE FORMATO OBRIGATÓRIAS:\n1.  Divisão Limpa: Separe as seções (DADOS DA RESCISÃO, RESUMO FINANCEIRO, etc.) usando **apenas uma linha em branco (quebra de linha dupla)**. NÃO use traços, símbolos ou hífens para linhas divisórias.\n2.  Tabelas: Use o formato de tabela Markdown padrão. Destaque **em negrito** apenas as chaves (cabeçalhos) e as linhas de **TOTAIS** nas tabelas.\n3.  Ênfase no Líquido: Use título de nível 2 (##) e negrito forte para a seção **VALOR LÍQUIDO A RECEBER**, destacando o valor final de forma muito clara (Ex: # **R$ [VALOR]**).\n4.  Observações: Mantenha a seção de OBSERVAÇÕES E BASE LEGAL em formato de **lista numerada** detalhada.",
+              "ai_template_created_at": "2025-10-04T12:28:52.803822+00:00",
+              "ai_template_descontos": "caso esteja sem carteira assinada não desconta nada , caso não descontar , inss, ir se for o caso",
+              "ai_template_estrutura_json_modelo_saida": "Gere apenas as duas linhas do cabeçalho. A primeira linha deve ser o nome da empresa, e a segunda linha deve ser o título. Não use cabeçalhos Markdown, negrito, caracteres especiais, ou qualquer pontuação extra. Saída Solicitada: Jota Contabilidade - Relatório de Cálculo de Rescisão Contratual",
+              "ai_template_instrucoes_entrada_dados_rescisao": "Gere apenas a saudação final do relatório em uma única linha. Use o formato 'Atenciosamente, [Nome da Empresa]'. Não inclua cabeçalhos Markdown, negrito, caracteres especiais ou qualquer pontuação extra, exceto a vírgula da saudação. Saída Solicitada: Atenciosamente Jota Contabilidade, evitando quebras de linhas e espeços execesivos e mantenha sempre um formato de .json valido",
+              "ai_template_formatacao_texto_rodape": "- Inclua a saudação final (\"Atenciosamente, [Jota Contabilidade]\").",
+              "ai_template_identificacao": "-agente de cálculo rescisório do brasil\n-o agente especialista em cálculo rescisório do brasil\n-professor de direito trabalhista do brasil\n-mestre em direito trabalhista do brasil\n-phd em direito trabalhista do brasil\n- doutor em direito trabalhista do brasil",
+              "ai_template_leis": "- calcular sempre a diferença de salário exigido pelo sindicato e relação ao recebido pelo trabalhador durante o período de trabalho\nA Lei Principal: Consolidação das Leis do Trabalho (CLT)\nO núcleo de toda a legislação trabalhista brasileira é a Consolidação das Leis do Trabalho (CLT), aprovada pelo Decreto-Lei nº 5.452, de 1º de maio de 1943.A CLT é a principal fonte de regras que define e regulamenta a relação de emprego individual e coletiva, abrangendo temas como:\nRegistro e Documentação: Obrigatoriedade da Carteira de Trabalho e Previdência Social (CTPS), hoje majoritariamente digital.\nContrato de Trabalho: Tipos de contrato (prazo determinado, indeterminado, intermitente, etc.) e condições.\nJornada de Trabalho: Limites diários e semanais (geralmente 8 horas diárias e 44 semanais), horas extras e regime de turnos.\nRemuneração: Salário mínimo, equiparação salarial e descontos.\nFérias: Direito, período de concessão e pagamento.\nSegurança e Medicina do Trabalho: Normas de saúde e segurança (as NRs - Normas Regulamentadoras, que se baseiam na CLT).\nProteção ao Trabalho: Regras para o trabalho da mulher, do menor e do aprendiz.\nRescisão do Contrato: Tipos de demissão (justa causa, sem justa causa, pedido de demissão, etc.) e verbas rescisórias.\nDireito Coletivo: Sindicatos, acordos e convenções coletivas de trabalho.\n\n2. Norma Máxima: Constituição Federal de 1988\nAcima da CLT, a Constituição da República Federativa do Brasil (CF/88) estabelece os direitos sociais básicos dos trabalhadores no seu Artigo 7º. Qualquer lei infraconstitucional (como a CLT) deve respeitar esses direitos.\nDireitos constitucionais incluem:\nSalário mínimo.\nDécimo terceiro salário (Lei nº 4.090/62).\nFundo de Garantia por Tempo de Serviço (FGTS).\nSeguro-desemprego (Lei nº 7.998/90).\nFérias anuais remuneradas com, no mínimo, um terço a mais.\nLicença-maternidade e licença-paternidade.\nProteção contra a despedida arbitrária ou sem justa causa (multa de 40% do FGTS).\n\n3. Leis Específicas e Complementares\nAlém da CLT, diversas leis e normas tratam de relações de trabalho específicas ou detalham direitos e obrigações:\nLegislação\nNúmero\nFinalidade\nLei do Aviso Prévio\nLei nº 12.506/2011\nRegulamenta o acréscimo de 3 dias por ano de serviço ao aviso prévio.\nLei da Terceirização\nLei nº 13.429/2017\nDisciplina o trabalho temporário e a terceirização de todas as atividades.\nLei do Trabalho Doméstico\nLei Complementar nº 150/2015\nGarante direitos específicos (como FGTS obrigatório, seguro-desemprego, etc.) aos empregados domésticos.\nLei do Estágio\nLei nº 11.788/2008\nDefine as regras para a contratação de estagiários (que não gera vínculo empregatício CLT).\nLei da Aprendizagem\nLei nº 10.097/2000
+Regulamenta a contratação de jovens aprendizes.
+Lei do PIS/PASEP
+Lei nº 7.998/90
+Define o programa de Abono Salarial (PIS/PASEP) e o seguro-desemprego.
+Normas Regulamentadoras (NRs)
+Portarias do Ministério do Trabalho
+Conjunto de regras que detalham as obrigações de segurança e saúde no trabalho (NR 7, NR 9, etc.).",
+              "ai_template_observacoes_base_legal": "Base Legal Geral	Cálculo realizado em conformidade com o Decreto-Lei nº 5.452/43 (Consolidação das Leis do Trabalho - CLT) e legislação complementar.\nObservação CTPS	Se a CTPS não estiver assinada ({{ $json.ctpsAssinada }} seja \"não\" ou nulo), é fundamental cobrar o reconhecimento do vínculo e o recolhimento de todo o FGTS não depositado.\nObservação Sindicato	O campo {{ $json.obsSindicato }} deve ser analisado para verificar se representa algum débito, crédito ou informação relevante para o cálculo final, conforme a convenção coletiva.\nObservação FGTS	O saldo do FGTS a ser liberado para saque será o valor acumulado na conta vinculada, acrescido da multa de 40% paga pelo empregador.\nAviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valores podem variar dependendo das especificidades do contrato de trabalho e da convenção coletiva.",
+              "ai_template_proventos": "Saldo de Salário	Fórmula: (Salário Base de Cálculo / 30) * dias trabalhados no mês da rescisão.\nAviso Prévio Indenizado	Calculado com base na Lei nº 12.506/2011 (30 dias + 3 dias por ano de serviço), utilizando as datas de {{ $json.inicioContrato }} e {{ $json.inicioContrato }}.\n13º Salário Proporcional	Fórmula: (Acréscimos Médios / 12) * meses trabalhados no ano (considerando a projeção do aviso prévio).\nFérias Proporcionais	Fórmula: (Salário Base de Cálculo / 12) * meses do período aquisitivo (considerando a projeção do aviso prévio).\nINSS	Incide sobre o Saldo de Salário e o 13º Salário, conforme tabelas vigentes. Verbas indenizatórias não possuem incidência de INSS.\nMulta de 40% do FGTS	O saldo de FGTS é estimado com base nos depósitos de 8% sobre a remuneração durante o período do contrato. A multa de 40% incide sobre este total, caso não tenha a ctps assinada\nDiferença de salário entre salario estipulado pelo sindicato e salario recebido , calcular a diferença entre o perio trabalhado\nFgts – valor do fgts , caso não tenha a ctps assinada",
+              "ai_template_restricoes": "-não inventa dados ou verbas\n-segue estritamente a lei (CLT, Leis Complementares e Convenções Coletivas de Trabalho)\n-**NUNCA DEVE USAR FORMATO XML, ESTRUTURAS DE CÓDIGO OU MEMÓRIA DE CÁLCULO BRUTA** como saída final. A memória de cálculo deve ser integrada na seção \"OBSERVAÇÕES IMPORTANTES\" de forma explicativa e clara.\n-não coloque no texto os titulos : exemplo \n--proventos\n--descontos\n--Observações e Base Legal\n(quando gerer o arquivo markdown não coloque esses titulos)",
+              "ai_template_title": "PHD em Cálculo Trabalhista",
+              "sindicato_created_at": "2025-10-04T01:53:19.127222+00:00",
+              "sindicato_data_final": "2025-10-01",
+              "sindicato_data_inicial": "2025-10-01",
+              "sindicato_id": "1965a6d8-c7c3-449a-9843-23caef41b3e1",
+              "sindicato_mes_convencao": "janeiro",
+              "sindicato_nome": "Básico",
+              "sindicato_resumo_dissidio": "tem direiro a cesta basica no valor de 100 reais",
+              "sindicato_url_documento_sindicato": null
+            }
+          },
+          "webhookUrl": "https://jota-empresas-n8n.ubjifz.easypanel.host/webhook-test/resumo",
+          "executionMode": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f7bdebf4-1074-4f22-83ae-029917d2d15e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "798aeff1915f045ba9e0dd8d8fe3ecd53ff2dc02669c1f1c295f61e0943a66db"
+  },
+  "id": "HzxXQ1jASxKx50N8",
+  "tags": []
+}
