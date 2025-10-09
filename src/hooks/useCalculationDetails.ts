@@ -109,8 +109,8 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
             estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
           ),
           tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
-          related_proventos:tbl_proventos(*),
-          related_descontos:tbl_descontos(*)
+          tbl_proventos(*),
+          tbl_descontos(*)
         `)
         .eq('id', calculationId)
         .single();
