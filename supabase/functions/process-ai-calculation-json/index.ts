@@ -1,17 +1,8 @@
 // deno-lint-ignore-file
 // @ts-ignore
-// Deno configuration for this Edge Function
-// This block is usually in deno.json, but moved here to avoid deployment issues.
-// {
-//   "compilerOptions": {
-//     "lib": ["deno.ns", "deno.unstable"],
-//     "types": ["https://deno.land/std@0.190.0/http/server.ts", "https://esm.sh/@supabase/supabase-js@2.45.0"]
-//   },
-//   "imports": {
-//     "https://deno.land/std@0.190.0/http/server.ts": "https://deno.land/std@0.190.0/http/server.ts",
-//     "https://esm.sh/@supabase/supabase-js@2.45.0": "https://esm.sh/@supabase/supabase-js@2.45.0"
-//   }
-// }
+/// <reference lib="deno.ns" />
+/// <reference types="https://deno.land/std@0.190.0/http/server.ts" />
+/// <reference types="https://esm.sh/@supabase/supabase-js@2.45.0" />
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -64,7 +55,7 @@ serve(async (req: Request) => {
 
     // Limpar proventos e descontos existentes para este cálculo antes de inserir novos
     const { error: deleteProventosError } = await supabaseClient
-      .from('proventos')
+      .from('tbl_proventos')
       .delete()
       .eq('id_calculo', calculationId);
 
@@ -73,7 +64,7 @@ serve(async (req: Request) => {
     }
 
     const { error: deleteDescontosError } = await supabaseClient
-      .from('descontos')
+      .from('tbl_descontos')
       .delete()
       .eq('id_calculo', calculationId);
 
@@ -89,7 +80,7 @@ serve(async (req: Request) => {
         // Inserir apenas se o valor for maior que zero ou se for uma verba de irregularidade (para registrar a ausência)
         if (valorCalculado > 0 || proventoItem.Natureza_da_Verba === 'Irregularidade_Contratual') {
           const { error: insertError } = await supabaseClient
-            .from('proventos')
+            .from('tbl_proventos')
             .insert({
               id_calculo: calculationId,
               nome_provento: proventoItem.Provento,
@@ -116,7 +107,7 @@ serve(async (req: Request) => {
         // Inserir apenas se o valor for maior que zero ou se for uma verba de irregularidade
         if (valorCalculado > 0 || descontoItem.Natureza_da_Verba === 'Irregularidade_Contratual') {
           const { error: insertError } = await supabaseClient
-            .from('descontos')
+            .from('tbl_descontos')
             .insert({
               id_calculo: calculationId,
               nome_desconto: descontoItem.Desconto,

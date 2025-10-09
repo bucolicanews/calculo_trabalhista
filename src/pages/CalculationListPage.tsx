@@ -104,7 +104,9 @@ const CalculationListPage = () => {
         tbl_clientes(nome), 
         tbl_sindicatos(nome), 
         tbl_ai_prompt_templates(id, title),
-        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
+        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
+        tbl_proventos(*), -- NOVO JOIN
+        tbl_descontos(*) -- NOVO JOIN
       `)
       .order('created_at', { ascending: false });
 
@@ -216,6 +218,8 @@ const CalculationListPage = () => {
         let clientSelectParts: Set<string> = new Set();
         let sindicatoSelectParts: Set<string> = new Set();
         let aiTemplateSelectParts: Set<string> = new Set();
+        let proventosSelectParts: Set<string> = new Set(); // NOVO
+        let descontosSelectParts: Set<string> = new Set(); // NOVO
 
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
@@ -228,6 +232,10 @@ const CalculationListPage = () => {
               sindicatoSelectParts.add(fieldDef.baseSupabasePath);
             } else if (fieldDef.sourceTable === 'tbl_ai_prompt_templates') {
               aiTemplateSelectParts.add(fieldDef.baseSupabasePath);
+            } else if (fieldDef.sourceTable === 'tbl_proventos') { // NOVO
+              proventosSelectParts.add(fieldDef.baseSupabasePath);
+            } else if (fieldDef.sourceTable === 'tbl_descontos') { // NOVO
+              descontosSelectParts.add(fieldDef.baseSupabasePath);
             }
           }
         });
@@ -244,6 +252,14 @@ const CalculationListPage = () => {
         if (aiTemplateSelectParts.size > 0) {
           let aiTemplatePath = `tbl_ai_prompt_templates(${Array.from(aiTemplateSelectParts).join(',')})`;
           selectParts.add(aiTemplatePath);
+        }
+
+        if (proventosSelectParts.size > 0) { // NOVO
+          selectParts.add(`tbl_proventos(${Array.from(proventosSelectParts).join(',')})`);
+        }
+
+        if (descontosSelectParts.size > 0) { // NOVO
+          selectParts.add(`tbl_descontos(${Array.from(descontosSelectParts).join(',')})`);
         }
 
         const finalSelectString = Array.from(selectParts).join(', ');
