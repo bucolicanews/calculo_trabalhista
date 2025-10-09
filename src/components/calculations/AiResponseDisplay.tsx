@@ -1,10 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react'; // 'useEffect' removido
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { parseMarkdownTables } from '@/utils/markdownParser'; // convertToCsv e ParsedTable removidos
+// parseMarkdownTables removido
 // showError e showSuccess removidos, pois não são mais usados aqui
 
 // jsPDF e html2canvas removidos
@@ -27,13 +27,7 @@ const AiResponseDisplay: React.FC<AiResponseDisplayProps> = ({
   // parsedTables e setParsedTables removidos
   // markdownRef removido, pois não é mais usado para gerar PDF ou CSV a partir daqui
 
-  useEffect(() => {
-    // O useEffect que usava parsedTables também foi removido
-    // Se houver alguma lógica de parsing de markdown que precise ser mantida para exibição,
-    // ela deve ser adaptada para não depender de `parsedTables` ou `markdownRef` para downloads.
-    // Por enquanto, o `aiResponse` é apenas exibido.
-  }, [aiResponse]);
-
+  // O useEffect que usava parsedTables também foi removido
   // Funções de download (handleDownloadCsv, handleDownloadAiResponseAsPdf, handleDownloadAiResponseAsTxt)
   // foram removidas, pois os botões correspondentes foram removidos.
 
@@ -43,15 +37,7 @@ const AiResponseDisplay: React.FC<AiResponseDisplayProps> = ({
         {otherResultDetails?.data_hora && <p className="text-sm text-gray-400">Gerado em: {format(new Date(otherResultDetails.data_hora), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>}
       </CardHeader>
       <CardContent className="space-y-4 text-gray-300">
-        {aiResponse && (
-          <div className="prose prose-invert max-w-none overflow-x-auto px-1">
-            {/* O bloco de botões de download de PDF e TXT foi removido conforme sua solicitação anterior. */}
-            {/* Se precisar de download CSV, ele pode ser reintroduzido aqui. */}
-            {/* ReactMarkdown e customMarkdownComponents seriam usados aqui para renderizar aiResponse */}
-            {/* Por simplicidade, apenas exibindo o texto bruto por enquanto */}
-            <pre className="whitespace-pre-wrap text-sm">{aiResponse}</pre>
-          </div>
-        )}
+        {/* A exibição direta de aiResponse foi removida */}
         {otherResultDetails?.texto_extraido && (
           <div>
             <h3 className="text-lg font-semibold text-orange-400 mb-2">Texto Extraído do Documento:</h3>

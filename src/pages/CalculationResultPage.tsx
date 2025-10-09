@@ -294,8 +294,6 @@ const CalculationResultPage: React.FC = () => {
 
           {hasAnyResult ? (
             <AiResponseDisplay
-              calculationId={calculation.id}
-              employeeName={calculation.nome_funcionario}
               aiResponse={calculation.resposta_ai}
               otherResultDetails={otherResultDetails}
             />
