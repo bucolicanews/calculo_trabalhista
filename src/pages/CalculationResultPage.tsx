@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react'; // 'useRef' removido
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -12,7 +12,8 @@ import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView'; // Importar o novo componente
 
-import jsPDF from 'jspdf';
+import * as JsPDFModule from 'jspdf';
+const jsPDF = JsPDFModule.default || JsPDFModule; // Handle both default and named export scenarios
 import 'jspdf-autotable'; // Importar o plugin jspdf-autotable
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -381,7 +382,7 @@ const CalculationResultPage: React.FC = () => {
 
       doc.setFontSize(10);
       doc.setTextColor(0); // Preto
-      uniqueLegislations.forEach((leg, index) => {
+      uniqueLegislations.forEach((leg) => { // 'index' removido
         const textLines = doc.splitTextToSize(`- ${leg}`, pageWidth - 2 * margin);
         textLines.forEach((line: string) => {
           if (yPos + smallLineHeight > pageHeight - margin) {
@@ -396,7 +397,7 @@ const CalculationResultPage: React.FC = () => {
     }
 
     // Atualizar o número total de páginas no cabeçalho/rodapé de todas as páginas
-    const finalPageCount = doc.internal.getNumberOfPages();
+    const finalPageCount = (doc.internal as any).getNumberOfPages(); // Adicionado 'as any'
     for (let i = 1; i <= finalPageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(10);
