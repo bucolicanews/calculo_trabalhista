@@ -105,7 +105,7 @@ const CalculationListPage = () => {
         id, nome_funcionario, inicio_contrato, fim_contrato, created_at, resposta_ai, 
         tbl_clientes(nome), 
         tbl_sindicatos(nome), 
-        tbl_ai_prompt_templates(id, title), -- Apenas id e title são necessários para a lista
+        tbl_ai_prompt_templates(id, title),
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
       `)
       .order('created_at', { ascending: false });
