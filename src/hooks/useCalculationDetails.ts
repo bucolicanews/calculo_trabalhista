@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
-import { parseMarkdownTables, ParsedTable } from '@/utils/markdownParser';
+
 
 export interface Provento {
   id: string;
@@ -50,7 +50,7 @@ export interface CalculationDetails {
   media_remuneracoes: number;
   carga_horaria: string | null;
   created_at: string;
-  resposta_ai: string | null;
+  resposta_ai: any | null; // Changed from string to any to reflect JSONB type
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
   tbl_ai_prompt_templates: { 
@@ -78,7 +78,6 @@ export interface CalculationDetails {
 interface UseCalculationDetailsResult {
   calculation: CalculationDetails | null;
   loading: boolean;
-  parsedTables: ParsedTable[];
   hasAnyResult: boolean;
 }
 
@@ -86,7 +85,6 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
   const { user } = useAuth();
   const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [parsedTables, setParsedTables] = useState<ParsedTable[]>([]);
   const [hasAnyResult, setHasAnyResult] = useState(false);
 
   useEffect(() => {
@@ -122,8 +120,6 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
       } else if (data) {
         console.log("Dados do cálculo carregados (hook):", data); // Adicionado para depuração
         setCalculation(data as unknown as CalculationDetails);
-        const tables = (data as unknown as CalculationDetails).resposta_ai ? parseMarkdownTables((data as unknown as CalculationDetails).resposta_ai!) : [];
-        setParsedTables(tables);
         setHasAnyResult(
           !!(data as unknown as CalculationDetails).resposta_ai || 
           !!(data as unknown as CalculationDetails).tbl_resposta_calculo?.url_documento_calculo || 
@@ -133,7 +129,6 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
         );
       } else {
         setCalculation(null);
-        setParsedTables([]);
         setHasAnyResult(false);
       }
       setLoading(false);
@@ -142,5 +137,5 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
     fetchCalculationResult();
   }, [user, calculationId]);
 
-  return { calculation, loading, parsedTables, hasAnyResult };
+  return { calculation, loading, hasAnyResult };
 };

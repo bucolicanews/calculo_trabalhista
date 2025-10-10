@@ -98,18 +98,4 @@
   body {
     @apply bg-background text-foreground;
   }
-
-  /* Custom styles for markdown tables within prose */
-  .prose table {
-    @apply w-full border-collapse my-4; /* Adicionado my-4 para margem vertical de 1rem (16px) */
-  }
-
-  .prose th,
-  .prose td {
-    @apply border border-gray-700 px-4 py-2; /* Adiciona bordas */
-  }
-
-  .prose th {
-    @apply bg-gray-800 font-semibold text-orange-400; /* Estilo para cabeçalhos de tabela */
-  }
 }

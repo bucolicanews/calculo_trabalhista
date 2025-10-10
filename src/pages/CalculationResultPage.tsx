@@ -66,7 +66,7 @@ interface CalculationDetails {
   media_remuneracoes: number;
   carga_horaria: string | null;
   created_at: string;
-  resposta_ai: string | null;
+  resposta_ai: any | null; // Changed from string to any to reflect JSONB type
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
   tbl_ai_prompt_templates: { 

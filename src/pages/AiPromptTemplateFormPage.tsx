@@ -38,20 +38,10 @@ const modelTemplate: AiPromptTemplateState = {
 -resposta precisa, **metódica e embasada na CLT**, **Jurisprudências já proferidas** e no **direito trabalhistas**
 -conhecedor do assunto e de toda a legislação trabalhista (CLT, jurisprudência, CCTs/Dissídios)
 -extremamente metódico
--**A saída final deve ser formatada EXCLUSIVAMENTE**  no formato MARKDOWN SEM TRAÇOS SEM BARARS , BEM FORMTADO 
-INSTRUÇÕES DE FORMATO OBRIGATÓRIAS:
-1.  Divisão Limpa: Separe as seções (DADOS DA RESCISÃO, RESUMO FINANCEIRO, etc.) usando **apenas uma linha em branco (quebra de linha dupla)**. NÃO use traços, símbolos ou hífens para linhas divisórias.
-2.  Tabelas: Use o formato de tabela Markdown padrão. Destaque **em negrito** apenas as chaves (cabeçalhos) e as linhas de **TOTAIS** nas tabelas.
-3.  Ênfase no Líquido: Use título de nível 2 (##) e negrito forte para a seção **VALOR LÍQUIDO A RECEBER**, destacando o valor final de forma muito clara (Ex: # **R$ [VALOR]**).
-4.  Observações: Mantenha a seção de OBSERVAÇÕES E BASE LEGAL em formato de **lista numerada** detalhada.`,
+-**A saída final deve ser formatada EXCLUSIVAMENTE** no formato JSON, seguindo a estrutura detalhada em 'Estrutura JSON Modelo Saída'.`,
   restricoes: `-não inventa dados ou verbas
 -segue estritamente a lei (CLT, Leis Complementares e Convenções Coletivas de Trabalho)
--**NUNCA DEVE USAR FORMATO XML, ESTRUTURAS DE CÓDIGO OU MEMÓRIA DE CÁLCULO BRUTA** como saída final. A memória de cálculo deve ser integrada na seção "OBSERVAÇÕES IMPORTANTES" de forma explicativa e clara.
--não coloque no texto os titulos : exemplo 
---proventos
---descontos
---Observações e Base Legal
-(quando gerer o arquivo markdown não coloque esses titulos)`,
+-**NUNCA DEVE USAR FORMATO XML OU ESTRUTURAS DE CÓDIGO BRUTA** como saída final, apenas o JSON solicitado.`,
   atribuicoes: `-especialista em direito trabalhista
 -especialista na consolidação das leis trabalhistas
 -especialista em cada sindicado e seus dissídios
@@ -121,7 +111,38 @@ Observação CTPS	Se a CTPS não estiver assinada ({{ $json.ctpsAssinada }} seja
 Observação Sindicato	O campo {{ $json.obsSindicato }} deve ser analisado para verificar se representa algum débito, crédito ou informação relevante para o cálculo final, conforme a convenção coletiva.
 Observação FGTS	O saldo do FGTS a ser liberado para saque será o valor acumulado na conta vinculada, acrescido da multa de 40% paga pelo empregador.
 Aviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valores podem variar dependendo das especificidades do contrato de trabalho e da convenção coletiva.`,
-  estrutura_json_modelo_saida: ``, // Vazio por padrão
+  estrutura_json_modelo_saida: `{
+  "Verbas_Rescisorias": {
+    "Remuneracao": [
+      {
+        "Provento": "string",
+        "Cálculo": {
+          "Parametro": "string",
+          "Valor": "number",
+          "Fórmula_Sugerida": "string"
+        },
+        "Memoria_de_Calculo": "string",
+        "Legislação": "string",
+        "Exemplos_Aplicaveis": "string",
+        "Natureza_da_Verba": "string"
+      }
+    ],
+    "Descontos": [
+      {
+        "Desconto": "string",
+        "Cálculo": {
+          "Parametro": "string",
+          "Valor": "number",
+          "Fórmula_Sugerida": "string"
+        },
+        "Memoria_de_Calculo": "string",
+        "Legislação": "string",
+        "Exemplos_Aplicaveis": "string",
+        "Natureza_da_Verba": "string"
+      }
+    ]
+  }
+}`,
   instrucoes_entrada_dados_rescisao: ``, // Vazio por padrão
 };
 
