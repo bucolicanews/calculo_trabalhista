@@ -29,7 +29,11 @@ serve(async (req: Request) => {
   try {
     const { calculationId, aiResponse } = await req.json(); // aiResponse é o JSON string
 
+    // NOVO LOG PARA DEPURAR O PAYLOAD RECEBIDO
+    console.log(`[store-calculation-result] Received payload: calculationId=${calculationId}, aiResponse length=${aiResponse?.length || 0}`);
+
     if (!calculationId || !aiResponse) {
+      console.error(`[store-calculation-result] Missing calculationId or aiResponse. calculationId: ${calculationId}, aiResponse present: ${!!aiResponse}`);
       return new Response(JSON.stringify({ error: 'Missing calculationId or aiResponse' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -47,12 +51,12 @@ serve(async (req: Request) => {
       JSON.parse(aiResponse);
       isJson = true;
     } catch (e) {
-      console.warn(`AI response for calculationId ${calculationId} is not valid JSON. Skipping detailed processing.`);
+      console.warn(`[store-calculation-result] AI response for calculationId ${calculationId} is not valid JSON. Skipping detailed processing.`);
     }
 
     // 2. Se for JSON, invoca a função para processar proventos/descontos.
     if (isJson) {
-      console.log(`Invoking process-ai-calculation-json for calculationId: ${calculationId}`);
+      console.log(`[store-calculation-result] Invoking process-ai-calculation-json for calculationId: ${calculationId}`);
       const { data: invokeData, error: invokeError } = await supabaseClient.functions.invoke(
         'process-ai-calculation-json',
         {
@@ -64,14 +68,15 @@ serve(async (req: Request) => {
       );
 
       if (invokeError) {
-        console.error('Error invoking process-ai-calculation-json:', invokeError);
+        console.error('[store-calculation-result] Error invoking process-ai-calculation-json:', invokeError);
         // Continua, mas loga o erro de processamento secundário
       } else {
-        console.log('process-ai-calculation-json invoked successfully:', invokeData);
+        console.log('[store-calculation-result] process-ai-calculation-json invoked successfully:', invokeData);
       }
     }
 
     // 3. Armazena a resposta original (JSON string ou Markdown) na tabela tbl_calculos.
+    console.log(`[store-calculation-result] Attempting to update tbl_calculos for calculationId: ${calculationId}`);
     const { error: updateCalculoError } = await supabaseClient
       .from('tbl_calculos')
       .update({
@@ -80,20 +85,21 @@ serve(async (req: Request) => {
       .eq('id', calculationId);
 
     if (updateCalculoError) {
-      console.error('Error updating calculation with AI response:', updateCalculoError);
+      console.error('[store-calculation-result] Error updating calculation with AI response:', updateCalculoError);
       return new Response(JSON.stringify({ error: 'Failed to update calculation with AI response', details: updateCalculoError.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
 
+    console.log(`[store-calculation-result] Successfully updated tbl_calculos for calculationId: ${calculationId}`);
     return new Response(JSON.stringify({ message: 'AI response received, processed (if JSON), and updated successfully in tbl_calculos', calculationId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Error in store-calculation-result Edge Function:', error);
+    console.error('[store-calculation-result] Error in store-calculation-result Edge Function:', error);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
