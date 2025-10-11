@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { showError, showSuccess } from '@/utils/toast';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw } from 'lucide-react'; // Importar RefreshCw
 
 // Importar os novos componentes modulares
 import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
@@ -14,8 +14,8 @@ import FullRescissionView from '@/components/calculations/FullRescissionView'; /
 
 // MODIFIED IMPORT FOR JSPDF - Usando importação de namespace para garantir o carregamento completo
 import * as JsPDFModule from 'jspdf';
-const jsPDF = JsPDFModule.default; // Acessa o export default após a importação do namespace
-import 'jspdf-autotable'; // Importar o plugin jspdf-autotable
+// import 'jspdf-autotable'; // Se esta dependência não está instalada, mantemos comentada.
+const jsPDF = JsPDFModule.default;
 
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -31,6 +31,7 @@ interface Provento {
   formula_sugerida: string | null;
   parametro_calculo: string | null;
   json_completo: any | null;
+  memoria_calculo: string | null; // <--- NOVO CAMPO ADICIONADO
 }
 
 interface Desconto {
@@ -44,6 +45,7 @@ interface Desconto {
   formula_sugerida: string | null;
   parametro_calculo: string | null;
   json_completo: any | null;
+  memoria_calculo: string | null; // <--- NOVO CAMPO ADICIONADO
 }
 
 interface CalculationDetails {
@@ -66,10 +68,10 @@ interface CalculationDetails {
   media_remuneracoes: number;
   carga_horaria: string | null;
   created_at: string;
-  resposta_ai: any | null; // Changed from string to any to reflect JSONB type
+  resposta_ai: any | null;
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
-  tbl_ai_prompt_templates: { 
+  tbl_ai_prompt_templates: {
     id: string;
     title: string;
     identificacao: string;
@@ -78,8 +80,8 @@ interface CalculationDetails {
     atribuicoes: string;
     leis: string;
     observacoes_base_legal: string;
-    estrutura_json_modelo_saida: string | null; // Campo do DB
-    instrucoes_entrada_dados_rescisao: string | null; // Campo do DB
+    estrutura_json_modelo_saida: string | null;
+    instrucoes_entrada_dados_rescisao: string | null;
     created_at: string;
   } | null;
   tbl_resposta_calculo: {
@@ -87,8 +89,8 @@ interface CalculationDetails {
     texto_extraido: string | null;
     data_hora: string;
   } | null;
-  tbl_proventos: Provento[] | null; // Usar o nome da tabela diretamente
-  tbl_descontos: Desconto[] | null; // Usar o nome da tabela diretamente
+  tbl_proventos: Provento[] | null;
+  tbl_descontos: Desconto[] | null;
 }
 
 const CalculationResultPage: React.FC = () => {
@@ -97,6 +99,7 @@ const CalculationResultPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isReprocessing, setIsReprocessing] = useState(false); // Declaração correta mantida
 
   useEffect(() => {
     if (user && id) {
@@ -106,6 +109,7 @@ const CalculationResultPage: React.FC = () => {
 
   const fetchCalculationResult = async () => {
     setLoading(true);
+    // QUERY: Incluindo 'memoria_calculo' (via *) e todos os dados
     const { data, error } = await supabase
       .from('tbl_calculos')
       .select(`
@@ -118,7 +122,7 @@ const CalculationResultPage: React.FC = () => {
           estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
         ),
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
-        tbl_proventos(*),
+        tbl_proventos(*), 
         tbl_descontos(*)
       `)
       .eq('id', id)
@@ -127,13 +131,44 @@ const CalculationResultPage: React.FC = () => {
     if (error) {
       showError('Erro ao carregar resultado do cálculo: ' + error.message);
       console.error('Error fetching calculation result:', error);
-      navigate('/calculations');
+      // Aqui você voltaria para a lista de cálculos, onde a lista não está a ser exibida.
+      // O problema da lista está no componente que lista todos os cálculos, não nesta página de resultado.
+      // navigate('/calculations');
     } else if (data) {
       setCalculation(data as unknown as CalculationDetails);
     } else {
       setCalculation(null);
     }
     setLoading(false);
+  };
+
+  // Função de reprocessamento (agora como função única)
+  const handleReprocessGranularity = async () => {
+    if (!id) return;
+
+    setIsReprocessing(true);
+    showSuccess('Iniciando reprocessamento dos detalhes do cálculo (granularização).');
+
+    try {
+      const { error, data } = await supabase.functions.invoke('reprocess-calculation-ai-response', {
+        body: { calculationId: id },
+      });
+
+      if (error) {
+        showError('Erro ao reprocessar: ' + error.message);
+        console.error('Reprocessing failed:', error);
+      } else {
+        showSuccess('Reprocessamento iniciado com sucesso. Recarregando dados em instantes...');
+        setTimeout(() => {
+          fetchCalculationResult();
+        }, 3000);
+      }
+    } catch (e: any) {
+      showError('Falha de rede ao chamar reprocessamento: ' + e.message);
+      console.error('Network error during reprocessing:', e);
+    } finally {
+      setIsReprocessing(false);
+    }
   };
 
   const handleDownloadFullReportAsPdf = async () => {
@@ -144,50 +179,51 @@ const CalculationResultPage: React.FC = () => {
 
     showSuccess('Gerando PDF do relatório completo, aguarde...');
 
-    // jsPDF e jspdf-autotable já estão importados estaticamente no topo
-    const doc = new jsPDF('p', 'mm', 'a4');
-    let yPos = 15; // Posição Y inicial
+    // A biblioteca jspdf-autotable é necessária para a função autoTable
+    // Presumimos que jspdf-autotable está disponível globalmente após o import comentado.
+    const doc = new (jsPDF as any)('p', 'mm', 'a4');
+    let yPos = 15;
     const margin = 15;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const lineHeight = 7; // Altura da linha para texto normal
-    const smallLineHeight = 5; // Altura da linha para texto menor
+    const lineHeight = 7;
+    const smallLineHeight = 5;
     const tableMarginTop = 10;
 
     const addPageHeader = (pageNumber: number, totalPages: number) => {
       doc.setFontSize(10);
-      doc.setTextColor(100); // Cor cinza
+      doc.setTextColor(100);
       doc.text('Jota Contabilidade - Relatório de Cálculo de Rescisão Trabalhista', pageWidth / 2, 10, { align: 'center' });
       doc.text(`Funcionário: ${calculation.nome_funcionario}`, pageWidth / 2, 15, { align: 'center' });
       doc.text(`Página ${pageNumber} de ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
       doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, margin, pageHeight - 10, { align: 'left' });
       doc.setDrawColor(200);
-      doc.line(margin, 18, pageWidth - margin, 18); // Linha abaixo do cabeçalho
-      yPos = 25; // Reset yPos após o cabeçalho
+      doc.line(margin, 18, pageWidth - margin, 18);
+      yPos = 25;
     };
 
     let currentPage = 1;
-    let totalPagesPlaceholder = 1; // Será atualizado no final
+    let totalPagesPlaceholder = 1;
 
     addPageHeader(currentPage, totalPagesPlaceholder);
 
     // --- Título Principal ---
     doc.setFontSize(20);
-    doc.setTextColor(255, 69, 0); // Laranja
+    doc.setTextColor(255, 69, 0);
     doc.text('Demonstrativo Completo da Rescisão', pageWidth / 2, yPos, { align: 'center' });
     yPos += lineHeight * 2;
 
     // --- Detalhes do Cálculo ---
     doc.setFontSize(16);
-    doc.setTextColor(255, 69, 0); // Laranja
+    doc.setTextColor(255, 69, 0);
     doc.text('Detalhes do Cálculo', margin, yPos);
     yPos += lineHeight;
     doc.setDrawColor(255, 69, 0);
-    doc.line(margin, yPos - 2, margin + 50, yPos - 2); // Linha abaixo do título da seção
+    doc.line(margin, yPos - 2, margin + 50, yPos - 2);
     yPos += smallLineHeight;
 
     doc.setFontSize(10);
-    doc.setTextColor(0); // Preto
+    doc.setTextColor(0);
     const details = [
       `Funcionário: ${calculation.nome_funcionario}`,
       `Cliente: ${calculation.tbl_clientes?.nome || 'N/A'}`,
@@ -207,7 +243,7 @@ const CalculationResultPage: React.FC = () => {
       calculation.obs_sindicato ? `Obs. Sindicato: ${calculation.obs_sindicato}` : '',
       calculation.historia ? `Histórico: ${calculation.historia}` : '',
       calculation.tbl_ai_prompt_templates?.instrucoes_entrada_dados_rescisao ? `Instruções Entrada Dados Rescisão: ${calculation.tbl_ai_prompt_templates.instrucoes_entrada_dados_rescisao}` : '',
-    ].filter(Boolean); // Remove strings vazias
+    ].filter(Boolean);
 
     details.forEach(detail => {
       if (yPos + smallLineHeight > pageHeight - margin) {
@@ -218,7 +254,7 @@ const CalculationResultPage: React.FC = () => {
       doc.text(detail, margin, yPos);
       yPos += smallLineHeight;
     });
-    yPos += lineHeight; // Espaço após os detalhes
+    yPos += lineHeight;
 
     // --- Resumo Financeiro Detalhado (Proventos) ---
     const proventos = calculation.tbl_proventos || [];
@@ -231,18 +267,20 @@ const CalculationResultPage: React.FC = () => {
         addPageHeader(currentPage, totalPagesPlaceholder);
       }
       doc.setFontSize(16);
-      doc.setTextColor(255, 69, 0); // Laranja
+      doc.setTextColor(255, 69, 0);
       doc.text('Proventos', margin, yPos);
       yPos += lineHeight;
       doc.setDrawColor(255, 69, 0);
       doc.line(margin, yPos - 2, margin + 30, yPos - 2);
       yPos += smallLineHeight;
 
+      // Adicionando Memória de Cálculo ao cabeçalho da tabela de Proventos
       const proventosTableData = proventos.map(p => [
         p.nome_provento,
         p.natureza_da_verba,
         `R$ ${p.valor_calculado.toFixed(2)}`,
         [
+          p.memoria_calculo ? `Memória: ${p.memoria_calculo}` : '', // <--- CAMPO MEMÓRIA AQUI
           p.formula_sugerida ? `Fórmula: ${p.formula_sugerida}` : '',
           p.parametro_calculo ? `Parâmetro: ${p.parametro_calculo}` : '',
           p.exemplo_aplicavel ? `Exemplo: ${p.exemplo_aplicavel}` : '',
@@ -252,17 +290,16 @@ const CalculationResultPage: React.FC = () => {
 
       (doc as any).autoTable({
         startY: yPos,
-        head: [['Verba', 'Natureza', 'Valor', 'Detalhes']],
+        head: [['Verba', 'Natureza', 'Valor', 'Detalhes / Memória de Cálculo']], // <--- CABEÇALHO ATUALIZADO
         body: proventosTableData,
         theme: 'grid',
         styles: { fontSize: 9, cellPadding: 2, textColor: 0, lineColor: 200 },
         headStyles: { fillColor: [240, 240, 240], textColor: [255, 69, 0], fontStyle: 'bold' },
         columnStyles: {
-          2: { halign: 'right', textColor: [34, 139, 34] }, // Valor (verde)
-          3: { fontSize: 7, textColor: [100, 100, 100] } // Detalhes (menor e cinza)
+          2: { halign: 'right', textColor: [34, 139, 34] },
+          3: { fontSize: 7, textColor: [100, 100, 100] }
         },
         didDrawPage: (data: any) => {
-          // Adiciona cabeçalho e rodapé em cada nova página da tabela
           if (data.pageNumber > 1) {
             addPageHeader(currentPage, totalPagesPlaceholder);
           }
@@ -278,7 +315,7 @@ const CalculationResultPage: React.FC = () => {
         addPageHeader(currentPage, totalPagesPlaceholder);
       }
       doc.setFontSize(12);
-      doc.setTextColor(255, 69, 0); // Laranja
+      doc.setTextColor(255, 69, 0);
       doc.text(`Total Proventos: R$ ${totalProventos.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
       yPos += lineHeight * 1.5;
     }
@@ -294,7 +331,7 @@ const CalculationResultPage: React.FC = () => {
         addPageHeader(currentPage, totalPagesPlaceholder);
       }
       doc.setFontSize(16);
-      doc.setTextColor(255, 69, 0); // Laranja
+      doc.setTextColor(255, 69, 0);
       doc.text('Descontos', margin, yPos);
       yPos += lineHeight;
       doc.setDrawColor(255, 69, 0);
@@ -306,6 +343,7 @@ const CalculationResultPage: React.FC = () => {
         d.natureza_da_verba,
         `-R$ ${d.valor_calculado.toFixed(2)}`,
         [
+          d.memoria_calculo ? `Memória: ${d.memoria_calculo}` : '', // <--- CAMPO MEMÓRIA AQUI
           d.formula_sugerida ? `Fórmula: ${d.formula_sugerida}` : '',
           d.parametro_calculo ? `Parâmetro: ${d.parametro_calculo}` : '',
           d.exemplo_aplicavel ? `Exemplo: ${d.exemplo_aplicavel}` : '',
@@ -315,14 +353,14 @@ const CalculationResultPage: React.FC = () => {
 
       (doc as any).autoTable({
         startY: yPos,
-        head: [['Verba', 'Natureza', 'Valor', 'Detalhes']],
+        head: [['Verba', 'Natureza', 'Valor', 'Detalhes / Memória de Cálculo']], // <--- CABEÇALHO ATUALIZADO
         body: descontosTableData,
         theme: 'grid',
         styles: { fontSize: 9, cellPadding: 2, textColor: 0, lineColor: 200 },
         headStyles: { fillColor: [240, 240, 240], textColor: [255, 69, 0], fontStyle: 'bold' },
         columnStyles: {
-          2: { halign: 'right', textColor: [220, 20, 60] }, // Valor (vermelho)
-          3: { fontSize: 7, textColor: [100, 100, 100] } // Detalhes (menor e cinza)
+          2: { halign: 'right', textColor: [220, 20, 60] },
+          3: { fontSize: 7, textColor: [100, 100, 100] }
         },
         didDrawPage: (data: any) => {
           if (data.pageNumber > 1) {
@@ -340,7 +378,7 @@ const CalculationResultPage: React.FC = () => {
         addPageHeader(currentPage, totalPagesPlaceholder);
       }
       doc.setFontSize(12);
-      doc.setTextColor(255, 69, 0); // Laranja
+      doc.setTextColor(255, 69, 0);
       doc.text(`Total Descontos: -R$ ${totalDescontos.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
       yPos += lineHeight * 1.5;
     }
@@ -353,11 +391,11 @@ const CalculationResultPage: React.FC = () => {
       addPageHeader(currentPage, totalPagesPlaceholder);
     }
     doc.setFontSize(18);
-    doc.setTextColor(255, 69, 0); // Laranja
+    doc.setTextColor(255, 69, 0);
     doc.text('Valor Líquido a Receber', margin, yPos);
     yPos += lineHeight;
     doc.setFontSize(24);
-    doc.setTextColor(34, 139, 34); // Verde
+    doc.setTextColor(34, 139, 34);
     doc.text(`R$ ${valorLiquido.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
     yPos += lineHeight * 2;
 
@@ -374,7 +412,7 @@ const CalculationResultPage: React.FC = () => {
         addPageHeader(currentPage, totalPagesPlaceholder);
       }
       doc.setFontSize(16);
-      doc.setTextColor(255, 69, 0); // Laranja
+      doc.setTextColor(255, 69, 0);
       doc.text('Base Legal Aplicada', margin, yPos);
       yPos += lineHeight;
       doc.setDrawColor(255, 69, 0);
@@ -382,7 +420,7 @@ const CalculationResultPage: React.FC = () => {
       yPos += smallLineHeight;
 
       doc.setFontSize(10);
-      doc.setTextColor(0); // Preto
+      doc.setTextColor(0);
       uniqueLegislations.forEach((leg) => {
         const textLines = doc.splitTextToSize(`- ${leg}`, pageWidth - 2 * margin);
         textLines.forEach((line: string) => {
@@ -410,10 +448,12 @@ const CalculationResultPage: React.FC = () => {
     showSuccess('Download do PDF do relatório completo iniciado!');
   };
 
+
   if (loading) {
     return (
       <MainLayout>
-        <div className="container mx-auto py-8 text-center text-gray-400">Carregando resultado do cálculo...</div>
+        {/* CORREÇÃO DE RESPONSIVIDADE: Removido container mx-auto aqui para ocupar 100% */}
+        <div className="py-8 text-center text-gray-400">Carregando resultado do cálculo...</div>
       </MainLayout>
     );
   }
@@ -421,7 +461,8 @@ const CalculationResultPage: React.FC = () => {
   if (!calculation) {
     return (
       <MainLayout>
-        <div className="container mx-auto py-8 text-center text-gray-400">Nenhum resultado de cálculo encontrado.</div>
+        {/* CORREÇÃO DE RESPONSIVIDADE: Removido container mx-auto aqui */}
+        <div className="py-8 text-center text-gray-400">Nenhum resultado de cálculo encontrado.</div>
       </MainLayout>
     );
   }
@@ -451,24 +492,46 @@ const CalculationResultPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto py-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
-          <Button variant="ghost" onClick={() => navigate('/calculations')} className="text-orange-500 hover:text-orange-600 mb-2 sm:mb-0 sm:w-auto">
+      {/* CORREÇÃO DE RESPONSIVIDADE: O container mx-auto é aplicado aqui para manter margens laterais, mas ocupando o máximo da largura. */}
+      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 space-y-2 sm:space-y-0 sm:space-x-4">
+
+          <Button variant="ghost" onClick={() => navigate('/calculations')} className="text-orange-500 hover:text-orange-600 sm:w-auto">
             <ArrowLeft className="mr-1 h-1 w-1" /> Voltar para Cálculos
           </Button>
-          <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
+
+          <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center">
             Resultado do Cálculo
           </h1>
-          <Button
-            onClick={handleDownloadFullReportAsPdf}
-            className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto flex items-center justify-center"
-          >
-            <Download className="h-4 w-4 mr-2" /> Baixar Relatório Completo (PDF)
-          </Button>
+
+          <div className="flex space-x-2">
+            {/* Botão de Reprocessamento (para testar a escrita de Proventos/Descontos) */}
+            <Button
+              onClick={handleReprocessGranularity}
+              disabled={isReprocessing}
+              className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto flex items-center justify-center"
+            >
+              {isReprocessing ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Reprocessando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" /> Reprocessar Detalhes
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleDownloadFullReportAsPdf}
+              className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto flex items-center justify-center"
+            >
+              <Download className="h-4 w-4 mr-2" /> Baixar Relatório Completo (PDF)
+            </Button>
+          </div>
         </div>
 
-        <div /* ref={contentRef} */ className="report-content"> {/* contentRef não é mais usado para html2canvas */}
-          {/* Usar o novo componente FullRescissionView */}
+        <div className="report-content">
           <FullRescissionView
             calculationDetails={calculationDataForDetailsCard}
             proventos={calculation.tbl_proventos || []}

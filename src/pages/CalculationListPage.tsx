@@ -55,7 +55,10 @@ const CalculationListPage = () => {
   const [isSendingWebhook, setIsSendingWebhook] = useState<string | null>(null);
   const [isWebhookSelectionOpen, setIsWebhookSelectionOpen] = useState(false);
   const [currentCalculationIdForWebhook, setCurrentCalculationIdForWebhook] = useState<string | null>(null);
+
+  // 🛑 CORREÇÃO APLICADA: Inicializando como estado com new Map()
   const [countdownTimers, setCountdownTimers] = useState<Map<string, number>>(new Map());
+
   const [isReprocessing, setIsReprocessing] = useState<string | null>(null); // Novo estado para reprocessamento
 
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -105,7 +108,7 @@ const CalculationListPage = () => {
         tbl_sindicatos(nome), 
         tbl_ai_prompt_templates(id, title),
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora)
-      `) // Removidas as referências a tbl_proventos e tbl_descontos
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {
