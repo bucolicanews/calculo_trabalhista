@@ -5,17 +5,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { showError, showSuccess } from '@/utils/toast';
-import { ArrowLeft, Download, RefreshCw } from 'lucide-react'; // Importar RefreshCw
+import { ArrowLeft, Download } from 'lucide-react'; // Importar RefreshCw
 
 // Importar os novos componentes modulares
 import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView'; // Importar o novo componente
 
-// MODIFIED IMPORT FOR JSPDF - Usando importação de namespace para garantir o carregamento completo
-import * as JsPDFModule from 'jspdf';
-// import 'jspdf-autotable'; // Se esta dependência não está instalada, mantemos comentada.
-const jsPDF = JsPDFModule.default;
 
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
