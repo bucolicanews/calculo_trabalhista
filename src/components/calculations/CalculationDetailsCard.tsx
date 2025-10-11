@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format, getDay, getDate } from 'date-fns'; // Importando getDate
+import { format, getDate } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface CalculationDetailsCardProps {
@@ -23,26 +23,79 @@ interface CalculationDetailsCardProps {
     tbl_sindicatos: { nome: string } | null;
     tbl_ai_prompt_templates: {
       title: string;
-      estrutura_json_modelo_saida: string | null; // Campo do DB
-      instrucoes_entrada_dados_rescisao: string | null; // Campo do DB
+      estrutura_json_modelo_saida: string | null;
+      instrucoes_entrada_dados_rescisao: string | null;
     } | null;
   };
 }
 
+/**
+ * Tenta converter a string de data (DD/MM/AAAA ou AAAA-MM-DD) para um objeto Date.
+ * A data é criada com horário de 12:00:00 para evitar erros de fuso horário (UTC offset).
+ */
+const parseDateSafely = (dateString: string): Date | null => {
+  if (!dateString) return null;
+
+  // Tenta formato DD/MM/AAAA (Formulário)
+  if (dateString.includes('/')) {
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year) && month >= 1 && month <= 12) {
+        // CRITICAL FIX: Forçar a data para 12:00:00
+        const date = new Date(year, month - 1, day, 12, 0, 0);
+
+        // Validação simples
+        if (date.getFullYear() === year && date.getMonth() === month - 1) {
+          return date;
+        }
+      }
+    }
+  }
+
+  // Tenta formato AAAA-MM-DD (Supabase/ISO) - Esta é a conversão mais propensa ao erro de deslocamento
+  if (dateString.includes('-')) {
+    const date = new Date(dateString + 'T12:00:00'); // CRITICAL FIX: Adicionar horário
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  return null;
+};
+
+
 const CalculationDetailsCard: React.FC<CalculationDetailsCardProps> = ({ calculation }) => {
 
-  // 🛑 CÁLCULO DA BASE DE CÁLCULO FINAL (Salário Base + Médias de Variáveis)
+  // --- MANIPULAÇÃO SEGURA DAS DATAS ---
+  const inicio = parseDateSafely(calculation.inicio_contrato);
+  const fim = parseDateSafely(calculation.fim_contrato);
+
   const baseCalculoTotal = calculation.salario_trabalhador + (calculation.media_remuneracoes || 0);
 
-  // Calcula a duração do contrato em dias (para o Saldo de Salário e o Aviso Prévio Proporcional)
-  const inicio = new Date(calculation.inicio_contrato);
-  const fim = new Date(calculation.fim_contrato);
-  // Calcula a diferença em milissegundos e converte para dias (+1 para incluir o dia de início)
-  const diasTrabalhadosNoVinculo = Math.ceil(Math.abs(fim.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  const anosCompletos = Math.floor(diasTrabalhadosNoVinculo / 365.25);
+  let diasTrabalhadosNoVinculo = 0;
+  let anosCompletos = 0;
+  let diaDoMesDaRescisao = 0;
 
-  // 🛑 NOVO CÁLCULO: Dias trabalhados no mês da rescisão
-  const diaDoMesDaRescisao = getDate(fim);
+  if (inicio && fim) {
+    // Cálculo da duração do contrato em dias
+    const diffTime = Math.abs(fim.getTime() - inicio.getTime());
+    // Math.ceil garante que o último dia é sempre contado
+    diasTrabalhadosNoVinculo = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    // Calcula anos completos
+    anosCompletos = Math.floor(diasTrabalhadosNoVinculo / 365);
+
+    // Dia do mês da rescisão (para Saldo de Salário)
+    diaDoMesDaRescisao = getDate(fim);
+  }
+
+  // Função auxiliar para exibição
+  const formatDisplayDate = (date: Date | null) =>
+    date ? format(date, 'dd/MM/yyyy', { locale: ptBR }) : 'Data Inválida';
 
 
   return (
@@ -61,10 +114,9 @@ const CalculationDetailsCard: React.FC<CalculationDetailsCardProps> = ({ calcula
         )}
 
         {/* === DURAÇÃO E DATAS === */}
-        <p className="break-words"><strong>Início Contrato:</strong> {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy', { locale: ptBR })}</p>
-        <p className="break-words"><strong>Fim Contrato:</strong> {format(new Date(calculation.fim_contrato), 'dd/MM/yyyy', { locale: ptBR })}</p>
+        <p className="break-words"><strong>Início Contrato:</strong> {formatDisplayDate(inicio)}</p>
+        <p className="break-words"><strong>Fim Contrato:</strong> {formatDisplayDate(fim)}</p>
         <p className="break-words"><strong>Dias Trabalhados no Vínculo:</strong> {diasTrabalhadosNoVinculo} dias ({anosCompletos} anos completos)</p>
-        {/* 🛑 NOVO CAMPO EXIBIDO */}
         <p className="break-words"><strong>Dias Trabalhados no Mês da Rescisão:</strong> {diaDoMesDaRescisao} dias</p>
 
         {/* === REMUNERAÇÃO === */}
@@ -90,9 +142,7 @@ const CalculationDetailsCard: React.FC<CalculationDetailsCardProps> = ({ calcula
         {/* === INSTRUÇÕES / HISTÓRICO === */}
         {calculation.obs_sindicato && <p className="col-span-full break-words"><strong>Obs. Sindicato:</strong> {calculation.obs_sindicato}</p>}
         {calculation.historia && <p className="col-span-full break-words"><strong>Histórico:</strong> {calculation.historia}</p>}
-        {calculation.tbl_ai_prompt_templates?.instrucoes_entrada_dados_rescisao &&
-          <p className="col-span-full break-words"><strong>Instruções IA:</strong> {calculation.tbl_ai_prompt_templates.instrucoes_entrada_dados_rescisao}</p>
-        }
+
       </CardContent>
     </Card>
   );

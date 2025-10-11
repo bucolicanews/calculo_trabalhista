@@ -6,12 +6,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { format } from 'date-fns';
+// format do date-fns não é mais necessário aqui para conversão da data de input
 
 // Importar os novos componentes modulares
 import ClientSelectField from '@/components/calculations/ClientSelectField';
 import SindicatoSelectField from '@/components/calculations/SindicatoSelectField';
 import EmployeeDetailsSection from '@/components/calculations/EmployeeDetailsSection';
+// Importamos a versão mais recente do ContractDatesSection que aceita string
 import ContractDatesSection from '@/components/calculations/ContractDatesSection';
 import RescissionTypeSelectField from '@/components/calculations/RescissionTypeSelectField';
 import SalaryAndObservationsSection from '@/components/calculations/SalaryAndObservationsSection';
@@ -32,13 +33,9 @@ interface Sindicato {
 interface AiPromptTemplate {
   id: string;
   title: string;
-  // Adicione aqui os campos que você realmente precisa do template para o cálculo, se houver
-  // Por exemplo, se o n8n precisar de 'identificacao' ou 'comportamento' diretamente do template
-  // identificacao?: string;
-  // comportamento?: string;
 }
 
-// Nova lista de Tipos de Rescisão de Contrato de Trabalho com label e value para o ENUM do DB
+// Nova lista de Tipos de Rescisão de Contrato de Trabalho
 const noticeTypes = [
   { label: 'Rescisão com Justa Causa', value: 'rescisao_com_justa_causa' },
   { label: 'Rescisão sem Justa Causa', value: 'rescisao_sem_justa_causa' },
@@ -52,6 +49,21 @@ const noticeTypes = [
   { label: 'Encerramento da Empresa', value: 'encerramento_empresa' },
 ];
 
+/**
+ * Função de utilidade para converter DD/MM/AAAA para AAAA-MM-DD para o Supabase.
+ * Retorna null ou string vazia se o formato não for válido.
+ */
+const convertDDMMAAAAtoISO = (dateString: string): string | null => {
+  // Verifica se a string está completa no formato DD/MM/AAAA
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+    return null; // Retorna null se não estiver completa e no formato esperado
+  }
+
+  const [day, month, year] = dateString.split('/');
+  // Retorna no formato ISO YYYY-MM-DD
+  return `${year}-${month}-${day}`;
+};
+
 const CalculationFormPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -63,9 +75,9 @@ const CalculationFormPage = () => {
     nome_funcionario: '',
     cpf_funcionario: '',
     funcao_funcionario: '',
-    inicio_contrato: '',
-    fim_contrato: '',
-    tipo_aviso: '', // Este campo agora representa o tipo de rescisão
+    inicio_contrato: '', // Manteremos como DD/MM/AAAA no estado
+    fim_contrato: '',     // Manteremos como DD/MM/AAAA no estado
+    tipo_aviso: '',
     salario_sindicato: 0,
     salario_trabalhador: 0,
     obs_sindicato: '',
@@ -93,6 +105,7 @@ const CalculationFormPage = () => {
   }, [id, isEditing, user]);
 
   const fetchClientsSindicatosAndAiTemplates = async () => {
+    // ... (A função fetchClientsSindicatosAndAiTemplates permanece inalterada)
     const { data: clientsData, error: clientsError } = await supabase
       .from('tbl_clientes')
       .select('id, nome')
@@ -116,10 +129,9 @@ const CalculationFormPage = () => {
       setSindicatos(sindicatosData || []);
     }
 
-    // Buscar modelos de prompt de IA
     const { data: aiTemplatesData, error: aiTemplatesError } = await supabase
       .from('tbl_ai_prompt_templates')
-      .select('id, title') // Apenas id e title são necessários para o select
+      .select('id, title')
       .eq('user_id', user?.id);
 
     if (aiTemplatesError) {
@@ -134,7 +146,7 @@ const CalculationFormPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('tbl_calculos')
-      .select('*') // Seleciona todos os campos do cálculo
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -143,10 +155,18 @@ const CalculationFormPage = () => {
       console.error('Error fetching calculation:', error);
       navigate('/dashboard');
     } else if (data) {
+      // Conversão dos dados do Supabase (YYYY-MM-DD) para o formato de exibição (DD/MM/AAAA)
+      // Seus dados no DB estão em ISO, precisamos convertê-los de volta para o formato mascarado.
+      const isoToDDMMAAAA = (isoString: string | null): string => {
+        if (!isoString) return '';
+        const parts = isoString.split('-'); // [YYYY, MM, DD]
+        return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : isoString;
+      };
+
       setCalculation({
         ...data,
-        inicio_contrato: data.inicio_contrato || '',
-        fim_contrato: data.fim_contrato || '',
+        inicio_contrato: isoToDDMMAAAA(data.inicio_contrato),
+        fim_contrato: isoToDDMMAAAA(data.fim_contrato),
         salario_trabalhador: data.salario_trabalhador || 0,
         ai_template_id: data.ai_template_id || '',
       });
@@ -167,12 +187,17 @@ const CalculationFormPage = () => {
     setCalculation((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleDateChange = (name: string, date: Date | undefined) => {
+  // FUNÇÃO CORRIGIDA: Agora recebe a string mascarada e a armazena diretamente
+  const handleDateInputChange = (name: string, dateString: string) => {
     setCalculation((prev) => ({
       ...prev,
-      [name]: date ? format(date, 'yyyy-MM-dd') : '',
+      [name]: dateString, // Armazena a string DD/MM/AAAA no estado
     }));
   };
+
+  // A função handleDateChange original foi removida, pois causava o RangeError.
+  // O erro na linha 173 estava na assinatura ou uso dela:
+  // const handleDateChange = (name: string, date: Date | undefined) => { ... }
 
   const handleCheckboxChange = (checked: boolean) => {
     setCalculation((prev) => ({ ...prev, ctps_assinada: checked }));
@@ -185,6 +210,10 @@ const CalculationFormPage = () => {
       return;
     }
 
+    // VALIDAÇÃO: Agora verifica se as datas estão completas antes de converter
+    const inicioContratoISO = convertDDMMAAAAtoISO(calculation.inicio_contrato);
+    const fimContratoISO = convertDDMMAAAAtoISO(calculation.fim_contrato);
+
     if (!calculation.cliente_id) {
       showError('Por favor, selecione um cliente.');
       return;
@@ -193,12 +222,12 @@ const CalculationFormPage = () => {
       showError('Por favor, insira o nome do funcionário.');
       return;
     }
-    if (!calculation.inicio_contrato) {
-      showError('Por favor, selecione a data de início do contrato.');
+    if (!inicioContratoISO) {
+      showError('Por favor, insira uma data de início do contrato válida (DD/MM/AAAA).');
       return;
     }
-    if (!calculation.fim_contrato) {
-      showError('Por favor, selecione a data de fim do contrato.');
+    if (!fimContratoISO) {
+      showError('Por favor, insira uma data de fim do contrato válida (DD/MM/AAAA).');
       return;
     }
     if (!calculation.tipo_aviso) {
@@ -210,6 +239,10 @@ const CalculationFormPage = () => {
 
     const calculationData = {
       ...calculation,
+      // CONVERSÃO FINAL PARA O BANCO DE DADOS AQUI!
+      inicio_contrato: inicioContratoISO,
+      fim_contrato: fimContratoISO,
+      // Fim da conversão
       salario_sindicato: parseFloat(String(calculation.salario_sindicato)) || 0,
       salario_trabalhador: parseFloat(String(calculation.salario_trabalhador)) || 0,
       media_descontos: parseFloat(String(calculation.media_descontos)) || 0,
@@ -295,7 +328,8 @@ const CalculationFormPage = () => {
               <ContractDatesSection
                 inicio_contrato={calculation.inicio_contrato}
                 fim_contrato={calculation.fim_contrato}
-                onDateChange={handleDateChange}
+                // Corrigido: Agora usa a função que aceita a string de data
+                onDateChange={handleDateInputChange}
                 disabled={loading}
               />
 

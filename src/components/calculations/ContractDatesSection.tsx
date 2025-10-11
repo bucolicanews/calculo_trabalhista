@@ -1,47 +1,54 @@
 import React from 'react';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+// Removemos: Button, Calendar, Popover, PopoverContent, PopoverTrigger, format, ptBR, CalendarIcon, e qualquer dependência de máscara externa.
 
 interface ContractDatesSectionProps {
+  // A data é uma string no formato DD/MM/AAAA.
   inicio_contrato: string;
   fim_contrato: string;
-  onDateChange: (name: string, date: Date | undefined) => void;
+  // A função de mudança recebe o nome do campo e a string mascarada.
+  onDateChange: (name: string, dateString: string) => void;
   disabled: boolean;
 }
 
-// Objeto de classes para estilizar o calendário. Pode ser reutilizado.
-const calendarClassNames = {
-  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-  month: "space-y-4",
-  caption: "flex justify-center pt-1 relative items-center",
-  caption_label: "text-sm font-medium text-orange-400",
-  caption_dropdowns: "flex gap-2 [&_.rdp-vhidden]:hidden", // Esconde o label visualmente oculto que pode atrapalhar o layout
-  nav: "space-x-1 flex items-center",
-  nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-white",
-  nav_button_previous: "absolute left-1",
-  nav_button_next: "absolute right-1",
-  table: "w-full border-collapse space-y-1",
-  head_row: "flex",
-  head_cell: "text-gray-400 rounded-md w-9 font-normal text-[0.8rem]",
-  row: "flex w-full mt-2",
-  cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-orange-600/20 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-  day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 text-gray-200",
-  day_selected: "bg-orange-600 text-white hover:bg-orange-700 focus:bg-orange-600 focus:text-white rounded-md",
-  day_today: "bg-gray-700 text-gray-100 rounded-md",
-  day_outside: "text-gray-500 opacity-50",
-  day_disabled: "text-gray-600 opacity-50",
-  day_range_middle: "aria-selected:bg-orange-600/30 aria-selected:text-white",
-  day_hidden: "invisible",
-  // Classes para os dropdowns de Mês e Ano
-  dropdown_month: "[&>div]:bg-gray-800 [&>div]:border-orange-700 [&>div]:text-white",
-  dropdown_year: "[&>div]:bg-gray-800 [&>div]:border-orange-700 [&>div]:text-white",
+// Estilização base para o Input, mantendo o tema escuro/laranja
+const inputClassNames = cn(
+  "flex h-10 w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white",
+  "focus-visible:outline-none focus-visible:ring-2 focus:ring-orange-500", // A cor de foco laranja
+  "disabled:cursor-not-allowed disabled:opacity-50"
+);
+
+/**
+ * Aplica a máscara DD/MM/AAAA a uma string conforme o usuário digita.
+ * Remove caracteres não numéricos e insere as barras automaticamente.
+ */
+const applyDateMask = (value: string): string => {
+  // 1. Remove tudo que não for dígito
+  let cleaned = value.replace(/\D/g, '');
+
+  // 2. Limita a 8 dígitos (DDMMYYYY)
+  if (cleaned.length > 8) {
+    cleaned = cleaned.substring(0, 8);
+  }
+
+  // 3. Aplica a máscara: DD/MM/AAAA
+  let masked = '';
+  for (let i = 0; i < cleaned.length; i++) {
+    // Insere a primeira barra após o dia (2 dígitos)
+    if (i === 2) {
+      masked += '/';
+    }
+    // Insere a segunda barra após o mês (4 dígitos no total)
+    if (i === 4) {
+      masked += '/';
+    }
+    masked += cleaned[i];
+  }
+
+  return masked;
 };
+
 
 const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
   inicio_contrato,
@@ -49,69 +56,53 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
   onDateChange,
   disabled,
 }) => {
+
+  // Função unificada para manipular a mudança de qualquer input
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    // Aplica a máscara ao valor atual do input
+    const maskedValue = applyDateMask(value);
+
+    // Envia o valor mascarado (ex: '11/10/2025') para o componente pai
+    onDateChange(name, maskedValue);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      {/* --- Início do Contrato (Input Manual com Máscara) --- */}
       <div>
         <Label htmlFor="inicio_contrato" className="text-gray-300">Início do Contrato</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:ring-2 focus:ring-orange-500",
-                !inicio_contrato && "text-gray-400"
-              )}
-              disabled={disabled}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {inicio_contrato ? format(new Date(inicio_contrato), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-700">
-            <Calendar
-              mode="single"
-              selected={inicio_contrato ? new Date(inicio_contrato) : undefined}
-              onSelect={(date) => onDateChange('inicio_contrato', date)}
-              initialFocus
-              locale={ptBR}
-              captionLayout="dropdown-buttons"
-              fromYear={1950}
-              toYear={new Date().getFullYear() + 5}
-              classNames={calendarClassNames} // <-- AQUI A MÁGICA ACONTECE
-            />
-          </PopoverContent>
-        </Popover>
+        <input
+          id="inicio_contrato"
+          name="inicio_contrato"
+          type="text" // Tipo texto para permitir a máscara manual
+          placeholder="DD/MM/AAAA"
+          // O valor é o estado atual, que é uma string mascarada
+          value={inicio_contrato}
+          onChange={handleChange}
+          disabled={disabled}
+          maxLength={10} // Limita a 10 caracteres (incluindo as duas barras)
+          className={inputClassNames}
+        />
       </div>
+
+      {/* --- Fim do Contrato (Input Manual com Máscara) --- */}
       <div>
         <Label htmlFor="fim_contrato" className="text-gray-300">Fim do Contrato</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:ring-2 focus:ring-orange-500",
-                !fim_contrato && "text-gray-400"
-              )}
-              disabled={disabled}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {fim_contrato ? format(new Date(fim_contrato), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-700">
-            <Calendar
-              mode="single"
-              selected={fim_contrato ? new Date(fim_contrato) : undefined}
-              onSelect={(date) => onDateChange('fim_contrato', date)}
-              initialFocus
-              locale={ptBR}
-              captionLayout="dropdown-buttons"
-              fromYear={1950}
-              toYear={new Date().getFullYear() + 5}
-              classNames={calendarClassNames} // <-- AQUI A MÁGICA ACONTECE
-            />
-          </PopoverContent>
-        </Popover>
+        <input
+          id="fim_contrato"
+          name="fim_contrato"
+          type="text" // Tipo texto para permitir a máscara manual
+          placeholder="DD/MM/AAAA"
+          // O valor é o estado atual, que é uma string mascarada
+          value={fim_contrato}
+          onChange={handleChange}
+          disabled={disabled}
+          maxLength={10} // Limita a 10 caracteres (incluindo as duas barras)
+          className={inputClassNames}
+        />
       </div>
     </div>
   );
