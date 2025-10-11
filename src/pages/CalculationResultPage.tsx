@@ -20,33 +20,8 @@ const jsPDF = JsPDFModule.default;
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface Provento {
-  id: string;
-  id_calculo: string | null;
-  nome_provento: string;
-  valor_calculado: number;
-  natureza_da_verba: string;
-  legislacao: string | null;
-  exemplo_aplicavel: string | null;
-  formula_sugerida: string | null;
-  parametro_calculo: string | null;
-  json_completo: any | null;
-  memoria_calculo: string | null; // <--- NOVO CAMPO ADICIONADO
-}
-
-interface Desconto {
-  id: string;
-  id_calculo: string | null;
-  nome_desconto: string;
-  valor_calculado: number;
-  natureza_da_verba: string;
-  legislacao: string | null;
-  exemplo_aplicavel: string | null;
-  formula_sugerida: string | null;
-  parametro_calculo: string | null;
-  json_completo: any | null;
-  memoria_calculo: string | null; // <--- NOVO CAMPO ADICIONADO
-}
+// Importando as interfaces de Provento e Desconto do hook centralizado
+import { Provento, Desconto } from '@/hooks/useCalculationDetails';
 
 interface CalculationDetails {
   id: string;
@@ -150,7 +125,7 @@ const CalculationResultPage: React.FC = () => {
     showSuccess('Iniciando reprocessamento dos detalhes do cálculo (granularização).');
 
     try {
-      const { error, data } = await supabase.functions.invoke('reprocess-calculation-ai-response', {
+      const { error, data: _data } = await supabase.functions.invoke('reprocess-calculation-ai-response', {
         body: { calculationId: id },
       });
 

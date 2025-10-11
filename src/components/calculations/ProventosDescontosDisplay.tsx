@@ -3,34 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
-
-interface Provento {
-  id: string;
-  id_calculo: string | null;
-  nome_provento: string;
-  valor_calculado: number;
-  natureza_da_verba: string;
-  legislacao: string | null;
-  exemplo_aplicavel: string | null;
-  formula_sugerida: string | null;
-  parametro_calculo: string | null;
-  json_completo: any | null;
-  memoria_calculo: string | null; // Novo campo
-}
-
-interface Desconto {
-  id: string;
-  id_calculo: string | null;
-  nome_desconto: string;
-  valor_calculado: number;
-  natureza_da_verba: string;
-  legislacao: string | null;
-  exemplo_aplicavel: string | null;
-  formula_sugerida: string | null;
-  parametro_calculo: string | null;
-  json_completo: any | null;
-  memoria_calculo: string | null; // Novo campo
-}
+import { Provento, Desconto } from '@/hooks/useCalculationDetails'; // Importando as interfaces do hook
 
 interface ProventosDescontosDisplayProps {
   proventos: Provento[];
@@ -95,7 +68,7 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
         <CollapsibleTrigger asChild>
           <TableRow className="border-gray-700 hover:bg-gray-800 cursor-pointer">
             <TableCell className="font-medium text-gray-200 w-2/5 break-words">
-              {item.nome_provento ? item.nome_provento.replace(/_/g, ' ') : item.nome_desconto.replace(/_/g, ' ')}
+              {isProvento ? (item as Provento).nome_provento.replace(/_/g, ' ') : (item as Desconto).nome_desconto.replace(/_/g, ' ')}
             </TableCell>
             <TableCell className="text-gray-300 w-1/5">{item.natureza_da_verba.replace(/_/g, ' ')}</TableCell>
             <TableCell className={`text-right w-1/5 ${isProvento ? 'text-green-400' : 'text-red-400'}`}>

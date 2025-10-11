@@ -4,8 +4,9 @@ Este projeto é uma aplicação de cálculo trabalhista projetada para auxiliar 
 
 ## Sumário
 
-1.  [Visão Geral do Projeto](#1-visão-geral-do-projeto)
-2.  [Guia de Implantação](#2-guia-de-implantação)
+1.  [Apresentação Profissional](#1-apresentação-profissional)
+2.  [Visão Geral do Projeto](#2-visão-geral-do-projeto)
+3.  [Guia de Implantação](#3-guia-de-implantação)
     *   [Pré-requisitos](#pré-requisitos)
     *   [Configuração do Supabase](#configuração-do-supabase)
         *   [Esquema do Banco de Dados](#esquema-do-banco-de-dados)
@@ -13,21 +14,31 @@ Este projeto é uma aplicação de cálculo trabalhista projetada para auxiliar 
         *   [Autenticação](#autenticação)
         *   [Segurança em Nível de Linha (RLS)](#segurança-em-nível-de-linha-rls)
         *   [Funções e Triggers](#funções-e-triggers)
+        *   [Inserção de Modelo de IA Padrão (Seed)](#inserção-de-modelo-de-ia-padrão-seed)
     *   [Fluxo de Trabalho n8n](#fluxo-de-trabalho-n8n)
     *   [Funções Edge (Supabase)](#funções-edge-supabase)
     *   [Implantação do Frontend](#implantação-do-frontend)
     *   [Variáveis de Ambiente](#variáveis-de-ambiente)
-3.  [Desenvolvimento Local](#3-desenvolvimento-local)
-4.  [Contribuindo](#4-contribuindo)
-5.  [Licença](#5-licença)
+    *   [Dependências do Projeto](#dependências-do-projeto)
+4.  [Desenvolvimento Local](#4-desenvolvimento-local)
+5.  [Contribuindo](#5-contribuindo)
+6.  [Licença](#6-licença)
 
 ---
 
-## 1. Visão Geral do Projeto
+## 1. Apresentação Profissional
+
+Apresentamos a "Calculadora Trabalhista Jota Empresas", uma solução robusta e intuitiva desenvolvida para otimizar e automatizar os complexos processos de cálculo de rescisões contratuais. Criada com foco na precisão e conformidade legal, esta aplicação é uma ferramenta indispensável para profissionais de contabilidade, departamentos de RH e escritórios jurídicos que buscam eficiência e segurança nas operações trabalhistas.
+
+Integrando tecnologias de ponta como React para uma interface de usuário dinâmica, Supabase para um backend escalável e seguro, e n8n para automação inteligente de fluxos de trabalho, a Calculadora Trabalhista Jota Empresas não apenas simplifica a entrada de dados, mas também aproveita o poder da Inteligência Artificial para gerar relatórios detalhados e embasados na legislação vigente. Com ela, você garante cálculos transparentes, reduz erros e otimiza o tempo, permitindo que sua equipe se concentre em atividades estratégicas.
+
+Nossa plataforma é projetada para ser responsiva, segura e fácil de usar, proporcionando uma experiência de usuário superior e garantindo que todos os cálculos estejam em estrita conformidade com a CLT, jurisprudências e convenções coletivas.
+
+## 2. Visão Geral do Projeto
 
 Esta aplicação oferece uma interface de usuário para inserir parâmetros de cálculo trabalhista. Ela utiliza um backend Supabase para armazenamento de dados e gerenciamento de usuários. Cálculos complexos ou integrações (por exemplo, com serviços de IA) são tratados por um fluxo de trabalho n8n, que recebe dados via webhooks. Os resultados do fluxo de trabalho n8n são então armazenados de volta no Supabase e exibidos no frontend.
 
-## 2. Guia de Implantação
+## 3. Guia de Implantação
 
 Para implantar esta aplicação, você precisará configurar o Supabase, implantar o fluxo de trabalho n8n e implantar a aplicação frontend.
 
@@ -49,7 +60,7 @@ Esta aplicação depende fortemente do Supabase para seu backend. Você precisar
 
 Abaixo estão os esquemas de tabela inferidos com base no uso e busca de dados da aplicação. Você deve criar essas tabelas em seu projeto Supabase.
 
-```sql
+<dyad-execute-sql description="Esquema completo do banco de dados Supabase">
 -- Habilitar extensão uuid-ossp para gerar UUIDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -131,6 +142,36 @@ CREATE TABLE public.tbl_calculos (
   resposta_ai JSONB -- Armazena a resposta JSON da IA diretamente
 );
 
+-- Tabela de Proventos (Verbas Remuneratórias)
+CREATE TABLE public.tbl_proventos (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id_calculo UUID REFERENCES public.tbl_calculos(id) ON DELETE CASCADE,
+  nome_provento TEXT NOT NULL,
+  valor_calculado NUMERIC NOT NULL,
+  natureza_da_verba TEXT NOT NULL,
+  legislacao TEXT,
+  exemplo_aplicavel TEXT,
+  formula_sugerida TEXT,
+  parametro_calculo TEXT,
+  json_completo JSONB,
+  memoria_calculo TEXT
+);
+
+-- Tabela de Descontos
+CREATE TABLE public.tbl_descontos (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id_calculo UUID REFERENCES public.tbl_calculos(id) ON DELETE CASCADE,
+  nome_desconto TEXT NOT NULL,
+  valor_calculado NUMERIC NOT NULL,
+  natureza_da_verba TEXT NOT NULL,
+  legislacao TEXT,
+  exemplo_aplicavel TEXT,
+  formula_sugerida TEXT,
+  parametro_calculo TEXT,
+  json_completo JSONB,
+  memoria_calculo TEXT
+);
+
 -- Tabela de Respostas de Cálculo (para resultados de webhooks, etc.)
 CREATE TABLE public.tbl_resposta_calculo (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -152,7 +193,7 @@ CREATE TABLE public.tbl_webhook_configs (
   title TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-```
+</dyad-execute-sql>
 
 #### Relacionamentos
 
@@ -164,6 +205,8 @@ Certifique-se de que os relacionamentos de chave estrangeira estejam corretament
 *   `public.tbl_calculos.cliente_id` references `public.tbl_clientes.id`
 *   `public.tbl_calculos.sindicato_id` references `public.tbl_sindicatos.id`
 *   `public.tbl_calculos.ai_template_id` references `public.tbl_ai_prompt_templates.id`
+*   `public.tbl_proventos.id_calculo` references `public.tbl_calculos.id`
+*   `public.tbl_descontos.id_calculo` references `public.tbl_calculos.id`
 *   `public.tbl_resposta_calculo.calculo_id` references `public.tbl_calculos.id` (com `ON DELETE CASCADE` para integridade dos dados)
 *   `public.tbl_webhook_configs.user_id` references `auth.users.id`
 
@@ -179,13 +222,15 @@ Configure o Supabase Auth para gerenciamento de usuários. A aplicação atualme
 
 É altamente recomendável habilitar e configurar o RLS para todas as tabelas que contêm dados de usuário sensíveis para garantir a privacidade e segurança dos dados.
 
-```sql
+<dyad-execute-sql description="Políticas de RLS para todas as tabelas">
 -- Habilitar RLS para todas as tabelas
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_clientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_sindicatos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_ai_prompt_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_calculos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tbl_proventos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tbl_descontos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_resposta_calculo ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_webhook_configs ENABLE ROW LEVEL SECURITY;
 
@@ -239,6 +284,26 @@ CREATE POLICY "Calculos podem ser atualizados apenas pelos donos dos clientes" O
 CREATE POLICY "Calculos podem ser deletados apenas pelos donos dos clientes" ON public.tbl_calculos
   FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM public.tbl_clientes WHERE tbl_clientes.id = tbl_calculos.cliente_id AND tbl_clientes.user_id = auth.uid()));
 
+-- Políticas para a tabela 'tbl_proventos' (baseado no user_id do cliente do cálculo)
+CREATE POLICY "proventos_select_policy" ON public.tbl_proventos
+FOR SELECT TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_proventos.id_calculo) AND (cl.user_id = auth.uid()))));
+CREATE POLICY "proventos_insert_policy" ON public.tbl_proventos
+FOR INSERT TO authenticated WITH CHECK (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_proventos.id_calculo) AND (cl.user_id = auth.uid()))));
+CREATE POLICY "proventos_update_policy" ON public.tbl_proventos
+FOR UPDATE TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_proventos.id_calculo) AND (cl.user_id = auth.uid()))));
+CREATE POLICY "proventos_delete_policy" ON public.tbl_proventos
+FOR DELETE TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_proventos.id_calculo) AND (cl.user_id = auth.uid()))));
+
+-- Políticas para a tabela 'tbl_descontos' (baseado no user_id do cliente do cálculo)
+CREATE POLICY "descontos_select_policy" ON public.tbl_descontos
+FOR SELECT TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_descontos.id_calculo) AND (cl.user_id = auth.uid()))));
+CREATE POLICY "descontos_insert_policy" ON public.tbl_descontos
+FOR INSERT TO authenticated WITH CHECK (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_descontos.id_calculo) AND (cl.user_id = auth.uid()))));
+CREATE POLICY "descontos_update_policy" ON public.tbl_descontos
+FOR UPDATE TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_descontos.id_calculo) AND (cl.user_id = auth.uid()))));
+CREATE POLICY "descontos_delete_policy" ON public.tbl_descontos
+FOR DELETE TO authenticated USING (EXISTS ( SELECT 1 FROM (tbl_calculos c JOIN tbl_clientes cl ON ((c.cliente_id = cl.id))) WHERE ((c.id = tbl_descontos.id_calculo) AND (cl.user_id = auth.uid()))));
+
 -- Políticas para a tabela 'tbl_resposta_calculo' (baseado no user_id do cliente do cálculo)
 CREATE POLICY "Respostas de calculo podem ser vistas apenas pelos donos dos ca" ON public.tbl_resposta_calculo
   FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.tbl_calculos c JOIN public.tbl_clientes cl ON c.cliente_id = cl.id WHERE c.id = tbl_resposta_calculo.calculo_id AND cl.user_id = auth.uid()));
@@ -258,13 +323,13 @@ CREATE POLICY "Users can only update their own webhook configs" ON public.tbl_we
   FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "Users can only delete their own webhook configs" ON public.tbl_webhook_configs
   FOR DELETE TO authenticated USING (auth.uid() = user_id);
-```
+</dyad-execute-sql>
 
 #### Funções e Triggers
 
 A função `handle_new_user` é responsável por criar um perfil para novos usuários no momento do cadastro, preenchendo automaticamente alguns campos com base nos metadados do usuário e definindo um modelo de IA padrão.
 
-```sql
+<dyad-execute-sql description="Função e Trigger para criar perfil de usuário e vincular modelo de IA padrão">
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE PLPGSQL
@@ -296,13 +361,13 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-```
+</dyad-execute-sql>
 
 #### Inserção de Modelo de IA Padrão (Seed)
 
 Para garantir que a função `handle_new_user` encontre o modelo de IA padrão, você pode inserir um registro inicial na tabela `tbl_ai_prompt_templates`.
 
-```sql
+<dyad-execute-sql description="Inserção do modelo de prompt de IA padrão">
 INSERT INTO public.tbl_ai_prompt_templates (
   id, user_id, title, identificacao, comportamento, restricoes, atribuicoes, leis, proventos, descontos, observacoes_base_legal, estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao, created_at
 ) VALUES (
@@ -427,9 +492,13 @@ Aviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valor
   'Instruções para entrada de dados para rescisão',
   NOW()
 ) ON CONFLICT (id) DO NOTHING;
-```
+</dyad-execute-sql>
 
-<dyad-write path="src/n8n/calculo_trabalhista_n8n.json" description="Atualizando o workflow n8n para usar o campo 'estrutura_json_modelo_saida' no systemMessage do AI Agent.">
+### Fluxo de Trabalho n8n
+
+O fluxo de trabalho n8n é responsável por orquestrar a comunicação entre o frontend, o modelo de IA e o Supabase. Ele recebe os dados do cálculo via webhook, envia para o AI Agent e armazena a resposta no Supabase.
+
+<dyad-write path="src/n8n/calculo_trabalhista_n8n.json" description="Workflow n8n para cálculo trabalhista">
 {
   "name": "calculo_trabalhista",
   "nodes": [
@@ -807,14 +876,33 @@ Aviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valor
               "cliente_responsavel": "J COSME",
               "cliente_tipo_empregador": "Empresa",
               "ai_template_atribuicoes": "-especialista em direito trabalhista\n-especialista na consolidação das leis trabalhistas\n-especialista em cada sindicado e seus dissídios\n-phd em leis trabalhistas\n-professor de cálculo trabalhista e rescisões",
-              "ai_template_comportamento": "-cordialmente profissional\n-resposta precisa, **metódica e embasada na CLT**, **Jurisprudências já proferidas** e no **direito trabalhistas**\n-conhecedor do assunto e de toda a legislação trabalhista (CLT, jurisprudência, CCTs/Dissídios)\n-extremamente metódico\n-**A saída final deve ser formatada EXCLUSIVAMENTE** no formato JSON, seguindo a estrutura detalhada em 'Estrutura JSON Modelo Saída'.",
+              "ai_template_comportamento": "-cordialmente profissional\n-resposta precisa, **metódica e embasada na CLT**, **Jurisprudências já proferidas** e no **direito trabalhistas**\n-conhecedor do assunto e de toda a legislação trabalhista (CLT, jurisprudência, CCTs/Dissídios)
+-extremamente metódico
+-**A saída final deve ser formatada EXCLUSIVAMENTE** no formato JSON, seguindo a estrutura detalhada em 'Estrutura JSON Modelo Saída'.",
               "ai_template_created_at": "2025-10-04T12:28:52.803822+00:00",
               "ai_template_descontos": "caso esteja sem carteira assinada não desconta nada , caso não descontar , inss, ir se for o caso",
-              "ai_template_estrutura_json_modelo_saida": "{\n  \"Verbas_Rescisorias\": {\n    \"Remuneracao\": [\n      {\n        \"Provento\": \"string\",\n        \"Cálculo\": {\n          \"Parametro\": \"string\",\n          \"Valor\": \"number\",\n          \"Fórmula_Sugerida\": \"string\"\n        },\n        \"Memoria_de_Calculo\": \"string\",\n        \"Legislação\": \"string\",\n        \"Exemplos_Aplicaveis\": \"string\",\n        \"Natureza_da_Verba\": \"string\"\n      }\n    ],\n    \"Descontos\": [\n      {\n        \"Desconto\": \"string\",\n        \"Cálculo\": {\n          \"Parametro\": \"string\",\n          \"Valor\": \"number\",\n          \"Fórmula_Sugerida\": \"string\"\n        },\n        \"Memoria_de_Calculo\": \"string\",\n        \"Legislação\": \"string\",\n        \"Exemplos_Aplicaveis\": \"string\",\n        \"Natureza_da_Verba\": \"string\"\n      }\n    ]\n  }\n}",
+              "ai_template_estrutura_json_modelo_saida": "{\n  \"Verbas_Rescisorias\": {\n    \"Remuneracao\": [\n      {\n        \"Provento\": \"string\",\n        \"Cálculo\": {\n          \"Parametro\": \"string\",
+          \"Valor\": \"number\",
+          \"Fórmula_Sugerida\": \"string\"
+        },\n        \"Memoria_de_Calculo\": \"string\",
+        \"Legislação\": \"string\",
+        \"Exemplos_Aplicaveis\": \"string\",
+        \"Natureza_da_Verba\": \"string\"
+      }\n    ],\n    \"Descontos\": [\n      {\n        \"Desconto\": \"string\",
+        \"Cálculo\": {\n          \"Parametro\": \"string\",
+          \"Valor\": \"number\",
+          \"Fórmula_Sugerida\": \"string\"
+        },\n        \"Memoria_de_Calculo\": \"string\",
+        \"Legislação\": \"string\",
+        \"Exemplos_Aplicaveis\": \"string\",
+        \"Natureza_da_Verba\": \"string\"
+      }\n    ]\n  }\n}",
               "ai_template_instrucoes_entrada_dados_rescisao": "",
               "ai_template_formatacao_texto_rodape": "- Inclua a saudação final (\"Atenciosamente, [Jota Contabilidade]\").",
               "ai_template_identificacao": "-agente de cálculo rescisório do brasil\n-o agente especialista em cálculo rescisório do brasil\n-professor de direito trabalhista do brasil\n-mestre em direito trabalhista do brasil\n-phd em direito trabalhista do brasil\n- doutor em direito trabalhista do brasil",
-              "ai_template_leis": "- calcular sempre a diferença de salário exigido pelo sindicato e relação ao recebido pelo trabalhador durante o período de trabalho\nA Lei Principal: Consolidação das Leis do Trabalho (CLT)\nO núcleo de toda a legislação trabalhista brasileira é a Consolidação das Leis do Trabalho (CLT), aprovada pelo Decreto-Lei nº 5.452, de 1º de maio de 1943.A CLT é a principal fonte de regras que define e regulamenta a relação de emprego individual e coletiva, abrangendo temas como:\nRegistro e Documentação: Obrigatoriedade da Carteira de Trabalho e Previdência Social (CTPS), hoje majoritariamente digital.\nContrato de Trabalho: Tipos de contrato (prazo determinado, indeterminado, intermitente, etc.) e condições.\nJornada de Trabalho: Limites diários e semanais (geralmente 8 horas diárias e 44 semanais), horas extras e regime de turnos.\nRemuneração: Salário mínimo, equiparação salarial e descontos.\nFérias: Direito, período de concessão e pagamento.\nSegurança e Medicina do Trabalho: Normas de saúde e segurança (as NRs - Normas Regulamentadoras, que se baseiam na CLT).\nProteção ao Trabalho: Regras para o trabalho da mulher, do menor e do aprendiz.\nRescisão do Contrato: Tipos de demissão (justa causa, sem justa causa, pedido de demissão, etc.) e verbas rescisórias.\nDireito Coletivo: Sindicatos, acordos e convenções coletivas de trabalho.\n\n2. Norma Máxima: Constituição Federal de 1988\nAcima da CLT, a Constituição da República Federativa do Brasil (CF/88) estabelece os direitos sociais básicos dos trabalhadores no seu Artigo 7º. Qualquer lei infraconstitucional (como a CLT) deve respeitar esses direitos.\nDireitos constitucionais incluem:\nSalário mínimo.\nDécimo terceiro salário (Lei nº 4.090/62).\nFundo de Garantia por Tempo de Serviço (FGTS).\nSeguro-desemprego (Lei nº 7.998/90).\nFérias anuais remuneradas com, no mínimo, um terço a mais.\nLicença-maternidade e licença-paternidade.\nProteção contra a despedida arbitrária ou sem justa causa (multa de 40% do FGTS).\n\n3. Leis Específicas e Complementares\nAlém da CLT, diversas leis e normas tratam de relações de trabalho específicas ou detalham direitos e obrigações:\nLegislação\nNúmero\nFinalidade\nLei do Aviso Prévio\nLei nº 12.506/2011\nRegulamenta o acréscimo de 3 dias por ano de serviço ao aviso prévio.\nLei da Terceirização\nLei nº 13.429/2017\nDisciplina o trabalho temporário e a terceirização de todas as atividades.\nLei do Trabalho Doméstico\nLei Complementar nº 150/2015\nGarante direitos específicos (como FGTS obrigatório, seguro-desemprego, etc.) aos empregados domésticos.\nLei do Estágio\nLei nº 11.788/2008\nDefine as regras para a contratação de estagiários (que não gera vínculo empregatício CLT).\nLei da Aprendizagem\nLei nº 10.097/2000\nRegulamenta a contratação de jovens aprendizes.\nLei do PIS/PASEP\nLei nº 7.998/90\nDefine o programa de Abono Salarial (PIS/PASEP) e o seguro-desemprego.\nNormas Regulamentadoras (NRs)\nPortarias do Ministério do Trabalho\nConjunto de regras que detalham as obrigações de segurança e saúde no trabalho (NR 7, NR 9, etc.).",
+              "ai_template_leis": "- calcular sempre a diferença de salário exigido pelo sindicato e relação ao recebido pelo trabalhador durante o período de trabalho
+A Lei Principal: Consolidação das Leis do Trabalho (CLT)
+O núcleo de toda a legislação trabalhista brasileira é a Consolidação das Leis do Trabalho (CLT), aprovada pelo Decreto-Lei nº 5.452, de 1º de maio de 1943.A CLT é a principal fonte de regras que define e regulamenta a relação de emprego individual e coletiva, abrangendo temas como:\nRegistro e Documentação: Obrigatoriedade da Carteira de Trabalho e Previdência Social (CTPS), hoje majoritariamente digital.\nContrato de Trabalho: Tipos de contrato (prazo determinado, indeterminado, intermitente, etc.) e condições.\nJornada de Trabalho: Limites diários e semanais (geralmente 8 horas diárias e 44 semanais), horas extras e regime de turnos.\nRemuneração: Salário mínimo, equiparação salarial e descontos.\nFérias: Direito, período de concessão e pagamento.\nSegurança e Medicina do Trabalho: Normas de saúde e segurança (as NRs - Normas Regulamentadoras, que se baseiam na CLT).\nProteção ao Trabalho: Regras para o trabalho da mulher, do menor e do aprendiz.\nRescisão do Contrato: Tipos de demissão (justa causa, sem justa causa, pedido de demissão, etc.) e verbas rescisórias.\nDireito Coletivo: Sindicatos, acordos e convenções coletivas de trabalho.\n\n2. Norma Máxima: Constituição Federal de 1988\nAcima da CLT, a Constituição da República Federativa do Brasil (CF/88) estabelece os direitos sociais básicos dos trabalhadores no seu Artigo 7º. Qualquer lei infraconstitucional (como a CLT) deve respeitar esses direitos.\nDireitos constitucionais incluem:\nSalário mínimo.\nDécimo terceiro salário (Lei nº 4.090/62).\nFundo de Garantia por Tempo de Serviço (FGTS).\nSeguro-desemprego (Lei nº 7.998/90).\nFérias anuais remuneradas com, no mínimo, um terço a mais.\nLicença-maternidade e licença-paternidade.\nProteção contra a despedida arbitrária ou sem justa causa (multa de 40% do FGTS).\n\n3. Leis Específicas e Complementares\nAlém da CLT, diversas leis e normas tratam de relações de trabalho específicas ou detalham direitos e obrigações:\nLegislação\nNúmero\nFinalidade\nLei do Aviso Prévio\nLei nº 12.506/2011\nRegulamenta o acréscimo de 3 dias por ano de serviço ao aviso prévio.\nLei da Terceirização\nLei nº 13.429/2017\nDisciplina o trabalho temporário e a terceirização de todas as atividades.\nLei do Trabalho Doméstico\nLei Complementar nº 150/2015\nGarante direitos específicos (como FGTS obrigatório, seguro-desemprego, etc.) aos empregados domésticos.\nLei do Estágio\nLei nº 11.788/2008\nDefine as regras para a contratação de estagiários (que não gera vínculo empregatício CLT).\nLei da Aprendizagem\nLei nº 10.097/2000\nRegulamenta a contratação de jovens aprendizes.\nLei do PIS/PASEP\nLei nº 7.998/90\nDefine o programa de Abono Salarial (PIS/PASEP) e o seguro-desemprego.\nNormas Regulamentadoras (NRs)\nPortarias do Ministério do Trabalho\nConjunto de regras que detalham as obrigações de segurança e saúde no trabalho (NR 7, NR 9, etc.).",
               "ai_template_observacoes_base_legal": "Base Legal Geral	Cálculo realizado em conformidade com o Decreto-Lei nº 5.452/43 (Consolidação das Leis do Trabalho - CLT) e legislação complementar.\nObservação CTPS	Se a CTPS não estiver assinada ({{ $json.ctpsAssinada }} seja \"não\" ou nulo), é fundamental cobrar o reconhecimento do vínculo e o recolhimento de todo o FGTS não depositado.\nObservação Sindicato	O campo {{ $json.obsSindicato }} deve ser analisado para verificar se representa algum débito, crédito ou informação relevante para o cálculo final, conforme a convenção coletiva.\nObservação FGTS	O saldo do FGTS a ser liberado para saque será o valor acumulado na conta vinculada, acrescido da multa de 40% paga pelo empregador.\nAviso Geral	Este é um cálculo simulado com base nos dados fornecidos. Os valores podem variar dependendo das especificidades do contrato de trabalho e da convenção coletiva.",
               "ai_template_proventos": "Saldo de Salário	Fórmula: (Salário Base de Cálculo / 30) * dias trabalhados no mês da rescisão.\nAviso Prévio Indenizado	Calculado com base na Lei nº 12.506/2011 (30 dias + 3 dias por ano de serviço), utilizando as datas de {{ $json.inicioContrato }} e {{ $json.inicioContrato }}.\n13º Salário Proporcional	Fórmula: (Acréscimos Médios / 12) * meses trabalhados no ano (considerando a projeção do aviso prévio).\nFérias Proporcionais	Fórmula: (Salário Base de Cálculo / 12) * meses do período aquisitivo (considerando a projeção do aviso prévio).\nINSS	Incide sobre o Saldo de Salário e o 13º Salário, conforme tabelas vigentes. Verbas indenizatórias não possuem incidência de INSS.\nMulta de 40% do FGTS	O saldo de FGTS é estimado com base nos depósitos de 8% sobre a remuneração durante o período do contrato. A multa de 40% incide sobre este total, caso não tenha a ctps assinada\nDiferença de salário entre salario estipulado pelo sindicato e salario recebido , calcular a diferença entre o perio trabalhado\nFgts – valor do fgts , caso não tenha a ctps assinada",
               "ai_template_restricoes": "-não inventa dados ou verbas\n-segue estritamente a lei (CLT, Leis Complementares e Convenções Coletivas de Trabalho)\n-**NUNCA DEVE USAR FORMATO XML OU ESTRUTURAS DE CÓDIGO BRUTA** como saída final, apenas o JSON solicitado.",

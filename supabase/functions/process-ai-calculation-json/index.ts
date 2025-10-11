@@ -1,3 +1,4 @@
+// @ts-nocheck
 // deno-lint-ignore-file
 // @ts-ignore
 /// <reference lib="deno.ns" />
@@ -91,6 +92,7 @@ serve(async (req: Request) => {
               formula_sugerida: proventoItem.Cálculo?.Fórmula_Sugerida,
               parametro_calculo: proventoItem.Cálculo?.Parametro,
               json_completo: proventoItem, // Store the full JSON for reference
+              memoria_calculo: proventoItem.Memoria_de_Calculo, // NOVO CAMPO
             });
 
           if (insertError) {
@@ -118,6 +120,7 @@ serve(async (req: Request) => {
               formula_sugerida: descontoItem.Cálculo?.Fórmula_Sugerida,
               parametro_calculo: descontoItem.Cálculo?.Parametro,
               json_completo: descontoItem, // Store the full JSON for reference
+              memoria_calculo: descontoItem.Memoria_de_Calculo, // NOVO CAMPO
             });
 
           if (insertError) {

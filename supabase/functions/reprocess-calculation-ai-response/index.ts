@@ -1,29 +1,20 @@
+// @ts-nocheck
 // deno-lint-ignore-file
 // @ts-ignore
-// Deno configuration for this Edge Function
-// This block is usually in deno.json, but moved here to avoid deployment issues.
-// {
-//   "compilerOptions": {
-//     "lib": ["deno.ns", "deno.unstable"],
-//     "types": ["https://deno.land/std@0.190.0/http/server.ts", "https://esm.sh/@supabase/supabase-js@2.45.0"]
-//   },
-//   "imports": {
-//     "https://deno.land/std@0.190.0/http/server.ts": "https://deno.land/std@0.190.0/http/server.ts",
-//     "https://esm.sh/@supabase/supabase-js@2.45.0": "https://esm.sh/@supabase/supabase-js@2.45.0"
-//   }
-// }
+/// <reference lib="deno.ns" />
+/// <reference types="https://esm.sh/@supabase/supabase-js@2.45.0" />
 
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
