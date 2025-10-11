@@ -480,23 +480,6 @@ const CalculationResultPage: React.FC = () => {
           </h1>
 
           <div className="flex space-x-2">
-            {/* Botão de Reprocessamento (para testar a escrita de Proventos/Descontos) */}
-            <Button
-              onClick={handleReprocessGranularity}
-              disabled={isReprocessing}
-              className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto flex items-center justify-center"
-            >
-              {isReprocessing ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Reprocessando...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" /> Reprocessar Detalhes
-                </>
-              )}
-            </Button>
-
             <Button
               onClick={handleDownloadFullReportAsPdf}
               className="bg-purple-600 hover:bg-purple-700 text-white w-full sm:w-auto flex items-center justify-center"

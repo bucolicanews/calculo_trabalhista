@@ -457,18 +457,6 @@ const CalculationListPage = () => {
                         </Badge>
                       )}
 
-                      {/* Botão Processar/Reprocessar */}
-                      {hasResult && currentStatus !== 'reprocessing' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-purple-700 text-white hover:bg-purple-600"
-                          onClick={() => handleReprocessAiResponse(calculation.id)}
-                          disabled={isProcessingAny}
-                        >
-                          <Play className="h-4 w-4" />
-                        </Button>
-                      )}
 
                       {currentStatus !== 'sending' && currentStatus !== 'completed' && currentStatus !== 'pending_response' && currentStatus !== 'reprocessing' && !hasResult && (
                         <Button
