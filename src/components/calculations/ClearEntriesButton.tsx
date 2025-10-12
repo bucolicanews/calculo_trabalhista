@@ -1,25 +1,25 @@
 // src/components/calculations/ClearEntriesButton.tsx
 
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
 interface ClearEntriesButtonProps {
+    calculationId: string; // Adicionado
     // Passamos uma função para ser executada após o sucesso, como recarregar os dados.
     onSuccess: () => void;
 }
 
-const ClearEntriesButton: React.FC<ClearEntriesButtonProps> = ({ onSuccess }) => {
-    const { id } = useParams<{ id: string }>();
+const ClearEntriesButton: React.FC<ClearEntriesButtonProps> = ({ calculationId, onSuccess }) => {
+    // Removido useParams, pois calculationId agora é passado via props
     const [isClearing, setIsClearing] = useState(false);
 
     const handleClearEntries = async () => {
         // Validação para garantir que temos um ID
-        if (!id) {
-            showError("ID do cálculo não encontrado na URL.");
+        if (!calculationId) {
+            showError("ID do cálculo não encontrado.");
             return;
         }
 
@@ -32,10 +32,10 @@ const ClearEntriesButton: React.FC<ClearEntriesButtonProps> = ({ onSuccess }) =>
         showSuccess("Limpando registros, por favor aguarde...");
 
         try {
-            console.log(`🚀 Invocando 'clear-calculation-entries' para o ID: ${id}`);
+            console.log(`🚀 Invocando 'clear-calculation-entries' para o ID: ${calculationId}`);
 
             const { error } = await supabase.functions.invoke('clear-calculation-entries', {
-                body: { calculationId: id },
+                body: { calculationId: calculationId },
             });
 
             if (error) {

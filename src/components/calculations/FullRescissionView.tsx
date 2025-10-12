@@ -27,7 +27,7 @@ interface CalculationDataForDetailsCard {
     tbl_sindicatos: { nome: string } | null;
     tbl_ai_prompt_templates: {
         title: string;
-        estrutura_json_modelo_saida: string | null;
+        estrutura_json_modelo_saida: string | null; // Adicionado
         instrucoes_entrada_dados_rescisao: string | null;
     } | null;
 }

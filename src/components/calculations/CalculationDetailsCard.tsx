@@ -74,7 +74,7 @@ const CalculationDetailsCard: React.FC<CalculationDetailsCardProps> = ({ calcula
   const inicio = parseDateSafely(calculation.inicio_contrato);
   const fim = parseDateSafely(calculation.fim_contrato);
 
-  const baseCalculoTotal = calculation.salario_trabalhador + (calculation.media_remuneracoes || 0);
+  // 'baseCalculoTotal' removido pois não é utilizado.
 
   let diasTrabalhadosNoVinculo = 0;
   let anosCompletos = 0;

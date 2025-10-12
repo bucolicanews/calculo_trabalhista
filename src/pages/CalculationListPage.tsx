@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2, Play } from 'lucide-react'; // Adicionado Play icon
+import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { showError, showSuccess } from '@/utils/toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -15,7 +15,7 @@ import CalculationWebhookSender from '@/components/calculations/CalculationWebho
 import { Badge } from '@/components/ui/badge';
 
 // Definindo os possíveis status de um cálculo
-type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'reprocessing'; // Adicionado 'reprocessing'
+type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'reprocessing';
 
 interface Calculation {
   id: string;
@@ -59,7 +59,7 @@ const CalculationListPage = () => {
   // 🛑 CORREÇÃO APLICADA: Inicializando como estado com new Map()
   const [countdownTimers, setCountdownTimers] = useState<Map<string, number>>(new Map());
 
-  const [isReprocessing, setIsReprocessing] = useState<string | null>(null); // Novo estado para reprocessamento
+  const [isReprocessing] = useState<string | null>(null); // 'setIsReprocessing' removido pois não é utilizado neste arquivo
 
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const intervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -348,53 +348,6 @@ const CalculationListPage = () => {
       updateCalculationStatus(calculationId, 'idle');
     } finally {
       setIsSendingWebhook(null);
-    }
-  };
-
-  const handleReprocessAiResponse = async (calculationId: string) => {
-    if (!user) {
-      showError('Usuário não autenticado.');
-      return;
-    }
-
-    setIsReprocessing(calculationId);
-    updateCalculationStatus(calculationId, 'reprocessing');
-    showSuccess('Reprocessando resposta da IA...');
-
-    try {
-      const session = await supabase.auth.getSession();
-      const accessToken = session.data.session?.access_token;
-
-      if (!accessToken) {
-        showError('Sessão de usuário não encontrada. Por favor, faça login novamente.');
-        setIsReprocessing(null);
-        updateCalculationStatus(calculationId, 'completed');
-        return;
-      }
-
-      const response = await fetch(`https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/reprocess-calculation-ai-response`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ calculationId }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        showError(`Falha ao reprocessar resposta da IA: ${errorData.error || response.statusText}`);
-        console.error('Reprocess AI Response Error:', errorData);
-      } else {
-        showSuccess('Resposta da IA reprocessada com sucesso! Atualizando a lista...');
-        fetchCalculations(); // Atualiza a lista para refletir as mudanças
-      }
-    } catch (error: any) {
-      showError('Erro inesperado ao reprocessar resposta da IA: ' + error.message);
-      console.error('Unexpected Reprocess AI Response Error:', error);
-    } finally {
-      setIsReprocessing(null);
-      // Não define como 'completed' aqui, pois fetchCalculations irá atualizar o status
     }
   };
 

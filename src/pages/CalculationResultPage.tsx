@@ -12,6 +12,7 @@ import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView';
 import ClearEntriesButton from '@/components/calculations/ClearEntriesButton';
+import DownloadPdfButton from '@/components/calculations/DownloadPdfButton'; // Certifique-se que o import está aqui
 
 // Importando as interfaces
 import { Provento, Desconto } from '@/hooks/useCalculationDetails';
@@ -38,6 +39,7 @@ interface CalculationDetails {
   tbl_sindicatos: { nome: string } | null;
   tbl_ai_prompt_templates: {
     title: string;
+    estrutura_json_modelo_saida: string | null; // Adicionado
     instrucoes_entrada_dados_rescisao: string | null;
   } | null;
   tbl_resposta_calculo: {
@@ -117,13 +119,11 @@ const CalculationResultPage: React.FC = () => {
 
     showSuccess('Iniciando reprocessamento...');
     try {
-      // Primeiro limpa os registros antigos
       const { error: clearError } = await supabase.functions.invoke('clear-calculation-entries', {
         body: { calculationId: id },
       });
       if (clearError) throw new Error(`Falha ao limpar dados antigos: ${clearError.message}`);
 
-      // Se a limpeza funcionou, insere os novos
       const { error: processError, data: processData } = await supabase.functions.invoke('process-ai-calculation-json', {
         body: {
           calculationId: id,
@@ -184,9 +184,7 @@ const CalculationResultPage: React.FC = () => {
 
   return (
     <MainLayout>
-      {/* --- MUDANÇA 1: Removido padding horizontal (px-*) deste container --- */}
       <div className="container mx-auto py-8 w-full">
-        {/* --- MUDANÇA 2: Adicionado padding horizontal aqui para o cabeçalho --- */}
         <div className="mb-6 px-4 sm:px-0">
           <Button variant="ghost" onClick={() => navigate('/calculations')} className="text-orange-500 hover:text-orange-600 mb-4 sm:mb-0">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Cálculos
@@ -207,14 +205,20 @@ const CalculationResultPage: React.FC = () => {
                 </Button>
               )}
               {(calculation?.tbl_proventos?.length || 0) > 0 && (
-                <ClearEntriesButton calculationId={id} onSuccess={fetchCalculationResult} />
+                <ClearEntriesButton calculationId={id!} onSuccess={fetchCalculationResult} />
               )}
+
+              {/* --- CORREÇÃO APLICADA AQUI --- */}
+              {canReprocess && (
+                // Simplesmente renderize o componente e passe o ID do cálculo como prop
+                <DownloadPdfButton calculationId={id} />
+              )}
+              {/* --- FIM DA CORREÇÃO --- */}
+
             </div>
           </div>
         </div>
 
-        {/* --- O CONTEÚDO PRINCIPAL NÃO PRECISA DE PADDING EXTRA --- */}
-        {/* Agora ele irá se esticar 100% na horizontal em telas pequenas */}
         <div className="report-content">
           <FullRescissionView
             calculationDetails={calculationDataForDetailsCard}

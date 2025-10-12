@@ -15,6 +15,7 @@ export interface Provento {
   formula_sugerida: string | null;
   parametro_calculo: string | null;
   json_completo: any | null;
+  memoria_calculo: string | null; // Adicionado
 }
 
 export interface Desconto {
@@ -28,6 +29,7 @@ export interface Desconto {
   formula_sugerida: string | null;
   parametro_calculo: string | null;
   json_completo: any | null;
+  memoria_calculo: string | null; // Adicionado
 }
 
 export interface CalculationDetails {
