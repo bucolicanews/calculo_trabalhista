@@ -125,10 +125,6 @@ const CalculationDetailsCard: React.FC<CalculationDetailsCardProps> = ({ calcula
           <p className="break-words"><strong>Média Remunerações Variáveis:</strong> R$ {calculation.media_remuneracoes.toFixed(2)}</p>
         )}
 
-        {/* 🛑 CAMPO BASE DE CÁLCULO TOTAL (Destaque) */}
-        <p className="col-span-full md:col-span-2 text-lg font-semibold text-green-500 border-t border-b border-gray-700 py-2 mt-2">
-          <strong>BASE DE CÁLCULO RESCISÓRIA:</strong> R$ {baseCalculoTotal.toFixed(2)}
-        </p>
 
         {/* === OUTROS DETALHES === */}
         <p className="break-words"><strong>Tipo de Rescisão:</strong> {calculation.tipo_aviso}</p>

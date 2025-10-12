@@ -8,49 +8,64 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
-import { ArrowLeft, CalendarIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// --- INTERFACE E ESTILOS (COPIADOS DO EXEMPLO) ---
 
 interface SindicatoState {
   id?: string;
   nome: string;
-  data_inicial: string;
-  data_final: string;
+  data_inicial: string; // Armazenará a data como DD/MM/AAAA
+  data_final: string;   // Armazenará a data como DD/MM/AAAA
   mes_convencao: string;
   resumo_dissidio: string;
 }
 
-// Objeto de classes para estilizar o calendário. Copiado de ContractDatesSection.
-const calendarClassNames = {
-  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-  month: "space-y-4",
-  caption: "flex justify-center pt-1 relative items-center",
-  caption_label: "text-sm font-medium text-orange-400",
-  caption_dropdowns: "flex gap-2 [&_.rdp-vhidden]:hidden", // Esconde o label visualmente oculto que pode atrapalhar o layout
-  nav: "space-x-1 flex items-center",
-  nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-white",
-  nav_button_previous: "absolute left-1",
-  nav_button_next: "absolute right-1",
-  table: "w-full border-collapse space-y-1",
-  head_row: "flex",
-  head_cell: "text-gray-400 rounded-md w-9 font-normal text-[0.8rem]",
-  row: "flex w-full mt-2",
-  cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-orange-600/20 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-  day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 text-gray-200",
-  day_selected: "bg-orange-600 text-white hover:bg-orange-700 focus:bg-orange-600 focus:text-white rounded-md",
-  day_today: "bg-gray-700 text-gray-100 rounded-md",
-  day_outside: "text-gray-500 opacity-50",
-  day_disabled: "text-gray-600 opacity-50",
-  day_range_middle: "aria-selected:bg-orange-600/30 aria-selected:text-white",
-  day_hidden: "invisible",
-  // Classes para os dropdowns de Mês e Ano
-  dropdown_month: "[&>div]:bg-gray-800 [&>div]:border-orange-700 [&>div]:text-white",
-  dropdown_year: "[&>div]:bg-gray-800 [&>div]:border-orange-700 [&>div]:text-white",
+const inputClassNames = cn(
+  "flex h-10 w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white",
+  "focus-visible:outline-none focus-visible:ring-2 focus:ring-orange-500",
+  "disabled:cursor-not-allowed disabled:opacity-50"
+);
+
+// --- FUNÇÕES DE MÁSCARA E FORMATAÇÃO DE DATA ---
+
+/**
+ * Aplica a máscara DD/MM/AAAA a uma string conforme o usuário digita.
+ */
+const applyDateMask = (value: string): string => {
+  let cleaned = value.replace(/\D/g, '');
+  if (cleaned.length > 8) {
+    cleaned = cleaned.substring(0, 8);
+  }
+  let masked = '';
+  for (let i = 0; i < cleaned.length; i++) {
+    if (i === 2) masked += '/';
+    if (i === 4) masked += '/';
+    masked += cleaned[i];
+  }
+  return masked;
 };
+
+/**
+ * Converte uma data do formato do Supabase (AAAA-MM-DD) para exibição (DD/MM/AAAA).
+ */
+const formatDateForDisplay = (isoDate: string | null): string => {
+  if (!isoDate) return '';
+  const [year, month, day] = isoDate.split('-');
+  return `${day}/${month}/${year}`;
+};
+
+/**
+ * Converte uma data do formato de exibição (DD/MM/AAAA) para o formato do Supabase (AAAA-MM-DD).
+ */
+const formatDateForSupabase = (displayDate: string): string | null => {
+  if (!displayDate || displayDate.length !== 10) return null;
+  const [day, month, year] = displayDate.split('/');
+  if (!day || !month || !year) return null;
+  return `${year}-${month}-${day}`;
+};
+
 
 const SindicatoFormPage = () => {
   const navigate = useNavigate();
@@ -81,13 +96,13 @@ const SindicatoFormPage = () => {
 
     if (error) {
       showError('Erro ao carregar sindicato: ' + error.message);
-      console.error('Error fetching sindicato:', error);
       navigate('/sindicatos');
     } else if (data) {
+      // **CORREÇÃO:** Converte as datas do formato do DB para o formato de exibição antes de popular o estado.
       setSindicato({
         ...data,
-        data_inicial: data.data_inicial || '',
-        data_final: data.data_final || '',
+        data_inicial: formatDateForDisplay(data.data_inicial),
+        data_final: formatDateForDisplay(data.data_final),
         mes_convencao: data.mes_convencao || '',
         resumo_dissidio: data.resumo_dissidio || '',
       });
@@ -97,39 +112,34 @@ const SindicatoFormPage = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setSindicato((prev) => ({ ...prev, [name]: value }));
+    // **CORREÇÃO:** Aplica a máscara se o campo for de data.
+    if (name === 'data_inicial' || name === 'data_final') {
+      const maskedValue = applyDateMask(value);
+      setSindicato((prev) => ({ ...prev, [name]: maskedValue }));
+    } else {
+      setSindicato((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  const handleDateChange = (name: string, date: Date | undefined) => {
-    setSindicato((prev) => ({
-      ...prev,
-      [name]: date ? format(date, 'yyyy-MM-dd') : '',
-    }));
-  };
+  // A função handleDateChange foi removida pois não é mais necessária.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    // **CORREÇÃO:** Converte as datas do formato de exibição de volta para o formato do DB antes de salvar.
     const sindicatoToSave = {
       ...sindicato,
+      data_inicial: formatDateForSupabase(sindicato.data_inicial),
+      data_final: formatDateForSupabase(sindicato.data_final),
     };
 
-    let response;
-    if (isEditing) {
-      response = await supabase
-        .from('tbl_sindicatos')
-        .update(sindicatoToSave)
-        .eq('id', id);
-    } else {
-      response = await supabase
-        .from('tbl_sindicatos')
-        .insert(sindicatoToSave);
-    }
+    const response = isEditing
+      ? await supabase.from('tbl_sindicatos').update(sindicatoToSave).eq('id', id)
+      : await supabase.from('tbl_sindicatos').insert(sindicatoToSave);
 
     if (response.error) {
       showError('Erro ao salvar sindicato: ' + response.error.message);
-      console.error('Error saving sindicato:', response.error);
     } else {
       showSuccess(`Sindicato ${isEditing ? 'atualizado' : 'criado'} com sucesso!`);
       navigate('/sindicatos');
@@ -152,10 +162,10 @@ const SindicatoFormPage = () => {
           <Button variant="ghost" onClick={() => navigate('/sindicatos')} className="text-orange-500 hover:text-orange-600 mb-4 sm:mb-0 sm:w-auto">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Button>
-          <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
-            {isEditing ? 'Editar Cadastro de Sindicato' : 'Novo Cadastro de Sindicato'}
+          <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center">
+            {isEditing ? 'Editar Sindicato' : 'Novo Sindicato'}
           </h1>
-          <div className="w-full sm:w-24 h-0 sm:h-auto"></div> {/* Placeholder for alignment */}
+          <div className="w-full sm:w-24 h-0 sm:h-auto"></div>
         </div>
         <Card className="max-w-2xl mx-auto bg-gray-900 border-orange-500 text-white">
           <CardHeader>
@@ -165,110 +175,52 @@ const SindicatoFormPage = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Label htmlFor="nome" className="text-gray-300">Nome do Sindicato</Label>
-                <Input
-                  id="nome"
-                  name="nome"
-                  value={sindicato.nome}
-                  onChange={handleChange}
-                  required
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
+                <Input id="nome" name="nome" value={sindicato.nome} onChange={handleChange} required className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
               </div>
 
-              {/* Data Inicial */}
+              {/* --- Data Inicial (Input com Máscara) --- */}
               <div>
                 <Label htmlFor="data_inicial" className="text-gray-300">Data Inicial do Acordo</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:ring-2 focus:ring-orange-500",
-                        !sindicato.data_inicial && "text-gray-400"
-                      )}
-                      disabled={loading}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {sindicato.data_inicial ? format(new Date(sindicato.data_inicial), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-700">
-                    <Calendar
-                      mode="single"
-                      selected={sindicato.data_inicial ? new Date(sindicato.data_inicial) : undefined}
-                      onSelect={(date) => handleDateChange('data_inicial', date)}
-                      initialFocus
-                      locale={ptBR}
-                      captionLayout="dropdown-buttons"
-                      fromYear={1950}
-                      toYear={new Date().getFullYear() + 5}
-                      classNames={calendarClassNames}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <input
+                  id="data_inicial"
+                  name="data_inicial"
+                  type="text"
+                  placeholder="DD/MM/AAAA"
+                  value={sindicato.data_inicial}
+                  onChange={handleChange}
+                  disabled={loading}
+                  maxLength={10}
+                  className={inputClassNames}
+                />
               </div>
 
-              {/* Data Final */}
+              {/* --- Data Final (Input com Máscara) --- */}
               <div>
                 <Label htmlFor="data_final" className="text-gray-300">Data Final do Acordo</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:ring-2 focus:ring-orange-500",
-                        !sindicato.data_final && "text-gray-400"
-                      )}
-                      disabled={loading}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {sindicato.data_final ? format(new Date(sindicato.data_final), 'PPP', { locale: ptBR }) : <span>Selecione a data</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-gray-900 border-orange-700">
-                    <Calendar
-                      mode="single"
-                      selected={sindicato.data_final ? new Date(sindicato.data_final) : undefined}
-                      onSelect={(date) => handleDateChange('data_final', date)}
-                      initialFocus
-                      locale={ptBR}
-                      captionLayout="dropdown-buttons"
-                      fromYear={1950}
-                      toYear={new Date().getFullYear() + 5}
-                      classNames={calendarClassNames}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Mês da Convenção */}
-              <div>
-                <Label htmlFor="mes_convencao" className="text-gray-300">Mês da Convenção (Ex: Janeiro, 01/2024)</Label>
-                <Input
-                  id="mes_convencao"
-                  name="mes_convencao"
-                  value={sindicato.mes_convencao || ''}
+                <input
+                  id="data_final"
+                  name="data_final"
+                  type="text"
+                  placeholder="DD/MM/AAAA"
+                  value={sindicato.data_final}
                   onChange={handleChange}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  placeholder="Ex: Janeiro ou 01/2024"
+                  disabled={loading}
+                  maxLength={10}
+                  className={inputClassNames}
                 />
               </div>
 
-              {/* Resumo do Dissídio */}
+              <div>
+                <Label htmlFor="mes_convencao" className="text-gray-300">Mês da Convenção</Label>
+                <Input id="mes_convencao" name="mes_convencao" value={sindicato.mes_convencao || ''} onChange={handleChange} placeholder="Ex: Janeiro ou 01/2024" className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
+              </div>
+
               <div>
                 <Label htmlFor="resumo_dissidio" className="text-gray-300">Resumo do Dissídio</Label>
-                <Textarea
-                  id="resumo_dissidio"
-                  name="resumo_dissidio"
-                  value={sindicato.resumo_dissidio}
-                  onChange={handleChange}
-                  rows={5}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                  placeholder="Insira o resumo do dissídio aqui..."
-                />
+                <Textarea id="resumo_dissidio" name="resumo_dissidio" value={sindicato.resumo_dissidio} onChange={handleChange} rows={5} placeholder="Insira o resumo do dissídio aqui..." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full bg-gray-800 hover:bg-gray-700 text-white">
+              <Button type="submit" disabled={loading} className="w-full bg-orange-600 hover:bg-orange-700 text-white">
                 {loading ? 'Salvando...' : (isEditing ? 'Atualizar Sindicato' : 'Criar Sindicato')}
               </Button>
             </form>
