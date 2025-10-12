@@ -5,21 +5,18 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { showError, showSuccess } from '@/utils/toast';
-// O ícone de Download foi removido pois o botão de PDF foi removido em passos anteriores
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 
 // Importar os novos componentes modulares
 import AiResponseDisplay from '@/components/calculations/AiResponseDisplay';
 import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView';
-
-// --- CORREÇÃO 1: Importar o componente como 'default' ---
 import ClearEntriesButton from '@/components/calculations/ClearEntriesButton';
 
-// Importando as interfaces de Provento e Desconto do hook centralizado
+// Importando as interfaces
 import { Provento, Desconto } from '@/hooks/useCalculationDetails';
 
-// TIPAGEM (Adicionadas propriedades que faltavam para evitar erros)
+// TIPAGEM
 interface CalculationDetails {
   id: string;
   nome_funcionario: string;
@@ -187,8 +184,10 @@ const CalculationResultPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl">
-        <div className="mb-6">
+      {/* --- MUDANÇA 1: Removido padding horizontal (px-*) deste container --- */}
+      <div className="container mx-auto py-8 w-full">
+        {/* --- MUDANÇA 2: Adicionado padding horizontal aqui para o cabeçalho --- */}
+        <div className="mb-6 px-4 sm:px-0">
           <Button variant="ghost" onClick={() => navigate('/calculations')} className="text-orange-500 hover:text-orange-600 mb-4 sm:mb-0">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Cálculos
           </Button>
@@ -197,7 +196,6 @@ const CalculationResultPage: React.FC = () => {
               Resultado do Cálculo
             </h1>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-
               {canReprocess && (
                 <Button
                   onClick={handleReprocessGranularity}
@@ -208,17 +206,15 @@ const CalculationResultPage: React.FC = () => {
                   {isReprocessing ? 'Processando...' : 'Reprocessar Detalhes'}
                 </Button>
               )}
-
-              {/* --- CORREÇÃO 2: Usar o componente diretamente --- */}
-              {/* Ele só aparece se existirem proventos ou descontos para limpar */}
               {(calculation?.tbl_proventos?.length || 0) > 0 && (
-                <ClearEntriesButton onSuccess={fetchCalculationResult} />
+                <ClearEntriesButton calculationId={id} onSuccess={fetchCalculationResult} />
               )}
-
             </div>
           </div>
         </div>
 
+        {/* --- O CONTEÚDO PRINCIPAL NÃO PRECISA DE PADDING EXTRA --- */}
+        {/* Agora ele irá se esticar 100% na horizontal em telas pequenas */}
         <div className="report-content">
           <FullRescissionView
             calculationDetails={calculationDataForDetailsCard}

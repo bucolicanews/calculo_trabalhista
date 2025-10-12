@@ -46,7 +46,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-grow p-6 overflow-auto">
+        {/* --- MUDANÇA: Ajustado o padding para ser responsivo --- */}
+        {/* Remove o padding horizontal em telas pequenas e o adiciona em telas maiores */}
+        <main className="flex-grow overflow-auto py-6 md:px-6">
           {children}
         </main>
       </div>
