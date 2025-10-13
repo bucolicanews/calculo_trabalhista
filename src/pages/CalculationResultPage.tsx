@@ -134,7 +134,7 @@ const CalculationResultPage: React.FC = () => {
   // =================== FIM DA LÓGICA CORRIGIDA ====================
 
   const otherResultDetails = calculation.tbl_resposta_calculo;
-  const calculationDataForDetailsCard = { /* ... (mesmo objeto de antes) ... */ };
+  // const calculationDataForDetailsCard = { /* ... (mesmo objeto de antes) ... */ }; // REMOVIDO: Variável não utilizada
 
   return (
     <MainLayout>
