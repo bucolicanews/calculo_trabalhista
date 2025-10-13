@@ -98,7 +98,7 @@ const AiPromptTemplateFormPage: React.FC = () => {
   const handleOpenInfoPage = () => {
     // Arquivos na pasta `public` são acessíveis pela raiz do site.
     // Garanta que o caminho é `public/info/index.html` no seu projeto.
-    window.open('/public/info/info.html', '_blank', 'noopener,noreferrer');
+    navigate('/info')
   };
 
 

@@ -20,6 +20,7 @@ import ClientFormPage from './pages/ClientFormPage';
 import SindicatoListPage from './pages/SindicatoListPage';
 import SindicatoFormPage from './pages/SindicatoFormPage';
 import WebhookConfigPage from './pages/WebhookConfigPage';
+import Info from './pages/Info';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -30,6 +31,7 @@ const App: React.FC = () => {
     <Router>
       <AuthProvider>
         <Routes>
+
           {/* Public Routes */}
           <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><AuthPage /></PublicRoute>} />
@@ -37,6 +39,7 @@ const App: React.FC = () => {
 
           {/* Private Routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+          <Route path="/info" element={<PrivateRoute><Info /></PrivateRoute>} />
           
           <Route path="/clients" element={<PrivateRoute><ClientListPage /></PrivateRoute>} />
           <Route path="/clients/new" element={<PrivateRoute><ClientFormPage /></PrivateRoute>} />
