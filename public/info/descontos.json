@@ -1,0 +1,158 @@
+[
+  {
+    "Desconto": "Aviso_Prévio_Indenizado_pelo_Empregado",
+    "Cálculo": {
+      "Parametro": "Dias_de_Aviso_a_Descontar",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Um_Mês_de_Salário_Base"
+    },
+    "Memoria_de_Calculo": "Base: Salário Base Corrigido. Cálculo: O valor de 1 Salário Base (equivalente a 30 dias) é descontado quando o empregado pede demissão e não cumpre o aviso.",
+    "Legislação": "CLT, Art. 487, §2º",
+    "Exemplos_Aplicaveis": "Empregado pede demissão e não cumpre o aviso prévio, indenizando o empregador.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "INSS_Sobre_Remunerações_(Saldo_Salário_e_Variáveis)",
+    "Cálculo": {
+      "Parametro": "Base_de_Cálculo_(Saldo_Salário + Variáveis)",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Tabela_INSS_aplicada_sobre_base_tributável_mensal"
+    },
+    "Memoria_de_Calculo": "Base: Saldo de Salário, Horas Extras, e Adicionais (Periculosidade/Insalubridade/Tempo_de_Serviço/Quebra_de_Caixa/etc.). Cálculo: Aplicação da Tabela Progressiva do INSS sobre a Base de Cálculo Mensal.",
+    "Legislação": "Lei 8.212/91",
+    "Exemplos_Aplicaveis": "Incide sobre Saldo de Salário, Horas Extras, Adicionais (Insalubridade/Periculosidade) e quaisquer diferenças salariais mensais.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "INSS_Sobre_13º_Salário_Proporcional",
+    "Cálculo": {
+      "Parametro": "Base_de_Cálculo_(13º_Proporcional)",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Tabela_INSS_aplicada_sobre_base_tributável_do_13º"
+    },
+    "Memoria_de_Calculo": "Base: Valor do 13º Salário Proporcional. Cálculo: Aplicação da Tabela Progressiva do INSS sobre a Base de Cálculo do 13º (cálculo separado das verbas mensais).",
+    "Legislação": "Lei 8.212/91",
+    "Exemplos_Aplicaveis": "Incide sobre o valor do 13º Salário (integral e/ou proporcional).",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "INSS_Sobre_13º_Salário_Aviso",
+    "Cálculo": {
+      "Parametro": "Base_de_Cálculo_(13º_Aviso)",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Tabela_INSS_aplicada_sobre_base_tributável_do_13º_aviso"
+    },
+    "Memoria_de_Calculo": "Base: 1/12 avos do 13º Salário projetado pelo Aviso Prévio Indenizado. Cálculo: Aplicação da Tabela Progressiva do INSS sobre esta base.",
+    "Legislação": "Lei 8.212/91 e Decreto 3.048/99, Art. 214, § 9º, V, “f”",
+    "Exemplos_Aplicaveis": "Incide sobre a projeção do 13º salário referente ao período do aviso prévio indenizado.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "INSS_Férias_Vencidas_(Indenizadas)",
+    "Cálculo": {
+      "Parametro": "Base_de_Cálculo_(Férias_Indenizadas)",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Isento_de_INSS"
+    },
+    "Memoria_de_Calculo": "O valor é **R$0,00** porque as Férias Vencidas e seu adicional de 1/3, quando pagas na rescisão, **são isentas de INSS**.",
+    "Legislação": "Decreto 3.048/99, Art. 214, § 9º, VI",
+    "Exemplos_Aplicaveis": "Não há incidência de INSS sobre Férias Vencidas (e seu adicional de 1/3) pagas na rescisão.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "INSS_Férias_Vencidas_do_Aviso",
+    "Cálculo": {
+      "Parametro": "Base_de_Cálculo_(Férias_Aviso)",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Isento_de_INSS"
+    },
+    "Memoria_de_Calculo": "O valor é **R$0,00** porque a projeção de Férias e seu adicional de 1/3 referente ao Aviso Prévio indenizado **é isenta de INSS**.",
+    "Legislação": "Decreto 3.048/99, Art. 214, § 9º, VI",
+    "Exemplos_Aplicaveis": "Não há incidência de INSS sobre a projeção de Férias e 1/3 referente ao Aviso Prévio indenizado.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "Imposto_de_Renda_Retido_na_Fonte_(IRRF)",
+    "Cálculo": {
+      "Parametro": "Base_de_Cálculo_(Verbas_Tributáveis)",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Tabela_IRRF_aplicada_sobre_base_de_cálculo"
+    },
+    "Memoria_de_Calculo": "Base: Verbas Remuneratórias e 13º (após deduções do INSS, dependentes e parcela isenta). Cálculo: Aplicação da Tabela Progressiva do IRRF sobre a base líquida.",
+    "Legislação": "Lei 7.713/88",
+    "Exemplos_Aplicaveis": "Incide sobre verbas tributáveis.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "Adiantamentos_e_Vales_(Saldo_Devedor)",
+    "Cálculo": {
+      "Parametro": "Valores_Adiantados_e_Não_Compensados",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Soma_de_Vales_e_Adiantamentos"
+    },
+    "Memoria_de_Calculo": "Base: Total de vales e adiantamentos concedidos. Cálculo: Soma de todos os adiantamentos salariais e vales (transporte, refeição, etc.) que não foram compensados.",
+    "Legislação": "CLT, Art. 462",
+    "Exemplos_Aplicaveis": "Vales salariais, adiantamentos de 13º e outros valores antecipados não compensados.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "Empréstimos_Consignados_e_Outros_Autorizados",
+    "Cálculo": {
+      "Parametro": "Saldo_Devedor_a_ser_descontado",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Desconto_permitido_por_lei_ou_contrato"
+    },
+    "Memoria_de_Calculo": "Base: Saldo devedor. Cálculo: Desconto do saldo de empréstimos consignados ou outros empréstimos, respeitando o limite legal de desconto na rescisão.",
+    "Legislação": "Lei 10.820/03 e CLT, Art. 462",
+    "Exemplos_Aplicaveis": "Parcelas restantes de empréstimos e descontos expressamente autorizados.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "Faltas_e_Atrasos_Injustificados",
+    "Cálculo": {
+      "Parametro": "Qtd_Dias_Faltas_e_Horas_Atrasos",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Valor_por_dia_ou_hora_não_trabalhada"
+    },
+    "Memoria_de_Calculo": "Base: Salário Base. Cálculo: (Salário Base / 30) * [Dias de Falta] e/ou (Valor Hora) * [Horas de Atraso], mais DSR's perdidos.",
+    "Legislação": "CLT, Art. 473",
+    "Exemplos_Aplicaveis": "Desconto dos dias ou horas em que o empregado faltou sem justificativa legal.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "Vale_Transporte_e_Alimentação_Antecipado",
+    "Cálculo": {
+      "Parametro": "Valor_Relativo_aos_Dias_Não_Trabalhados",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Valor_Benefício_Proporcional"
+    },
+    "Memoria_de_Calculo": "Base: Valor do benefício mensal. Cálculo: Valor do benefício antecipado referente aos dias que o empregado não trabalhará após a rescisão.",
+    "Legislação": "Lei 7.418/85 (VT) e Lei 6.321/76 (VA/VR)",
+    "Exemplos_Aplicaveis": "Desconto de vales fornecidos para dias não trabalhados após a rescisão.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "Danos_e_Prejuízos_Causados",
+    "Cálculo": {
+      "Parametro": "Valor_do_Prejuízo_(Com_Dolo_ou_Previsão)",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Valor_do_Dano_Causado"
+    },
+    "Memoria_de_Calculo": "Base: Valor do prejuízo. Cálculo: Valor do prejuízo, descontado apenas se comprovado **dolo** ou se houver **previsão expressa** em contrato para desconto por culpa.",
+    "Legislação": "CLT, Art. 462, §1º",
+    "Exemplos_Aplicaveis": "Dano causado com **dolo** ou com **culpa** se houver **previsão expressa** em contrato.",
+    "Natureza_da_Verba": "Normal"
+  },
+  {
+    "Desconto": "Mensalidades_Sindicais_e_Contribuições",
+    "Cálculo": {
+      "Parametro": "Valores_Devidos_e_Autorizados",
+      "Valor": 0.00,
+      "Fórmula_Sugerida": "Valor_da_Contribuição_Sindical_Devida"
+    },
+    "Memoria_de_Calculo": "Base: Valor da contribuição sindical/associativa. Cálculo: Valor da contribuição devida, descontado apenas se houver autorização prévia e expressa do empregado.",
+    "Legislação": "CLT, Art. 578 e 579",
+    "Exemplos_Aplicaveis": "Contribuições sindicais ou associativas apenas se houver autorização prévia e expressa do empregado.",
+    "Natureza_da_Verba": "Normal"
+  }
+]

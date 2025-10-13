@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Prompt - PHD Cálculo Trabalhista - Jota Contabilidade</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        header img {
+            max-width: 150px;
+            margin-bottom: 15px;
+        }
+
+        header h1 {
+            color: #c0392b;
+            margin: 10px 0 5px 0;
+            font-size: 2.2em;
+        }
+
+        header h2 {
+            color: #555;
+            font-weight: 400;
+            margin: 0;
+            font-size: 1.6em;
+        }
+
+        h3,
+        h4 {
+            color: #c0392b;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            margin-top: 40px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section p,
+        .section li {
+            font-size: 1.1em;
+            color: #555;
+        }
+
+        .verba-card {
+            background-color: #fdfdfd;
+            border: 1px solid #eaeaea;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .verba-card h5 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.25em;
+            color: #34495e;
+        }
+
+        ul.rules {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        ul.rules li {
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        ul.rules li::before {
+            content: '✓';
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 1.2em;
+            position: absolute;
+            left: 0;
+            top: 2px;
+        }
+
+        ul.restrictions li::before {
+            content: '✗';
+            color: #c0392b;
+        }
+
+        code,
+        pre {
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            color: #333;
+            font-size: 0.95em;
+            border: 1px solid #dee2e6;
+        }
+
+        pre {
+            padding: 15px;
+            padding-top: 45px;
+            /* Espaço para o botão */
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        strong {
+            color: #2c3e50;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .copy-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .copy-btn.copied {
+            background-color: #27ae60;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            color: #34495e;
+            font-weight: 600;
+        }
+
+        .field-name {
+            font-weight: bold;
+            color: #2980b9;
+        }
+
+        .field-desc {
+            margin-left: 20px;
+            display: block;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <img src="https://jota.teusite.top/imagens/logo.png" alt="Logo Jota Contabilidade">
+            <h1>Jota Contabilidade</h1>
+            <h2>Proposta para Cálculo Rescisório</h2>
+        </header>
+
+        <div class="section">
+            <h3>Título do Modelo: PHD Cálculo Trabalhista2</h3>
+            <h4>1. Perfil e Comportamento do Agente de IA</h4>
+            <ul>
+                <li><span class="field-name">Identificação:</span> <span class="field-desc">Você é um
+                        <strong>Especialista Sênior em Cálculo Trabalhista e Tributário (CLT)</strong>. Sua única
+                        responsabilidade é analisar os dados de entrada de uma rescisão contratual e preencher o JSON de
+                        saída com os valores e detalhes de cálculo corretos.</span></li>
+                <li><span class="field-name">Comportamento:</span>
+                    <ul class="rules">
+                        <li><strong>Rigor Legal:</strong> Baseie todos os cálculos e descrições nas normas da CLT, Lei
+                            8.036/90 (FGTS), Decreto 3.048/99 (INSS) e Normas Coletivas (CCT/ACT) aplicáveis.</li>
+                        <li><strong>Completo e Objetivo:</strong> Preencha TODOS os campos de proventos e descontos. Se
+                            um item não for aplicável, o valor deve ser <code>0.00</code> e a
+                            <code>Memoria_de_Calculo</code> deve justificar o motivo.</li>
+                        <li><strong>Cálculo Detalhado:</strong> A <code>Memoria_de_Calculo</code> deve explicar o passo
+                            a passo que levou ao valor final.</li>
+                    </ul>
+                </li>
+                <li><span class="field-name">Restrições:</span>
+                    <ul class="rules restrictions">
+                        <li>Nunca calcular INSS se a CTPS não estiver assinada.</li>
+                        <li>Nunca inventar valores se o campo de entrada for nulo ou zerado.</li>
+                        <li>Nunca lançar multa de 40% do FGTS se a CTPS estiver assinada (<code>true</code>).</li>
+                        <li>Nunca lançar Saldo do FGTS nos proventos se a CTPS estiver assinada (<code>true</code>).
+                        </li>
+                    </ul>
+                </li>
+                <li><span class="field-name">Atribuições:</span>
+                    <ul class="rules">
+                        <li><strong>Calcular Valores:</strong> Calcule o valor final para cada provento e desconto.</li>
+                        <li><strong>Preencher JSON:</strong> Insira os valores calculados em <code>"Valor"</code> e a
+                            justificativa em <code>"Memoria_de_Calculo"</code>.</li>
+                        <li><strong>Manter Metadados:</strong> Não altere os campos <code>"Legislação"</code>,
+                            <code>"Exemplos_Aplicaveis"</code>, <code>"Fórmula_Sugerida"</code> e
+                            <code>"Natureza_da_Verba"</code>.</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>Modelos JSON para Copiar</h3>
+            <p>Utilize os botões abaixo para copiar os blocos de texto e JSON necessários para alimentar o agente de IA.
+            </p>
+
+            <h4>Estrutura JSON Modelo Saída (Resultado Final Esperado)</h4>
+            <pre
+                id="full-json-structure"><button class="copy-btn" onclick="copyContent('full-json-structure')">Copiar JSON Completo</button></pre>
+
+            <h4>Modelo JSON: Apenas Proventos (Remuneração)</h4>
+            <pre
+                id="proventos-json-block"><button class="copy-btn" onclick="copyContent('proventos-json-block')">Copiar JSON de Proventos</button></pre>
+
+            <h4>Modelo JSON: Apenas Descontos</h4>
+            <pre
+                id="descontos-json-block"><button class="copy-btn" onclick="copyContent('descontos-json-block')">Copiar JSON de Descontos</button></pre>
+        </div>
+
+        <h3>Detalhamento das Verbas para Consulta</h3>
+        <p>A seguir, a explicação individual de cada verba.</p>
+
+        <h4 id="proventos-detalhe">Proventos (Remuneração)</h4>
+        <div id="proventos-container"></div>
+
+        <h4 id="descontos-detalhe">Descontos</h4>
+        <div id="descontos-container"></div>
+
+
+        <div class="section">
+            <h3>Observações e Base Legal</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tópico</th>
+                        <th>Descrição da Regra</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Base Legal Central</strong></td>
+                        <td>Cálculos baseados na CLT (Decreto-Lei nº 5.452/43), Lei do FGTS (nº 8.036/90) e Regulamento
+                            da Previdência (Decreto nº 3.048/99).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Validação de Vínculo (CTPS)</strong></td>
+                        <td>Se <code>ctpsAssinada</code> for "não" ou nula, o "FGTS_Não_Depositado_e_Devido" deve ser
+                            calculado para todo o período.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Análise Sindical</strong></td>
+                        <td>O campo <code>obsSindicato</code> deve ser analisado para identificar regras específicas da
+                            CCT, como piso salarial, multas ou outras verbas.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Proventos de FGTS</strong></td>
+                        <td>A "Multa_FGTS_40_Por_Cento" incide sobre o saldo total do FGTS (Saldo em Conta + FGTS Não
+                            Depositado).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Princípio de Execução</strong></td>
+                        <td>Os cálculos são uma simulação baseada nos dados de entrada. Utilizar sempre a maior base de
+                            cálculo possível (Salário Base + Médias, Piso, etc.) para verbas reflexas.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const proventosData = [
+            { "Provento": "Média_de_Verbas_Variáveis_(Integração_à_Base)", "Cálculo": { "Parametro": "Média_das_Variáveis_Pendentes", "Valor": 0.00, "Fórmula_Sugerida": "(Média_Horas_Extras + Média_Comissões + Média_Adicionais) / N_Meses" }, "Memoria_de_Calculo": "Base: Verbas variáveis pagas nos últimos 12 meses (Horas Extras, Adicional Noturno, Comissões, etc.). Cálculo: Soma dessas verbas dividida por 12. Este valor deve ser somado ao Salário Base Fixo para compor a Remuneração Média.", "Legislação": "Súmulas 264 e 347 do TST", "Exemplos_Aplicaveis": "O valor encontrado aqui é a base para corrigir o Salário Base (Salário Base Corrigido).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Base_de_Cálculo_Rescisória", "Cálculo": { "Parametro": "Remuneração_Média_para_Proporcionais", "Valor": 0.00, "Fórmula_Sugerida": "Salário_Base_Fixo + Média_de_Verbas_Variáveis" }, "Memoria_de_Calculo": "Base: Salário Base Fixo do Contrato. Cálculo: Soma do Salário Base Fixo com o valor calculado na verba 'Média_de_Verbas_Variáveis_(Integração_à_Base)'. Este valor compõe o Salário Base Corrigido/Remuneração Média utilizado como base para Férias, 13º e Aviso Prévio.", "Legislação": "Súmulas 264 e 347 do TST", "Exemplos_Aplicaveis": "É a remuneração integral (Salário Base Corrigido) considerada para calcular todas as verbas proporcionais e indenizadas.", "Natureza_da_Verba": "Informativa" },
+            { "Provento": "Saldo_de_Salário", "Cálculo": { "Parametro": "Dias_Trabalhados_no_Mês", "Valor": 0.00, "Fórmula_Sugerida": "(Salário_Base_Corrigido / 30) * Dias_Trabalhados" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido/Remuneração Média. Cálculo: (Salário Base Corrigido / 30) * [Número de Dias Trabalhados no Mês da Rescisão].", "Legislação": "CLT, Art. 457, §1º", "Exemplos_Aplicaveis": "Qualquer tipo de rescisão contratual.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Diferença_Salarial_Retroativa_(Piso_ou_Função)", "Cálculo": { "Parametro": "Meses_de_Diferença_a_ser_Paga", "Valor": 0.00, "Fórmula_Sugerida": "Soma_das_diferenças_mensais (Salário_Devido - Salário_Pago) * Meses_do_Contrato" }, "Memoria_de_Calculo": "Cálculo: (Piso Salarial da Categoria - Salário Pago) multiplicado pelo número de meses em que a diferença foi devida.", "Legislação": "CLT, Art. 460 e Norma Coletiva (CCT/ACT)", "Exemplos_Aplicaveis": "**Verba de Irregularidade** - Aplica-se quando o salário pago é inferior ao piso da categoria ou quando há acúmulo/desvio de função.", "Natureza_da_Verba": "Irregularidade_Contratual" },
+            { "Provento": "13º_Salário_Devido_Anos_Anteriores", "Cálculo": { "Parametro": "Anos_Integrais_Pendentes", "Valor": 0.00, "Fórmula_Sugerida": "Salário_Base_Corrigido * N_Anos" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido (incluindo variáveis). Cálculo: Salário Base Corrigido multiplicado pelo número de anos integrais pendentes de pagamento do 13º.", "Legislação": "Lei 4.090/62", "Exemplos_Aplicaveis": "Quando o 13º Salário de anos anteriores não foi pago no prazo legal.", "Natureza_da_Verba": "Irregularidade_Contratual" },
+            { "Provento": "13º_Salário_Integral_(Ano_Corrente)", "Cálculo": { "Parametro": "Aplicável_se_Rescisão_em_Dezembro", "Valor": 0.00, "Fórmula_Sugerida": "Salário_Base_Corrigido * 1.0" }, "Memoria_de_Calculo": "Aplicável se a rescisão ocorrer em dezembro. Base: Salário Base Corrigido. Cálculo: Salário Base Corrigido * 1.0.", "Legislação": "Lei 4.090/62", "Exemplos_Aplicaveis": "Devido integralmente no ano da rescisão (se a rescisão ocorrer em Dezembro).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "13º_Salário_Proporcional", "Cálculo": { "Parametro": "Meses_Trabalhados_no_Ano", "Valor": 0.00, "Fórmula_Sugerida": "(Salário_Base_Corrigido / 12) * Meses_Proporcionais" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido (incluindo variáveis). Cálculo: (Salário Base Corrigido / 12) * [Número de Meses Proporcionais (mês com 15 dias ou mais)].", "Legislação": "Lei 4.090/62", "Exemplos_Aplicaveis": "Avos do 13º devidos no ano da rescisão (exceto justa causa).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "13º_do_Aviso_(Projeção)", "Cálculo": { "Parametro": "Projeção_do_Aviso_Prévio", "Valor": 0.00, "Fórmula_Sugerida": "(Salário_Base_Corrigido / 12) * 1_Mês" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 12) * 1 avo referente à projeção do aviso prévio indenizado.", "Legislação": "CLT, Art. 487, §1º", "Exemplos_Aplicaveis": "1/12 avos do 13º Salário referente ao mês projetado pelo aviso prévio indenizado.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Férias_Vencidas_Simples_(Indenizadas)", "Cálculo": { "Parametro": "Qtd_Períodos_Vencidos_Não_Dobrados", "Valor": 0.00, "Fórmula_Sugerida": "Salário_Base_Corrigido * Qtd_Períodos" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido (incluindo médias). Cálculo: Salário Base Corrigido multiplicado pelo número de períodos vencidos não dobrados.", "Legislação": "CLT, Art. 146", "Exemplos_Aplicaveis": "Férias vencidas, mas que ainda não atingiram o período para pagamento em dobro (após 12 meses do período concessivo).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Férias_Vencidas_em_Dobro_(Indenizadas)", "Cálculo": { "Parametro": "Qtd_Períodos_Vencidos_Dobrados", "Valor": 0.00, "Fórmula_Sugerida": "Salário_Base_Corrigido * Qtd_Períodos * 2" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido (incluindo médias). Cálculo: Salário Base Corrigido multiplicado pelo número de períodos vencidos dobrados (multiplicar por 2).", "Legislação": "CLT, Art. 137", "Exemplos_Aplicaveis": "Férias vencidas, não usufruídas, e que já ultrapassaram o período concessivo.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Férias_Proporcionais", "Cálculo": { "Parametro": "Meses_Proporcionais_de_Férias", "Valor": 0.00, "Fórmula_Sugerida": "(Salário_Base_Corrigido / 12) * Meses_Proporcionais" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido (incluindo médias). Cálculo: (Salário Base Corrigido / 12) multiplicado pelo número de meses proporcionais no último período aquisitivo.", "Legislação": "CLT, Art. 147", "Exemplos_Aplicaveis": "Meses trabalhados no último período aquisitivo (geralmente pago exceto em justa causa).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Férias_do_Aviso_Prévio", "Cálculo": { "Parametro": "Meses_Projetados_pelo_Aviso", "Valor": 0.00, "Fórmula_Sugerida": "(Salário_Base_Corrigido / 12) * Meses_Projetados" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 12) * 1 avo referente à projeção do aviso prévio indenizado.", "Legislação": "CLT, Art. 487, §1º", "Exemplos_Aplicaveis": "Projeção de férias referente ao período indenizado do Aviso Prévio.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Um_Terço_Constitucional_Geral", "Cálculo": { "Parametro": "Soma_de_Todas_as_Férias", "Valor": 0.00, "Fórmula_Sugerida": "(Férias_Vencidas_Simples + Férias_Dobro + Férias_Proporcionais + Férias_Aviso) * 1/3" }, "Memoria_de_Calculo": "Base: Soma de todas as verbas de Férias (Vencidas, Dobradas, Proporcionais, Aviso). Cálculo: Soma da Base de Férias * 1/3 (0.3333).", "Legislação": "CF/88, Art. 7º, XVII", "Exemplos_Aplicaveis": "Adicional obrigatório de 1/3 incidente sobre a soma de todas as verbas de férias.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Aviso_Prévio_Indenizado_pelo_Empregador", "Cálculo": { "Parametro": "Dias_de_Aviso", "Valor": 0.00, "Fórmula_Sugerida": "(Salário_Base_Corrigido / 30) * Dias_de_Aviso" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 30) * [Dias de Aviso Prévio Devidos (30 dias + 3 dias/ano)].", "Legislação": "CLT, Art. 487 e Lei 12.506/11", "Exemplos_Aplicaveis": "Demissão sem justa causa, dispensa indireta. Base de cálculo deve incluir as médias das verbas variáveis.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Horas_Extras_50_Por_Cento", "Cálculo": { "Parametro": "Total_Horas_Pendentes_50%", "Valor": 0.00, "Fórmula_Sugerida": "Valor_Hora_Normal * 1.50 * Total_Horas" }, "Memoria_de_Calculo": "Base: Valor da Hora Normal. Cálculo: Valor Hora Normal * 1.50 * [Total de Horas Extras a 50% Pendentes].", "Legislação": "CF/88, Art. 7º, XVI e CLT, Art. 59", "Exemplos_Aplicaveis": "Horas trabalhadas em dias úteis fora da jornada normal (acréscimo mínimo de 50%).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Horas_Extras_70_Por_Cento", "Cálculo": { "Parametro": "Total_Horas_Pendentes_70%", "Valor": 0.00, "Fórmula_Sugerida": "Valor_Hora_Normal * 1.70 * Total_Horas" }, "Memoria_de_Calculo": "Base: Valor da Hora Normal. Cálculo: Valor Hora Normal * 1.70 * [Total de Horas Extras a 70% Pendentes]. Aplicar se houver previsão em CCT.", "Legislação": "Norma Coletiva (CCT/ACT)", "Exemplos_Aplicaveis": "Horas trabalhadas que possuem um adicional majorado por previsão em Convenção Coletiva.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Horas_Extras_100_Por_Cento", "Cálculo": { "Parametro": "Total_Horas_Pendentes_100%", "Valor": 0.00, "Fórmula_Sugerida": "Valor_Hora_Normal * 2.00 * Total_Horas" }, "Memoria_de_Calculo": "Base: Valor da Hora Normal. Cálculo: Valor Hora Normal * 2.00 * [Total de Horas Extras a 100% Pendentes].", "Legislação": "Súmula 113 do TST e Lei 605/49", "Exemplos_Aplicaveis": "Horas trabalhadas em domingos e feriados não compensados (adicional de 100%).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Folgas_DSR_Trabalhado_e_Não_Compensado", "Cálculo": { "Parametro": "Dias_de_Folga_Trabalhados", "Valor": 0.00, "Fórmula_Sugerida": "(Salário_Base / 30) * Dias_de_Folga * 2" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 30) * [Dias de Folga Trabalhados] * 2 (Pagamento em dobro).", "Legislação": "CLT, Art. 67 e Lei 605/49", "Exemplos_Aplicaveis": "Pagamento em dobro dos Descansos Semanais Remunerados (DSRs) trabalhados e não usufruídos/compensados.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Feriado_Trabalhado_e_Não_Compensado", "Cálculo": { "Parametro": "Dias_de_Feriado_Trabalhados", "Valor": 0.00, "Fórmula_Sugerida": "(Salário_Base / 30) * Dias_de_Feriado * 2" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 30) * [Dias de Feriado Trabalhados] * 2 (Pagamento em dobro).", "Legislação": "Lei 605/49, Art. 9º", "Exemplos_Aplicaveis": "Pagamento em dobro dos feriados civis ou religiosos trabalhados e não usufruídos/compensados.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Multa_FGTS_40_Por_Cento", "Cálculo": { "Parametro": "Saldo_do_FGTS_na_Rescisão", "Valor": 0.00, "Fórmula_Sugerida": "Saldo_FGTS * 0.40" }, "Memoria_de_Calculo": "Base: Saldo total dos depósitos de FGTS na conta. Cálculo: Saldo de FGTS * 0.40 (40%).", "Legislação": "Lei 8.036/90, Art. 18, §1º", "Exemplos_Aplicaveis": "**Verba de Irregularidade** \"Dispensa sem justa causa e Rescisão Indireta. somente se o funcionário estiver sem CTPS assinada\"", "Natureza_da_Verba": "Irregularidade_Contratual" },
+            { "Provento": "FGTS_Não_Depositado_e_Devido", "Cálculo": { "Parametro": "Total_de_Depósitos_Faltantes", "Valor": 0.00, "Fórmula_Sugerida": "Soma_dos_8%_de_cada_mês_não_recolhido + Juros_e_Multa" }, "Memoria_de_Calculo": "Base: Remuneração de cada mês não recolhido. Cálculo: Soma dos 8% de cada competência faltante, acrescida de juros e multa conforme legislação do FGTS.", "Legislação": "Lei 8.036/90", "Exemplos_Aplicaveis": "**Verba de Irregularidade** - Meses em que a empresa não recolheu o FGTS, ou todo o período em caso de **CTPS não assinada**.", "Natureza_da_Verba": "Irregularidade_Contratual" },
+            { "Provento": "Adicional_de_Periculosidade", "Cálculo": { "Parametro": "Percentual_sobre_Salário_Base", "Valor": 0.00, "Fórmula_Sugerida": "Salário_Base * 0.30" }, "Memoria_de_Calculo": "Base: Salário Base (sem adicionais). Cálculo: Salário Base * 0.30 (30%). Devido proporcionalmente ao saldo de salário.", "Legislação": "CLT, Art. 193", "Exemplos_Aplicaveis": "Quando o empregado estava exposto a risco (eletricidade, inflamáveis, explosivos).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Adicional_de_Insalubridade", "Cálculo": { "Parametro": "Percentual_sobre_Salário_Mínimo", "Valor": 0.00, "Fórmula_Sugerida": "Salário_Mínimo * (0.10, 0.20 ou 0.40)" }, "Memoria_de_Calculo": "Base: Salário Mínimo Vigente. Cálculo: Salário Mínimo * [Grau de Insalubridade (10%, 20% ou 40%)]. Devido proporcionalmente ao saldo de salário.", "Legislação": "CLT, Art. 192", "Exemplos_Aplicaveis": "Quando o empregado estava exposto a agentes nocivos à saúde em grau Mínimo, Médio ou Máximo.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Adicional_por_Tempo_de_Serviço_(Biênio, Triênio, Quinquênio)", "Cálculo": { "Parametro": "Anos_Completos_e_Percentual_Aplicável", "Valor": 0.00, "Fórmula_Sugerida": "Percentual_sobre_Salário_Base * N_Períodos_Completos" }, "Memoria_de_Calculo": "Base: Salário Base. Cálculo: (Percentual por Período) * [Número de Períodos Completos]. Devido proporcionalmente ao saldo de salário.", "Legislação": "Convenção/Acordo_Coletivo_ou_Lei_Estadual/Municipal", "Exemplos_Aplicaveis": "Pagamento de percentual progressivo por tempo de serviço, conforme previsto em norma coletiva. (Inclui Biênio, Triênio, Quadriênio, etc.).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Saldo_Banco_de_Horas_Não_Compensado", "Cálculo": { "Parametro": "Total_Horas_Credoras_no_Banco", "Valor": 0.00, "Fórmula_Sugerida": "Valor_Hora * Saldo_Banco_de_Horas" }, "Memoria_de_Calculo": "Base: Valor da Hora Extra. Cálculo: [Valor da Hora Extra] multiplicado pelo Saldo de Horas Credoras (a favor do empregado).", "Legislação": "CLT, Art. 59, §3º", "Exemplos_Aplicaveis": "Horas positivas no banco de horas, pagas como extra na rescisão.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Multa_FGTS_20_Por_Cento_(Acordo_Mútuo)", "Cálculo": { "Parametro": "Saldo_do_FGTS_na_Rescisão", "Valor": 0.00, "Fórmula_Sugerida": "Saldo_FGTS * 0.20" }, "Memoria_de_Calculo": "Base: Saldo total dos depósitos de FGTS na conta. Cálculo: Saldo de FGTS * 0.20 (20%). Aplicável apenas na rescisão por acordo mútuo.", "Legislação": "CLT, Art. 484-A", "Exemplos_Aplicaveis": "Rescisão por acordo entre empregado e empregador (demissão consensual).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Diárias_para_Viagem_Excedentes_a_50%", "Cálculo": { "Parametro": "Valor_Total_Diárias", "Valor": 0.00, "Fórmula_Sugerida": "Diárias_que_excedem_50%_do_salário_mensal" }, "Memoria_de_Calculo": "Base: Salário Base Mensal. Cálculo: Valor das diárias de viagem que ultrapassam 50% do Salário Base. Este valor passa a ter natureza salarial.", "Legislação": "CLT, Art. 457, §2º", "Exemplos_Aplicaveis": "Diárias que, por seu valor excessivo, adquirem natureza salarial e devem integrar o cálculo rescisório.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Gorjetas_(Apuradas_e_Registradas)", "Cálculo": { "Parametro": "Média_das_Gorjetas_no_Contrato", "Valor": 0.00, "Fórmula_Sugerida": "Integram_a_base_de_cálculo_das_verbas_rescisórias" }, "Memoria_de_Calculo": "Base: Média dos valores de gorjeta. Cálculo: Média do valor das gorjetas sobre o período de apuração. Este valor integra a base de cálculo.", "Legislação": "CLT, Art. 457, §3º", "Exemplos_Aplicaveis": "Gorjetas que integravam a remuneração média e precisam ser refletidas nas verbas rescisórias.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Adicional_Noturno_Devido", "Cálculo": { "Parametro": "Total_Adicional_Noturno_Pendentes", "Valor": 0.00, "Fórmula_Sugerida": "Soma_do_Adicional_Noturno_devido" }, "Memoria_de_Calculo": "Base: Horas noturnas pendentes. Cálculo: Soma do valor do adicional noturno devido, calculado sobre as horas trabalhadas entre 22h e 5h.", "Legislação": "CLT, Art. 73", "Exemplos_Aplicaveis": "Horas trabalhadas no período noturno e não pagas.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Salário_Família_Proporcional", "Cálculo": { "Parametro": "Dias_Trabalhados_no_Mês", "Valor": 0.00, "Fórmula_Sugerida": "(Valor_Benefício / 30) * Dias_Trabalhados" }, "Memoria_de_Calculo": "Base: Valor do Salário-Família. Cálculo: (Valor Benefício / 30) * [Dias Trabalhados no Mês da Rescisão].", "Legislação": "Lei 8.213/91", "Exemplos_Aplicaveis": "Pagamento proporcional no mês de rescisão.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Indenização_Adicional_(Lei_6.708/79)", "Cálculo": { "Parametro": "Aplicável_se_Dispensa_Próximo_Data_Base", "Valor": 0.00, "Fórmula_Sugerida": "Geralmente_Equivalente_a_Um_Salário" }, "Memoria_de_Calculo": "Base: Salário Base. Cálculo: Geralmente equivalente a 1 Salário Base. Aplicável se a dispensa sem justa causa ocorrer nos 30 dias que antecedem a data base.", "Legislação": "Lei 6.708/79 (Verificar CCT)", "Exemplos_Aplicaveis": "Dispensa nos 30 dias que antecedem a data base de correção salarial.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Indenização_Art_479_CLT_(Prazo_Determinado)", "Cálculo": { "Parametro": "Dias_Faltantes_para_Fim_do_Contrato", "Valor": 0.00, "Fórmula_Sugerida": "Metade_da_Remuneração_a_que_teria_direito" }, "Memoria_de_Calculo": "Base: Remuneração restante até o fim do contrato. Cálculo: Metade da remuneração que o empregado teria direito até o fim do contrato por prazo determinado.", "Legislação": "CLT, Art. 479", "Exemplos_Aplicaveis": "Contrato por prazo determinado (ex: experiência) rescindido antecipadamente e sem justa causa pelo empregador.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Indenização_por_Dispensa_Indireta", "Cálculo": { "Parametro": "Decisão_Judicial_ou_Acordo", "Valor": 0.00, "Fórmula_Sugerida": "Valor_Definido_em_Sentença_ou_Acordo" }, "Memoria_de_Calculo": "Base: Remuneração Devida. Cálculo: Conforme decisão judicial ou acordo. Verbas equivalentes à demissão sem justa causa.", "Legislação": "CLT, Art. 483", "Exemplos_Aplicaveis": "Empregado demite o empregador por falta grave (resulta em verbas de demissão sem justa causa).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Multa_Art_477_CLT_(Atraso_na_Quitação)", "Cálculo": { "Parametro": "Aplicável_se_Pagamento_Atrasado", "Valor": 0.00, "Fórmula_Sugerida": "Salário_Base" }, "Memoria_de_Calculo": "Base: Salário Base Mensal. Cálculo: Salário Base Integral. Aplicável se as verbas rescisórias não forem pagas no prazo legal (10 dias após o término do contrato).", "Legislação": "CLT, Art. 477, §8º", "Exemplos_Aplicaveis": "**Verba de Irregularidade** - Atraso no pagamento da rescisão.", "Natureza_da_Verba": "Irregularidade_Contratual" },
+            { "Provento": "Quebra_de_Caixa_Devida", "Cálculo": { "Parametro": "Valor_mensal_conforme_CCT", "Valor": 0.00, "Fórmula_Sugerida": "(Valor_Mensal_CCT / 30) * Dias_Trabalhados" }, "Memoria_de_Calculo": "Base: Valor estabelecido em norma coletiva ou contrato. Cálculo: Pagamento proporcional ao Saldo de Salário, caso o empregado tenha exercido a função no mês da rescisão. **OBSERVAR NORMA DO SINDICATO/CCT**.", "Legislação": "Norma Coletiva (CCT/ACT) ou Contrato", "Exemplos_Aplicaveis": "Pagamento proporcional no mês da rescisão para empregados que lidam com numerário e têm a verba prevista em CCT.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Auxílio_Alimentação_ou_Refeição_Devido", "Cálculo": { "Parametro": "Valores_pendentes_não_compensados", "Valor": 0.00, "Fórmula_Sugerida": "Soma_dos_valores_pendentes_conforme_CCT" }, "Memoria_de_Calculo": "Base: Valor do benefício estabelecido em norma coletiva. Cálculo: Pagamento dos valores de Auxílio Alimentação/Refeição devidos no mês da rescisão e não fornecidos/pagos. **OBSERVAR NORMA DO SINDICATO/CCT**.", "Legislação": "Norma Coletiva (CCT/ACT) ou Lei 6.321/76", "Exemplos_Aplicaveis": "Valores pendentes de pagamento ou fornecimento no período trabalhado do mês da rescisão. Geralmente verba indenizatória.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Auxílio_Creche_ou_Babá_Indenizado", "Cálculo": { "Parametro": "Valores_pendentes_não_compensados_CCT", "Valor": 0.00, "Fórmula_Sugerida": "Valor_mensal_ou_proporcional_conforme_CCT" }, "Memoria_de_Calculo": "Base: Valor e critérios estabelecidos em norma coletiva. Cálculo: Valores devidos e não pagos/indenizados até a data da rescisão. **OBSERVAR NORMA DO SINDICATO/CCT**.", "Legislação": "Norma Coletiva (CCT/ACT) ou CLT, Art. 389, §1º", "Exemplos_Aplicaveis": "Pagamento de valores devidos conforme as regras da CCT ou acordo (geralmente com natureza indenizatória).", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Auxílio_Funeral_Devido", "Cálculo": { "Parametro": "Valor_total_da_indenização_CCT", "Valor": 0.00, "Fórmula_Sugerida": "Valor_Fixo_Definido_na_CCT_em_caso_de_óbito" }, "Memoria_de_Calculo": "Base: Valor fixo ou critérios definidos em norma coletiva. Cálculo: Indenização devida aos dependentes em caso de óbito do empregado, conforme as regras da CCT. **OBSERVAR NORMA DO SINDICATO/CCT**.", "Legislação": "Norma Coletiva (CCT/ACT)", "Exemplos_Aplicaveis": "Indenização paga aos dependentes em caso de falecimento do empregado.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Biênio_(Adicional_por_Tempo_de_Serviço)", "Cálculo": { "Parametro": "Percentual_sobre_Salário_Base_por_Biênio", "Valor": 0.00, "Fórmula_Sugerida": "Percentual_CCT * N_Biênios" }, "Memoria_de_Calculo": "Base: Salário Base. Cálculo: (Percentual por Biênio) * [Número de Biênios Completos]. Devido proporcionalmente no Saldo de Salário e integrando a Remuneração Média. **OBSERVAR NORMA DO SINDICATO/CCT**.", "Legislação": "Norma Coletiva (CCT/ACT)", "Exemplos_Aplicaveis": "Pagamento de adicional por cada período de 2 anos completos de serviço, se previsto em CCT.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Triênio_(Adicional_por_Tempo_de_Serviço)", "Cálculo": { "Parametro": "Percentual_sobre_Salário_Base_por_Triênio", "Valor": 0.00, "Fórmula_Sugerida": "Percentual_CCT * N_Triênios" }, "Memoria_de_Calculo": "Base: Salário Base. Cálculo: (Percentual por Triênio) * [Número de Triênios Completos]. Devido proporcionalmente no Saldo de Salário e integrando a Remuneração Média. **OBSERVAR NORMA DO SINDICATO/CCT**.", "Legislação": "Norma Coletiva (CCT/ACT)", "Exemplos_Aplicaveis": "Pagamento de adicional por cada período de 3 anos completos de serviço, se previsto em CCT.", "Natureza_da_Verba": "Normal" },
+            { "Provento": "Quadriênio_(Adicional_por_Tempo_de_Serviço)", "Cálculo": { "Parametro": "Percentual_sobre_Salário_Base_por_Quadriênio", "Valor": 0.00, "Fórmula_Sugerida": "Percentual_CCT * N_Quadriênios" }, "Memoria_de_Calculo": "Base: Salário Base. Cálculo: (Percentual por Quadriênio) * [Número de Quadriênios Completos]. Devido proporcionalmente no Saldo de Salário e integrando a Remuneração Média. **OBSERVAR NORMA DO SINDICATO/CCT**.", "Legislação": "Norma Coletiva (CCT/ACT)", "Exemplos_Aplicaveis": "Pagamento de adicional por cada período de 4 anos completos de serviço, se previsto em CCT.", "Natureza_da_Verba": "Normal" }
+        ];
+
+        const descontosData = [
+            { "Desconto": "Aviso_Prévio_Indenizado_pelo_Empregado", "Cálculo": { "Parametro": "Dias_de_Aviso_a_Descontar", "Valor": 0.00, "Fórmula_Sugerida": "Um_Mês_de_Salário_Base" }, "Memoria_de_Calculo": "Base: Salário Base Corrigido. Cálculo: O valor de 1 Salário Base (equivalente a 30 dias) é descontado quando o empregado pede demissão e não cumpre o aviso.", "Legislação": "CLT, Art. 487, §2º", "Exemplos_Aplicaveis": "Empregado pede demissão e não cumpre o aviso prévio, indenizando o empregador.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "INSS_Sobre_Remunerações_(Saldo_Salário_e_Variáveis)", "Cálculo": { "Parametro": "Base_de_Cálculo_(Saldo_Salário + Variáveis)", "Valor": 0.00, "Fórmula_Sugerida": "Tabela_INSS_aplicada_sobre_base_tributável_mensal" }, "Memoria_de_Calculo": "Base: Saldo de Salário, Horas Extras, e Adicionais (Periculosidade/Insalubridade/Tempo_de_Serviço/Quebra_de_Caixa/etc.). Cálculo: Aplicação da Tabela Progressiva do INSS sobre a Base de Cálculo Mensal.", "Legislação": "Lei 8.212/91", "Exemplos_Aplicaveis": "Incide sobre Saldo de Salário, Horas Extras, Adicionais (Insalubridade/Periculosidade) e quaisquer diferenças salariais mensais.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "INSS_Sobre_13º_Salário_Proporcional", "Cálculo": { "Parametro": "Base_de_Cálculo_(13º_Proporcional)", "Valor": 0.00, "Fórmula_Sugerida": "Tabela_INSS_aplicada_sobre_base_tributável_do_13º" }, "Memoria_de_Calculo": "Base: Valor do 13º Salário Proporcional. Cálculo: Aplicação da Tabela Progressiva do INSS sobre a Base de Cálculo do 13º (cálculo separado das verbas mensais).", "Legislação": "Lei 8.212/91", "Exemplos_Aplicaveis": "Incide sobre o valor do 13º Salário (integral e/ou proporcional).", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "INSS_Sobre_13º_Salário_Aviso", "Cálculo": { "Parametro": "Base_de_Cálculo_(13º_Aviso)", "Valor": 0.00, "Fórmula_Sugerida": "Tabela_INSS_aplicada_sobre_base_tributável_do_13º_aviso" }, "Memoria_de_Calculo": "Base: 1/12 avos do 13º Salário projetado pelo Aviso Prévio Indenizado. Cálculo: Aplicação da Tabela Progressiva do INSS sobre esta base.", "Legislação": "Lei 8.212/91 e Decreto 3.048/99, Art. 214, § 9º, V, “f”", "Exemplos_Aplicaveis": "Incide sobre a projeção do 13º salário referente ao período do aviso prévio indenizado.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "INSS_Férias_Vencidas_(Indenizadas)", "Cálculo": { "Parametro": "Base_de_Cálculo_(Férias_Indenizadas)", "Valor": 0.00, "Fórmula_Sugerida": "Isento_de_INSS" }, "Memoria_de_Calculo": "O valor é **R$0,00** porque as Férias Vencidas e seu adicional de 1/3, quando pagas na rescisão, **são isentas de INSS**.", "Legislação": "Decreto 3.048/99, Art. 214, § 9º, VI", "Exemplos_Aplicaveis": "Não há incidência de INSS sobre Férias Vencidas (e seu adicional de 1/3) pagas na rescisão.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "INSS_Férias_Vencidas_do_Aviso", "Cálculo": { "Parametro": "Base_de_Cálculo_(Férias_Aviso)", "Valor": 0.00, "Fórmula_Sugerida": "Isento_de_INSS" }, "Memoria_de_Calculo": "O valor é **R$0,00** porque a projeção de Férias e seu adicional de 1/3 referente ao Aviso Prévio indenizado **é isenta de INSS**.", "Legislação": "Decreto 3.048/99, Art. 214, § 9º, VI", "Exemplos_Aplicaveis": "Não há incidência de INSS sobre a projeção de Férias e 1/3 referente ao Aviso Prévio indenizado.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "Imposto_de_Renda_Retido_na_Fonte_(IRRF)", "Cálculo": { "Parametro": "Base_de_Cálculo_(Verbas_Tributáveis)", "Valor": 0.00, "Fórmula_Sugerida": "Tabela_IRRF_aplicada_sobre_base_de_cálculo" }, "Memoria_de_Calculo": "Base: Verbas Remuneratórias e 13º (após deduções do INSS, dependentes e parcela isenta). Cálculo: Aplicação da Tabela Progressiva do IRRF sobre a base líquida.", "Legislação": "Lei 7.713/88", "Exemplos_Aplicaveis": "Incide sobre verbas tributáveis.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "Adiantamentos_e_Vales_(Saldo_Devedor)", "Cálculo": { "Parametro": "Valores_Adiantados_e_Não_Compensados", "Valor": 0.00, "Fórmula_Sugerida": "Soma_de_Vales_e_Adiantamentos" }, "Memoria_de_Calculo": "Base: Total de vales e adiantamentos concedidos. Cálculo: Soma de todos os adiantamentos salariais e vales (transporte, refeição, etc.) que não foram compensados.", "Legislação": "CLT, Art. 462", "Exemplos_Aplicaveis": "Vales salariais, adiantamentos de 13º e outros valores antecipados não compensados.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "Empréstimos_Consignados_e_Outros_Autorizados", "Cálculo": { "Parametro": "Saldo_Devedor_a_ser_descontado", "Valor": 0.00, "Fórmula_Sugerida": "Desconto_permitido_por_lei_ou_contrato" }, "Memoria_de_Calculo": "Base: Saldo devedor. Cálculo: Desconto do saldo de empréstimos consignados ou outros empréstimos, respeitando o limite legal de desconto na rescisão.", "Legislação": "Lei 10.820/03 e CLT, Art. 462", "Exemplos_Aplicaveis": "Parcelas restantes de empréstimos e descontos expressamente autorizados.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "Faltas_e_Atrasos_Injustificados", "Cálculo": { "Parametro": "Qtd_Dias_Faltas_e_Horas_Atrasos", "Valor": 0.00, "Fórmula_Sugerida": "Valor_por_dia_ou_hora_não_trabalhada" }, "Memoria_de_Calculo": "Base: Salário Base. Cálculo: (Salário Base / 30) * [Dias de Falta] e/ou (Valor Hora) * [Horas de Atraso], mais DSR's perdidos.", "Legislação": "CLT, Art. 473", "Exemplos_Aplicaveis": "Desconto dos dias ou horas em que o empregado faltou sem justificativa legal.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "Vale_Transporte_e_Alimentação_Antecipado", "Cálculo": { "Parametro": "Valor_Relativo_aos_Dias_Não_Trabalhados", "Valor": 0.00, "Fórmula_Sugerida": "Valor_Benefício_Proporcional" }, "Memoria_de_Calculo": "Base: Valor do benefício mensal. Cálculo: Valor do benefício antecipado referente aos dias que o empregado não trabalhará após a rescisão.", "Legislação": "Lei 7.418/85 (VT) e Lei 6.321/76 (VA/VR)", "Exemplos_Aplicaveis": "Desconto de vales fornecidos para dias não trabalhados após a rescisão.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "Danos_e_Prejuízos_Causados", "Cálculo": { "Parametro": "Valor_do_Prejuízo_(Com_Dolo_ou_Previsão)", "Valor": 0.00, "Fórmula_Sugerida": "Valor_do_Dano_Causado" }, "Memoria_de_Calculo": "Base: Valor do prejuízo. Cálculo: Valor do prejuízo, descontado apenas se comprovado **dolo** ou se houver **previsão expressa** em contrato para desconto por culpa.", "Legislação": "CLT, Art. 462, §1º", "Exemplos_Aplicaveis": "Dano causado com **dolo** ou com **culpa** se houver **previsão expressa** em contrato.", "Natureza_da_Verba": "Normal" },
+            { "Desconto": "Mensalidades_Sindicais_e_Contribuições", "Cálculo": { "Parametro": "Valores_Devidos_e_Autorizados", "Valor": 0.00, "Fórmula_Sugerida": "Valor_da_Contribuição_Sindical_Devida" }, "Memoria_de_Calculo": "Base: Valor da contribuição sindical/associativa. Cálculo: Valor da contribuição devida, descontado apenas se houver autorização prévia e expressa do empregado.", "Legislação": "CLT, Art. 578 e 579", "Exemplos_Aplicaveis": "Contribuições sindicais ou associativas apenas se houver autorização prévia e expressa do empregado.", "Natureza_da_Verba": "Normal" }
+        ];
+
+        function createVerbaCard(verba, type) {
+            const containerId = type === 'provento' ? 'proventos-container' : 'descontos-container';
+            const container = document.getElementById(containerId);
+
+            const verbaName = type === 'provento' ? verba.Provento : verba.Desconto;
+
+            const card = document.createElement('div');
+            card.className = 'verba-card';
+
+            let content = `<h5>${verbaName}</h5>`;
+            content += '<ul>';
+            content += `<li><span class="field-name">Objetivo:</span> <span class="field-desc">${verba.Memoria_de_Calculo}</span></li>`;
+            content += `<li><span class="field-name">Legislação:</span> <span class="field-desc"><code>${verba.Legislação}</code></span></li>`;
+            content += `<li><span class="field-name">Exemplos de Aplicação:</span> <span class="field-desc">${verba.Exemplos_Aplicaveis}</span></li>`;
+            content += '</ul>';
+
+            card.innerHTML = content;
+            container.appendChild(card);
+        }
+
+        window.onload = function () {
+            // Gerar cards de detalhamento
+            proventosData.forEach((verba) => createVerbaCard(verba, 'provento'));
+            descontosData.forEach((verba) => createVerbaCard(verba, 'desconto'));
+
+            // Popular os blocos de JSON completos para cópia
+            const proventosPre = document.getElementById('proventos-json-block');
+            proventosPre.appendChild(document.createTextNode(JSON.stringify(proventosData, null, 2)));
+
+            const descontosPre = document.getElementById('descontos-json-block');
+            descontosPre.appendChild(document.createTextNode(JSON.stringify(descontosData, null, 2)));
+
+            // Popular a estrutura JSON final completa
+            const fullJson = {
+                "Verbas_Rescisorias": {
+                    "Remuneracao": proventosData,
+                    "Descontos": descontosData
+                }
+            };
+            const fullJsonPre = document.getElementById('full-json-structure');
+            fullJsonPre.appendChild(document.createTextNode(JSON.stringify(fullJson, null, 2)));
+        };
+
+        function copyContent(elementId) {
+            const preElement = document.getElementById(elementId);
+            const button = preElement.querySelector('.copy-btn');
+
+            const clone = preElement.cloneNode(true);
+            const buttonClone = clone.querySelector('.copy-btn');
+            if (buttonClone) {
+                clone.removeChild(buttonClone);
+            }
+            const textToCopy = clone.textContent || clone.innerText;
+
+            navigator.clipboard.writeText(textToCopy.trim()).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copiado!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Falha ao copiar: ', err);
+                alert('Erro ao copiar. Tente manualmente.');
+            });
+        }
+    </script>
+</body>
+
+</html>

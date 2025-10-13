@@ -14,7 +14,6 @@ import { extractValueFromPath } from '@/utils/supabaseDataExtraction';
 import CalculationWebhookSender from '@/components/calculations/CalculationWebhookSender';
 import { Badge } from '@/components/ui/badge';
 
-// Definindo os possíveis status de um cálculo
 type CalculationStatus = 'idle' | 'sending' | 'pending_response' | 'completed' | 'reprocessing';
 
 interface Calculation {
@@ -22,7 +21,7 @@ interface Calculation {
   nome_funcionario: string;
   inicio_contrato: string;
   fim_contrato: string;
-  resposta_ai: any | null; // Changed from string to any to reflect JSONB type
+  resposta_ai: any | null;
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
   tbl_ai_prompt_templates: {
@@ -39,8 +38,8 @@ interface Calculation {
   [key: string]: any;
 }
 
-const AUTO_REFRESH_DURATION = 2 * 60 * 1000; // 2 minutos em milissegundos
-const PROCESS_WAIT_DURATION = 1 * 60 * 1000; // 1 minuto em milissegundos
+const AUTO_REFRESH_DURATION = 2 * 60 * 1000;
+const PROCESS_WAIT_DURATION = 1 * 60 * 1000;
 
 const formatCountdown = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -55,11 +54,8 @@ const CalculationListPage = () => {
   const [isSendingWebhook, setIsSendingWebhook] = useState<string | null>(null);
   const [isWebhookSelectionOpen, setIsWebhookSelectionOpen] = useState(false);
   const [currentCalculationIdForWebhook, setCurrentCalculationIdForWebhook] = useState<string | null>(null);
-
-  // 🛑 CORREÇÃO APLICADA: Inicializando como estado com new Map()
   const [countdownTimers, setCountdownTimers] = useState<Map<string, number>>(new Map());
-
-  const [isReprocessing] = useState<string | null>(null); // 'setIsReprocessing' removido pois não é utilizado neste arquivo
+  const [isReprocessing] = useState<string | null>(null);
 
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const intervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -115,17 +111,14 @@ const CalculationListPage = () => {
       showError('Erro ao carregar cálculos: ' + error.message);
       console.error('Error fetching calculations:', error);
     } else {
-      const initialCalculations: Calculation[] = (data as unknown as Calculation[] || []).map(calc => {
-        return {
-          ...calc,
-          status: calc.resposta_ai ? 'completed' : 'idle',
-        };
-      });
+      const initialCalculations: Calculation[] = (data as unknown as Calculation[] || []).map(calc => ({
+        ...calc,
+        status: calc.resposta_ai ? 'completed' : 'idle',
+      }));
       setCalculations(initialCalculations);
     }
     setLoading(false);
   };
-
 
   const handleDeleteCalculation = async (id: string) => {
     const { error } = await supabase.from('tbl_calculos').delete().eq('id', id);
@@ -140,7 +133,6 @@ const CalculationListPage = () => {
 
   const handleProcessWait = (calculationId: string) => {
     console.log(`[CalculationListPage] Iniciando espera de 1 minuto para o cálculo ID: ${calculationId}`);
-
     updateCalculationStatus(calculationId, 'pending_response');
     showSuccess('Processamento iniciado. A página será atualizada em 1 minuto.');
 
@@ -157,7 +149,6 @@ const CalculationListPage = () => {
       setCountdownTimers(prev => {
         const newTimers = new Map(prev);
         const currentSeconds = newTimers.get(calculationId);
-
         if (currentSeconds !== undefined && currentSeconds > 1) {
           newTimers.set(calculationId, currentSeconds - 1);
           return newTimers;
@@ -172,7 +163,6 @@ const CalculationListPage = () => {
     intervalsRef.current.set(calculationId, intervalId);
   };
 
-
   const handleOpenWebhookSelection = (calculationId: string) => {
     console.log(`[CalculationListPage] Abrindo seleção de webhook para cálculo ID: ${calculationId}`);
     setCurrentCalculationIdForWebhook(calculationId);
@@ -181,7 +171,6 @@ const CalculationListPage = () => {
 
   const handleSendToWebhook = async (calculationId: string, webhookConfigIds: string[]) => {
     console.log(`[CalculationListPage] handleSendToWebhook called for calculationId: ${calculationId}, webhookConfigIds:`, webhookConfigIds);
-
     if (!user) {
       showError('Usuário não autenticado.');
       return;
@@ -198,85 +187,50 @@ const CalculationListPage = () => {
         .in('id', webhookConfigIds);
 
       if (webhookError) {
-        showError('Erro ao buscar configurações de webhook: ' + webhookError.message);
-        console.error('[Webhook Sender] Erro ao buscar configurações de webhook:', webhookError);
-        updateCalculationStatus(calculationId, 'idle');
-        setIsSendingWebhook(null);
-        return;
+        throw new Error('Erro ao buscar configurações de webhook: ' + webhookError.message);
       }
 
       if (!webhookConfigs || webhookConfigs.length === 0) {
-        showError('Nenhum webhook selecionado ou configurado encontrado.');
-        console.warn('[Webhook Sender] Nenhum webhook selecionado ou configurado encontrado.');
-        updateCalculationStatus(calculationId, 'idle');
-        setIsSendingWebhook(null);
-        return;
+        throw new Error('Nenhum webhook selecionado ou configurado encontrado.');
       }
 
       let sentCount = 0;
       for (const config of webhookConfigs) {
-        let selectParts: Set<string> = new Set(['id']);
-        let clientSelectParts: Set<string> = new Set();
-        let sindicatoSelectParts: Set<string> = new Set();
-        let aiTemplateSelectParts: Set<string> = new Set();
-        let proventosSelectParts: Set<string> = new Set();
-        let descontosSelectParts: Set<string> = new Set();
+        const selectParts = new Set<string>(['id']);
+        const clientSelectParts = new Set<string>();
+        const sindicatoSelectParts = new Set<string>();
+        const aiTemplateSelectParts = new Set<string>();
+        const proventosSelectParts = new Set<string>();
+        const descontosSelectParts = new Set<string>();
 
         config.selected_fields.forEach((fieldKey: string) => {
           const fieldDef = allAvailableFieldsDefinition.find(f => f.key === fieldKey);
           if (fieldDef) {
-            if (fieldDef.sourceTable === 'tbl_calculos') {
-              selectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_clientes') {
-              clientSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_sindicatos') {
-              sindicatoSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_ai_prompt_templates') {
-              aiTemplateSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_proventos') {
-              proventosSelectParts.add(fieldDef.baseSupabasePath);
-            } else if (fieldDef.sourceTable === 'tbl_descontos') {
-              descontosSelectParts.add(fieldDef.baseSupabasePath);
+            switch (fieldDef.sourceTable) {
+              case 'tbl_calculos': selectParts.add(fieldDef.baseSupabasePath); break;
+              case 'tbl_clientes': clientSelectParts.add(fieldDef.baseSupabasePath); break;
+              case 'tbl_sindicatos': sindicatoSelectParts.add(fieldDef.baseSupabasePath); break;
+              case 'tbl_ai_prompt_templates': aiTemplateSelectParts.add(fieldDef.baseSupabasePath); break;
+              case 'tbl_proventos': proventosSelectParts.add(fieldDef.baseSupabasePath); break;
+              case 'tbl_descontos': descontosSelectParts.add(fieldDef.baseSupabasePath); break;
             }
           }
         });
 
-        if (clientSelectParts.size > 0) {
-          selectParts.add(`tbl_clientes(${Array.from(clientSelectParts).join(',')})`);
-        }
+        if (clientSelectParts.size > 0) selectParts.add(`tbl_clientes(${Array.from(clientSelectParts).join(',')})`);
+        if (sindicatoSelectParts.size > 0) selectParts.add(`tbl_sindicatos(${Array.from(sindicatoSelectParts).join(',')})`);
+        if (aiTemplateSelectParts.size > 0) selectParts.add(`tbl_ai_prompt_templates(${Array.from(aiTemplateSelectParts).join(',')})`);
+        if (proventosSelectParts.size > 0) selectParts.add(`tbl_proventos(${Array.from(proventosSelectParts).join(',')})`);
+        if (descontosSelectParts.size > 0) selectParts.add(`tbl_descontos(${Array.from(descontosSelectParts).join(',')})`);
 
-        if (sindicatoSelectParts.size > 0) {
-          let sindicatoPath = `tbl_sindicatos(${Array.from(sindicatoSelectParts).join(',')})`;
-          selectParts.add(sindicatoPath);
-        }
-
-        if (aiTemplateSelectParts.size > 0) {
-          let aiTemplatePath = `tbl_ai_prompt_templates(${Array.from(aiTemplateSelectParts).join(',')})`;
-          selectParts.add(aiTemplatePath);
-        }
-
-        if (proventosSelectParts.size > 0) {
-          selectParts.add(`tbl_proventos(${Array.from(proventosSelectParts).join(',')})`);
-        }
-
-        if (descontosSelectParts.size > 0) {
-          selectParts.add(`tbl_descontos(${Array.from(descontosSelectParts).join(',')})`);
-        }
-
-        const finalSelectString = Array.from(selectParts).join(', ');
         const { data: specificCalculationData, error: fetchError } = await supabase
           .from('tbl_calculos')
-          .select(finalSelectString)
+          .select(Array.from(selectParts).join(', '))
           .eq('id', calculationId)
           .single();
 
-        if (fetchError) {
-          showError(`Erro ao buscar dados do cálculo para webhook: ${fetchError.message}`);
-          continue;
-        }
-
-        if (!specificCalculationData) {
-          showError('Dados do cálculo não encontrados para o webhook.');
+        if (fetchError || !specificCalculationData) {
+          showError(`Erro ao buscar dados do cálculo para webhook: ${fetchError?.message || 'Dados não encontrados'}`);
           continue;
         }
 
@@ -289,31 +243,25 @@ const CalculationListPage = () => {
           }
         });
 
-        const finalPayload = {
-          body: payload
-        };
-
         const response = await fetch(config.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalPayload),
+          body: JSON.stringify({ body: payload }),
         });
 
         if (!response.ok) {
           const errorText = await response.text();
-          showError(`Falha ao enviar para o webhook: ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
+          showError(`Falha ao enviar para ${config.webhook_url}. Status: ${response.status}. Detalhes: ${errorText}`);
         } else {
           sentCount++;
         }
       }
 
       if (sentCount > 0) {
-        showSuccess(`Cálculo enviado para ${sentCount} webhook(s) com sucesso! A página será atualizada em ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
+        showSuccess(`Cálculo enviado para ${sentCount} webhook(s)! Atualizando em ${AUTO_REFRESH_DURATION / 1000 / 60} minuto(s).`);
         updateCalculationStatus(calculationId, 'pending_response');
 
-        const timeoutId = setTimeout(() => {
-          window.location.reload();
-        }, AUTO_REFRESH_DURATION);
+        const timeoutId = setTimeout(() => window.location.reload(), AUTO_REFRESH_DURATION);
         timeoutsRef.current.set(calculationId, timeoutId);
 
         const initialSeconds = AUTO_REFRESH_DURATION / 1000;
@@ -323,7 +271,6 @@ const CalculationListPage = () => {
           setCountdownTimers(prev => {
             const newTimers = new Map(prev);
             const currentSeconds = newTimers.get(calculationId);
-
             if (currentSeconds !== undefined && currentSeconds > 1) {
               newTimers.set(calculationId, currentSeconds - 1);
               return newTimers;
@@ -336,21 +283,17 @@ const CalculationListPage = () => {
           });
         }, 1000);
         intervalsRef.current.set(calculationId, intervalId);
-
       } else {
-        showError('Nenhum webhook foi enviado com sucesso.');
-        updateCalculationStatus(calculationId, 'idle');
+        throw new Error('Nenhum webhook foi enviado com sucesso.');
       }
-
     } catch (error: any) {
-      showError('Erro inesperado ao enviar cálculo para webhook: ' + error.message);
+      showError('Erro inesperado: ' + error.message);
       console.error('[Webhook Sender] Erro inesperado:', error);
       updateCalculationStatus(calculationId, 'idle');
     } finally {
       setIsSendingWebhook(null);
     }
   };
-
 
   return (
     <MainLayout>
@@ -377,72 +320,40 @@ const CalculationListPage = () => {
               const isProcessingAny = isSendingWebhook === calculation.id || isReprocessing === calculation.id || currentStatus === 'pending_response';
 
               return (
-                <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors">
+                <Card key={calculation.id} className="bg-gray-900 border-gray-700 text-white hover:border-orange-500 transition-colors flex flex-col justify-between">
                   <CardHeader>
                     <CardTitle className="text-xl text-orange-500">{calculation.nome_funcionario}</CardTitle>
                     <div className="flex items-center justify-between mb-2">
-
-                      {currentStatus === 'sending' && (
-                        <Badge variant="secondary" className="bg-yellow-600 text-white flex items-center">
-                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Enviando...
-                        </Badge>
-                      )}
-
-                      {currentStatus === 'pending_response' && (
-                        <Badge variant="secondary" className="bg-blue-600 text-white flex items-center">
-                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                          Aguardando Resposta...
-                          {remainingSeconds !== undefined && (
-                            <span className="ml-2 font-mono">({formatCountdown(remainingSeconds)})</span>
-                          )}
-                        </Badge>
-                      )}
-
-                      {currentStatus === 'reprocessing' && (
-                        <Badge variant="secondary" className="bg-purple-600 text-white flex items-center">
-                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Reprocessando...
-                        </Badge>
-                      )}
-
-                      {currentStatus === 'completed' && (
-                        <Badge variant="secondary" className="bg-green-600 text-white flex items-center">
-                          <CheckCircle2 className="h-3 w-3 mr-1" /> Concluído
-                        </Badge>
-                      )}
-
-
+                      {currentStatus === 'sending' && (<Badge variant="secondary" className="bg-yellow-600 text-white flex items-center"><RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Enviando...</Badge>)}
+                      {currentStatus === 'pending_response' && (<Badge variant="secondary" className="bg-blue-600 text-white flex items-center"><RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Aguardando... {remainingSeconds !== undefined && <span className="ml-2 font-mono">({formatCountdown(remainingSeconds)})</span>}</Badge>)}
+                      {currentStatus === 'reprocessing' && (<Badge variant="secondary" className="bg-purple-600 text-white flex items-center"><RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Reprocessando...</Badge>)}
+                      {currentStatus === 'completed' && (<Badge variant="secondary" className="bg-green-600 text-white flex items-center"><CheckCircle2 className="h-3 w-3 mr-1" /> Concluído</Badge>)}
                       {currentStatus !== 'sending' && currentStatus !== 'completed' && currentStatus !== 'pending_response' && currentStatus !== 'reprocessing' && !hasResult && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-gray-700 text-white hover:bg-gray-600"
-                          onClick={() => handleProcessWait(calculation.id)}
-                          disabled={isProcessingAny}
-                        >
-                          Processar
-                        </Button>
+                        <Button variant="outline" size="sm" className="bg-gray-700 text-white hover:bg-gray-600" onClick={() => handleProcessWait(calculation.id)} disabled={isProcessingAny}>1 Min Processar</Button>
                       )}
                     </div>
                     <p className="text-sm text-gray-400">Cliente: {calculation.tbl_clientes?.nome || 'N/A'}</p>
-                    {calculation.tbl_ai_prompt_templates?.title && (
-                      <p className="text-sm text-gray-400">Modelo IA: {calculation.tbl_ai_prompt_templates.title}</p>
-                    )}
+                    {calculation.tbl_ai_prompt_templates?.title && (<p className="text-sm text-gray-400">Modelo IA: {calculation.tbl_ai_prompt_templates.title}</p>)}
                     <div className="text-xs text-gray-500 mt-2 space-y-1">
                       <p>Início Contrato: {format(new Date(calculation.inicio_contrato), 'dd/MM/yyyy')}</p>
                       <p>Fim Contrato: {format(new Date(calculation.fim_contrato), 'dd/MM/yyyy')}</p>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex justify-end space-x-2 w-full">
-                    <Button asChild variant="outline" size="sm" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
-                      <Link to={`/calculations/${calculation.id}`}>
-                        <Edit className="h-4 w-4" />
+
+                  {/* ########## ÁREA DA CORREÇÃO DEFINITIVA ########## */}
+                  <CardContent className="flex flex-col gap-2 pt-4 sm:flex-row sm:flex-wrap sm:justify-end w-full">
+                    <Button asChild variant="outline" size="sm" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white flex-grow sm:flex-grow-0">
+                      <Link to={`/calculations/${calculation.id}`} className="flex items-center justify-center">
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar Cálculo
                       </Link>
                     </Button>
 
                     {hasResult && (
-                      <Button asChild variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
-                        <Link to={`/calculations/${calculation.id}/result`}>
-                          <Eye className="h-4 w-4" />
+                      <Button asChild variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white flex-grow sm:flex-grow-0">
+                        <Link to={`/calculations/${calculation.id}/result`} className="flex items-center justify-center">
+                          <Eye className="mr-2 h-4 w-4" />
+                          Consultar Resultado
                         </Link>
                       </Button>
                     )}
@@ -450,17 +361,19 @@ const CalculationListPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
+                      className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white flex-grow sm:flex-grow-0"
                       onClick={() => handleOpenWebhookSelection(calculation.id)}
                       disabled={isProcessingAny}
                     >
-                      {isSendingWebhook === calculation.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      <Send className="mr-2 h-4 w-4" />
+                      {isSendingWebhook === calculation.id ? 'Enviando...' : 'Enviar Cálculo'}
                     </Button>
 
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
-                          <Trash2 className="h-4 w-4" />
+                        <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700 flex-grow sm:flex-grow-0">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Excluir
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent className="bg-gray-900 border-red-600 text-white">
