@@ -4,7 +4,7 @@ import { MadeWithDyad } from '@/components/made-with-dyad';
 import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import Sidebar from './Sidebar'; // Importar o novo Sidebar
+import Sidebar from './Sidebar'; // Importar o Sidebar corrigido
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -30,25 +30,23 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <span className="sr-only">Abrir menu</span>
             </Button>
           </SheetTrigger>
+          {/* CORREÇÃO AQUI: */}
+          {/* - p-0: Removemos o padding interno do SheetContent. */}
+          {/* - O Sidebar é o ÚNICO filho, permitindo que ele controle todo o espaço. */}
           <SheetContent side="left" className="bg-gray-900 border-r border-orange-500 text-white p-0 w-64">
-            <div className="p-4">
-              <h2 className="text-2xl font-bold text-orange-500 mb-6">Menu</h2>
-            </div>
             <Sidebar isMobile onLinkClick={handleMobileLinkClick} />
           </SheetContent>
         </Sheet>
       </header>
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden"> {/* Adicionado overflow-hidden para evitar scroll duplo */}
         {/* Desktop Sidebar */}
         <aside className="hidden md:flex w-64 flex-shrink-0">
           <Sidebar />
         </aside>
 
         {/* Main Content */}
-        {/* --- MUDANÇA: Ajustado o padding para ser responsivo --- */}
-        {/* Remove o padding horizontal em telas pequenas e o adiciona em telas maiores */}
-        <main className="flex-grow overflow-auto py-6 md:px-6">
+        <main className="flex-grow overflow-auto p-6"> {/* Ajustado padding */}
           {children}
         </main>
       </div>
