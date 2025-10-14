@@ -278,14 +278,14 @@ const CalculationFormPage = () => {
   if (loading) {
     return (
       <MainLayout>
-        <div className="container mx-auto py-8 text-center text-gray-400">Carregando formulário de cálculo...</div>
+        <div className="container w-full text-center text-gray-400">Carregando formulário de cálculo...</div>
       </MainLayout>
     );
   }
 
   return (
     <MainLayout>
-      <div className="container mx-auto py-8">
+      <div className="container w-full">
         <h1 className="text-4xl font-bold text-orange-500 mb-8 text-center">
           {isEditing ? 'Editar Cálculo' : 'Novo Cálculo de Rescisão'}
         </h1>

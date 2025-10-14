@@ -44,7 +44,7 @@ const VerbaCard: React.FC<{ item: any; type: 'provento' | 'desconto' }> = ({ ite
   if (!isPositive) return null;
 
   return (
-    <Card className="bg-gray-800 border-gray-700 mb-4">
+    <Card className="w-full bg-gray-800 border-gray-700 mb-4">
       <CardHeader className="p-4 sm:p-6 pb-2">
         {/* Container do título e valor agora é responsivo */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">

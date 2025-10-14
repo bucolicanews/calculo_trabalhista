@@ -138,13 +138,13 @@ const CalculationResultPage: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto py-8 w-full">
-        <div className="mb-6 px-4 sm:px-0">
+      <div className="container w-full">
+        <div className="mb-0  sm:px-0">
           <Button variant="ghost" onClick={() => navigate('/calculations')} className="text-orange-500 hover:text-orange-600 mb-4 sm:mb-0">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Cálculos
           </Button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 mt-2">
-            <h1 className="text-3xl md:text-4xl font-extrabold text-orange-600 flex-grow text-left">
+            <h1 className="text-2xl md:text-4xl font-extrabold text-orange-600 flex-grow text-left">
               Resultado do Cálculo
             </h1>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
