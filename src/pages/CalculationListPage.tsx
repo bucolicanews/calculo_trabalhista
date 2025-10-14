@@ -341,8 +341,8 @@ const CalculationListPage = () => {
                   </CardHeader>
 
                   {/* ########## ÁREA DA CORREÇÃO DEFINITIVA ########## */}
-                  <CardContent className="flex flex-col gap-2 pt-4 sm:flex-row sm:flex-wrap sm:justify-end w-full">
-                    <Button asChild variant="outline" size="sm" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white flex-grow sm:flex-grow-0">
+                  <CardContent className="flex flex-col sm:flex-row flex-wrap justify-end gap-2 pt-4">
+                    <Button asChild variant="outline" size="sm" className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white sm:flex-1">
                       <Link to={`/calculations/${calculation.id}`} className="flex items-center justify-center">
                         <Edit className="mr-2 h-4 w-4" />
                         Editar Cálculo
@@ -350,7 +350,7 @@ const CalculationListPage = () => {
                     </Button>
 
                     {hasResult && (
-                      <Button asChild variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white flex-grow sm:flex-grow-0">
+                      <Button asChild variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white sm:flex-1">
                         <Link to={`/calculations/${calculation.id}/result`} className="flex items-center justify-center">
                           <Eye className="mr-2 h-4 w-4" />
                           Consultar Resultado
@@ -361,7 +361,7 @@ const CalculationListPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white flex-grow sm:flex-grow-0"
+                      className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white sm:flex-1"
                       onClick={() => handleOpenWebhookSelection(calculation.id)}
                       disabled={isProcessingAny}
                     >
@@ -371,7 +371,7 @@ const CalculationListPage = () => {
 
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700 flex-grow sm:flex-grow-0">
+                        <Button variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700 sm:flex-1">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Excluir
                         </Button>
