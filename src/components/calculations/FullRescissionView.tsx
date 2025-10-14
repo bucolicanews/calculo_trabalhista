@@ -47,7 +47,7 @@ export const FullRescissionView: React.FC<FullRescissionViewProps> = ({
     return (
         // --- MUDANÇA: 'p-4' foi trocado por 'py-4' ---
         // Isso remove o padding horizontal (px) e mantém apenas o vertical (py).
-        <div className="py-4 w-full">
+        <div className=" w-full">
             <h1 className="text-3xl font-bold text-center text-orange-500 mb-6 px-4">
                 Demonstrativo Completo da Rescisão
             </h1>
