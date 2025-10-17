@@ -15,7 +15,7 @@ import SindicatoSelectField from '@/components/calculations/SindicatoSelectField
 import AiPromptTemplateSelectField from '@/components/calculations/AiPromptTemplateSelectField';
 import AvisoTypeSelectField from '@/components/calculations/AvisoTypeSelectField';
 import ContractDatesSection from '@/components/calculations/ContractDatesSection';
-import RescissionTypeSelectField from '@/components/calculations/RescissionTypeSelectField'; // FIX 2: Importação adicionada
+import RescissionTypeSelectField from '@/components/calculations/RescissionTypeSelectField';
 
 // Helper Interfaces
 interface Client { id: string; nome: string; }
@@ -238,7 +238,7 @@ const CalculationFormPage: React.FC = () => {
     setCalculation(prev => ({ ...prev, [name]: value }));
   };
 
-  // FIX 1: Ajusta a tipagem para aceitar 'string' no nome do campo, pois o componente filho usa string.
+  // Generic handler for custom date input components that return an ISO string (YYYY-MM-DD)
   const handleDateInputChange = (name: string, dateString: string) => {
     setCalculation(prev => ({ ...prev, [name as keyof Calculation]: dateString }));
   };
@@ -324,17 +324,18 @@ const CalculationFormPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* --- SECTION: IDENTIFICAÇÃO --- */}
+              
+              {/* --- 1. IDENTIFICAÇÃO E MODELOS --- */}
               <div className="space-y-4 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">Identificação</h3>
+                <h3 className="text-lg font-semibold text-gray-300">1. Identificação e Modelos</h3>
                 <ClientSelectField cliente_id={calculation.cliente_id} clients={clients} onValueChange={(v) => handleSelectChange('cliente_id', v)} disabled={loading} />
                 <SindicatoSelectField sindicato_id={calculation.sindicato_id} sindicatos={sindicatos} onValueChange={(v) => handleSelectChange('sindicato_id', v)} disabled={loading} />
                 <AiPromptTemplateSelectField ai_template_id={calculation.ai_template_id} aiTemplates={aiTemplates} onValueChange={(v) => handleSelectChange('ai_template_id', v)} disabled={loading} />
               </div>
 
-              {/* --- SECTION: DADOS DO FUNCIONÁRIO --- */}
+              {/* --- 2. DADOS DO FUNCIONÁRIO --- */}
               <div className="space-y-4 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">Dados do Funcionário</h3>
+                <h3 className="text-lg font-semibold text-gray-300">2. Dados do Funcionário</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div><Label htmlFor="nome_funcionario" className="text-gray-300">Nome Completo</Label><Input id="nome_funcionario" name="nome_funcionario" value={calculation.nome_funcionario} onChange={handleChange} required className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                   <div><Label htmlFor="cpf_funcionario" className="text-gray-300">CPF</Label><Input id="cpf_funcionario" name="cpf_funcionario" value={calculation.cpf_funcionario} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
@@ -343,9 +344,9 @@ const CalculationFormPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* --- SECTION: CONTRATO E RESCISÃO --- */}
+              {/* --- 3. CONTRATO E RESCISÃO --- */}
               <div className="space-y-4 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">Contrato e Rescisão</h3>
+                <h3 className="text-lg font-semibold text-gray-300">3. Contrato e Rescisão</h3>
                 <ContractDatesSection
                   inicio_contrato={calculation.inicio_contrato}
                   fim_contrato={calculation.fim_contrato}
@@ -357,21 +358,21 @@ const CalculationFormPage: React.FC = () => {
                   <RescissionTypeSelectField 
                     tipo_aviso={calculation.tip_recisao} 
                     noticeTypes={rescissionTypes} 
-                    onValueChange={(v: string) => handleSelectChange('tip_recisao', v)} // FIX 3: Tipagem explícita
+                    onValueChange={(v) => handleSelectChange('tip_recisao', v)}
                     disabled={loading} 
                   />
                   <AvisoTypeSelectField 
                     tipo_aviso={calculation.tipo_aviso} 
                     noticeTypes={avisoTypes} 
-                    onValueChange={(v: string) => handleSelectChange('tipo_aviso', v)} // FIX 3: Tipagem explícita
+                    onValueChange={(v) => handleSelectChange('tipo_aviso', v)}
                     disabled={loading} 
                   />
                 </div>
               </div>
               
-              {/* --- SECTION: DADOS FINANCEIROS E SINDICATO --- */}
+              {/* --- 4. DADOS FINANCEIROS E SINDICATO --- */}
               <div className="space-y-4 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">Dados Financeiros e Sindicato</h3>
+                <h3 className="text-lg font-semibold text-gray-300">4. Dados Financeiros e Sindicato</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div><Label htmlFor="salario_trabalhador" className="text-gray-300">Último Salário (R$)</Label><Input id="salario_trabalhador" name="salario_trabalhador" type="number" value={calculation.salario_trabalhador} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                   <div><Label htmlFor="salario_sindicato" className="text-gray-300">Piso Salarial Sindicato (R$)</Label><Input id="salario_sindicato" name="salario_sindicato" type="number" value={calculation.salario_sindicato} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
@@ -382,9 +383,9 @@ const CalculationFormPage: React.FC = () => {
                 <div><Label htmlFor="obs_sindicato" className="text-gray-300">Observações Sindicato</Label><Textarea id="obs_sindicato" name="obs_sindicato" value={calculation.obs_sindicato} onChange={handleChange} rows={3} placeholder="Insira observações específicas da CCT ou dissídio." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
               </div>
               
-              {/* --- SECTION: FLAGS E INFORMAÇÕES ADICIONAIS --- */}
+              {/* --- 5. FLAGS E SITUAÇÕES IRREGULARES --- */}
               <div className="space-y-6 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">Flags e Detalhes Contratuais</h3>
+                <h3 className="text-lg font-semibold text-gray-300">5. Flags e Situações Irregulares</h3>
 
                 {/* Linha 1: Flags Gerais */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -399,13 +400,13 @@ const CalculationFormPage: React.FC = () => {
                   <div className="flex items-center space-x-2"><Checkbox id="caixa" name="caixa" checked={calculation.caixa} onCheckedChange={(c) => handleCheckboxChange('caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="caixa" className="text-gray-300">Função de Caixa?</Label></div>
                   <div className="flex items-center space-x-2"><Checkbox id="quebra_caixa" name="quebra_caixa" checked={calculation.quebra_caixa} onCheckedChange={(c) => handleCheckboxChange('quebra_caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="quebra_caixa" className="text-gray-300">Recebia Quebra de Caixa?</Label></div>
                   <div className="flex items-center space-x-2"><Checkbox id="insalubre" name="insalubre" checked={calculation.insalubre} onCheckedChange={(c) => handleCheckboxChange('insalubre', c as boolean)} className="border border-white/50" /><Label htmlFor="insalubre" className="text-gray-300">Serviço Insalubre?</Label></div>
-                  <div className="flex items-center space-x-2"><Checkbox id="periculosidade" name="periculosidade" checked={calculation.periculosidade} onCheckedChange={(c) => handleCheckboxChange('periculosidade', c as boolean)} className="border border-white/50" /><Label htmlFor="periculosidade" className="text-gray-300">Serviço Periculoso?</Label></div>
+                  <div className="flex items-center space-x-2"><Checkbox id="periculosidade" name="periculosidade" checked={calculation.periculosidade} onCheckedChange={(c) => handleCheckboxChange('periculosidade', c as boolean)} className="border border-white/50" /><Label htmlFor="periculosidade">Serviço Periculoso?</Label></div>
                 </div>
 
                 {/* Linha 3: Retroativos */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="flex items-center space-x-2"><Checkbox id="ferias_retroativas" name="ferias_retroativas" checked={calculation.ferias_retroativas} onCheckedChange={(c) => handleCheckboxChange('ferias_retroativas', c as boolean)} className="border border-white/50" /><Label htmlFor="ferias_retroativas" className="text-gray-300">Férias Retroativas?</Label></div>
-                  <div className="flex items-center space-x-2"><Checkbox id="decimo_terceiro_retroativo" name="decimo_terceiro_retroativo" checked={calculation.decimo_terceiro_retroativo} onCheckedChange={(c) => handleCheckboxChange('decimo_terceiro_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="decimo_terceiro_retroativo" className="text-gray-300">13º Retroativo?</Label></div>
+                  <div className="flex items-center space-x-2"><Checkbox id="decimo_terceiro_retroativo" name="decimo_terceiro_retroativo" checked={calculation.decimo_terceiro_retroativo} onCheckedChange={(c) => handleCheckboxChange('decimo_terceiro_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="decimo_terceiro_retroativo">13º Retroativo?</Label></div>
                   <div className="flex items-center space-x-2"><Checkbox id="he_retroativa" name="he_retroativa" checked={calculation.he_retroativa} onCheckedChange={(c) => handleCheckboxChange('he_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="he_retroativa" className="text-gray-300">HE Retroativa?</Label></div>
                   <div className="flex items-center space-x-2"><Checkbox id="quebra_caixa_retroativo" name="quebra_caixa_retroativo" checked={calculation.quebra_caixa_retroativo} onCheckedChange={(c) => handleCheckboxChange('quebra_caixa_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="quebra_caixa_retroativo" className="text-gray-300">QC Retroativo?</Label></div>
                 </div>
@@ -427,9 +428,9 @@ const CalculationFormPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* --- SECTION: DETALHES DE HORAS/FALTAS --- */}
-              <div className="space-y-4 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">Horas Extras, Feriados e Faltas</h3>
+              {/* --- 6. DETALHES ADICIONAIS E HISTÓRICO --- */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-300">6. Detalhes Adicionais e Histórico</h3>
                 
                 {/* Horas Extras */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -458,12 +459,11 @@ const CalculationFormPage: React.FC = () => {
                   <div><Label htmlFor="qunat_faltas" className="text-gray-300">Qtd. Faltas</Label><Input id="qunat_faltas" name="qunat_faltas" type="number" value={calculation.qunat_faltas} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
                 <div><Label htmlFor="info_faltas" className="text-gray-300">Detalhes Faltas</Label><Textarea id="info_faltas" name="info_faltas" value={calculation.info_faltas} onChange={handleChange} placeholder="Ex: Faltou 5 dias no último mês sem justificativa." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
-              </div>
 
-              {/* --- SECTION: PROVENTOS E DESCONTOS --- */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-300">Proventos e Descontos</h3>
-                
+                {/* Férias e 13º */}
+                <div><Label htmlFor="info_ferias" className="text-gray-300">Detalhes Férias</Label><Textarea id="info_ferias" name="info_ferias" value={calculation.info_ferias} onChange={handleChange} placeholder="Ex: O Funcionário retornou de férias no mês 10/2029 ou Nunca tirou Férias Contrato rescente menos de dois anos." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                <div><Label htmlFor="info_13_salario" className="text-gray-300">Detalhes 13º Salário</Label><Textarea id="info_13_salario" name="info_13_salario" value={calculation.info_13_salario} onChange={handleChange} placeholder="Ex: Recebeu apenas a primeira parcela no último ano." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+
                 {/* Proventos */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex items-center space-x-2"><Checkbox id="n_calcular_proventos" name="n_calcular_proventos" checked={calculation.n_calcular_proventos} onCheckedChange={(c) => handleCheckboxChange('n_calcular_proventos', c as boolean)} className="border border-white/50" /><Label htmlFor="n_calcular_proventos" className="text-gray-300">Não Calcular Proventos?</Label></div>
@@ -477,12 +477,13 @@ const CalculationFormPage: React.FC = () => {
                   <div className="flex items-center space-x-2"><Checkbox id="somente_inss" name="somente_inss" checked={calculation.somente_inss} onCheckedChange={(c) => handleCheckboxChange('somente_inss', c as boolean)} className="border border-white/50" /><Label htmlFor="somente_inss" className="text-gray-300">Calcular Desconto Somente INSS?</Label></div>
                   <div><Label htmlFor="media_descontos" className="text-gray-300">Média de Descontos (R$)</Label><Input id="media_descontos" name="media_descontos" type="number" value={calculation.media_descontos} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
-              </div>
+                {/* Note: info_descontos was removed from the schema, keeping it out of the final layout for cleanliness */}
 
-              {/* --- SECTION: HISTÓRICO --- */}
-              <div>
-                <Label htmlFor="historia" className="text-gray-300">Histórico / Resumo do Caso</Label>
-                <Textarea id="historia" name="historia" value={calculation.historia} onChange={handleChange} rows={5} placeholder="Descreva aqui um resumo completo do caso e outras observações importantes." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
+                {/* Histórico Final */}
+                <div>
+                  <Label htmlFor="historia" className="text-gray-300">Histórico / Resumo do Caso</Label>
+                  <Textarea id="historia" name="historia" value={calculation.historia} onChange={handleChange} rows={5} placeholder="Descreva aqui um resumo completo do caso e outras observações importantes." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
+                </div>
               </div>
 
               <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3">
