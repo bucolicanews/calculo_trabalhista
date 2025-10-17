@@ -7,8 +7,7 @@ interface ContractDatesSectionProps {
   // A data é uma string no formato DD/MM/AAAA.
   inicio_contrato: string;
   fim_contrato: string;
-  // Adicionado o novo campo
-  inicio_contrat_inregular: string;
+  inicio_contrat_inregular: string; // NOVO CAMPO
   // A função de mudança recebe o nome do campo e a string mascarada.
   onDateChange: (name: string, dateString: string) => void;
   disabled: boolean;
@@ -55,7 +54,7 @@ const applyDateMask = (value: string): string => {
 const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
   inicio_contrato,
   fim_contrato,
-  inicio_contrat_inregular, // Desestruturado
+  inicio_contrat_inregular, // NOVO CAMPO
   onDateChange,
   disabled,
 }) => {
@@ -108,7 +107,7 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
         />
       </div>
       
-      {/* --- Início Contrato Irregular (NOVO CAMPO) --- */}
+      {/* --- Início Contrato Irregular (Input Manual com Máscara) --- */}
       <div>
         <Label htmlFor="inicio_contrat_inregular" className="text-gray-300">Início Contrato Irregular (Opcional)</Label>
         <input

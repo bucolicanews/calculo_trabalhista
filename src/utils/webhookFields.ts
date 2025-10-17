@@ -49,11 +49,11 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'calculo_resposta_ai', label: 'Cálculo (Resposta IA)', baseSupabasePath: 'resposta_ai', sourceTable: 'tbl_calculos' },
   { key: 'calculo_ai_template_id', label: 'Cálculo (ID Modelo IA)', baseSupabasePath: 'ai_template_id', sourceTable: 'tbl_calculos' },
   
-  // NOVOS CAMPOS ADICIONADOS
-  { key: 'calculo_quebra_caixa', label: 'Cálculo (Quebra de Caixa)', baseSupabasePath: 'quebra_caixa', sourceTable: 'tbl_calculos' },
-  { key: 'calculo_quebra_caixa_retroativo', label: 'Cálculo (Quebra de Caixa Retroativo)', baseSupabasePath: 'quebra_caixa_retroativo', sourceTable: 'tbl_calculos' },
+  // Novos campos do tbl_calculos
   { key: 'calculo_faltou_todo_aviso', label: 'Cálculo (Faltou Todo Aviso)', baseSupabasePath: 'faltou_todo_aviso', sourceTable: 'tbl_calculos' },
-  // FIM DOS NOVOS CAMPOS
+  { key: 'calculo_quebra_caixa', label: 'Cálculo (Quebra Caixa)', baseSupabasePath: 'quebra_caixa', sourceTable: 'tbl_calculos' },
+  { key: 'calculo_quebra_caixa_retroativo', label: 'Cálculo (Quebra Caixa Retroativo)', baseSupabasePath: 'quebra_caixa_retroativo', sourceTable: 'tbl_calculos' },
+
 
   // tbl_ai_prompt_templates fields (agora acessíveis via tbl_calculos)
   { key: 'ai_template_title', label: 'Modelo IA (Título)', baseSupabasePath: 'title', sourceTable: 'tbl_ai_prompt_templates' },
