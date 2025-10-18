@@ -20,7 +20,6 @@ export interface WebhookFormState {
   selected_fields: string[];
   webhook_url: string;
   title: string;
-  vale_transporte?: string | boolean | null; // Adicionado para resolver o erro TS2339
 }
 
 export const useWebhookManagement = () => {
