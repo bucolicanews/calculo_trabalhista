@@ -53,7 +53,6 @@ export interface CalculationDetails {
   carga_horaria: string | null;
   created_at: string;
   resposta_ai: any | null; // Changed from string to any to reflect JSONB type
-  info_descontos: string | null; // NOVO CAMPO ADICIONADO
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
   tbl_ai_prompt_templates: { 
@@ -84,7 +83,7 @@ interface UseCalculationDetailsResult {
   hasAnyResult: boolean;
 }
 
-export const useCalculationDetails = (calculationId: string | undefined, refreshKey: number = 0): UseCalculationDetailsResult => {
+export const useCalculationDetails = (calculationId: string | undefined): UseCalculationDetailsResult => {
   const { user } = useAuth();
   const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,7 +102,6 @@ export const useCalculationDetails = (calculationId: string | undefined, refresh
         .select(`
           *,
           resposta_ai,
-          info_descontos,
           tbl_clientes(nome),
           tbl_sindicatos(nome),
           tbl_ai_prompt_templates(
@@ -139,7 +137,7 @@ export const useCalculationDetails = (calculationId: string | undefined, refresh
     };
 
     fetchCalculationResult();
-  }, [user, calculationId, refreshKey]); // Adicionado refreshKey como dependência
+  }, [user, calculationId]);
 
   return { calculation, loading, hasAnyResult };
 };

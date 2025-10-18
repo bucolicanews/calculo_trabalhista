@@ -210,7 +210,7 @@ const CalculationFormPage: React.FC = () => {
           sindicato_id: calcData.sindicato_id || '',
           ai_template_id: calcData.ai_template_id || '',
           data_aviso: calcData.data_aviso || '', // NOVO CAMPO
-          info_descontos: calcData.info_descontos || '', // GARANTIR QUE É UMA STRING
+          info_descontos: calcData.info_descontos || '', // NOVO CAMPO
         });
       }
     } catch (error: any) {
@@ -275,17 +275,19 @@ const CalculationFormPage: React.FC = () => {
       qunt_feriados_trabalhados: Number(calculation.qunt_feriados_trabalhados) || 0,
       qunat_faltas: Number(calculation.qunat_faltas) || 0,
 
-      // Handle optional foreign keys and text fields (empty string -> null)
+      // Handle optional foreign keys (empty string -> null)
       sindicato_id: calculation.sindicato_id === '' ? null : calculation.sindicato_id,
       ai_template_id: calculation.ai_template_id === '' ? null : calculation.ai_template_id,
       inicio_contrat_inregular: calculation.inicio_contrat_inregular === '' ? null : calculation.inicio_contrat_inregular,
-      data_aviso: calculation.data_aviso === '' ? null : calculation.data_aviso,
-      info_descontos: calculation.info_descontos === '' ? null : calculation.info_descontos, // GARANTIDO
+      data_aviso: calculation.data_aviso === '' ? null : calculation.data_aviso, // NOVO CAMPO
     };
 
     // Clean up the temporary fields before sending to DB
     // @ts-ignore
     delete calculationData.decimo_terceiro_retroativo;
+    // O campo info_descontos agora é um campo do DB, então não deve ser deletado.
+    // @ts-ignore
+    // delete calculationData.info_descontos; // REMOVIDO
     
     let response;
     if (isEditing) {
