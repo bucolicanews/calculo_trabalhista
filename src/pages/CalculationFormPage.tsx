@@ -285,9 +285,6 @@ const CalculationFormPage: React.FC = () => {
     // Clean up the temporary fields before sending to DB
     // @ts-ignore
     delete calculationData.decimo_terceiro_retroativo;
-    // O campo info_descontos agora é um campo do DB, então não deve ser deletado.
-    // @ts-ignore
-    // delete calculationData.info_descontos; // REMOVIDO
     
     let response;
     if (isEditing) {
