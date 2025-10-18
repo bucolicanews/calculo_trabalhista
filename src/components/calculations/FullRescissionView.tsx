@@ -1,13 +1,10 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import MainLayout from '@/components/layout/MainLayout';
 import { useCalculationDetails, Provento, Desconto } from '@/hooks/useCalculationDetails';
 import CalculationDetailsCard from './CalculationDetailsCard';
-import CalculationResultDisplay from './CalculationResultDisplay'; // Importação corrigida
+import CalculationResultDisplay from './CalculationResultDisplay';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { showError, showSuccess } from '@/utils/toast';
-import { supabase } from '@/integrations/supabase/client';
+import { showError } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
 
 // Define a estrutura de dados necessária para o CalculationDetailsCard
@@ -50,31 +47,13 @@ const FullRescissionView: React.FC = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  const handleGeneratePdf = async () => {
-    if (!calculation || !user) {
-      showError('Dados do cálculo não disponíveis.');
-      return;
-    }
-
-    showSuccess('Iniciando geração do PDF...');
-
-    try {
-      // A função Edge agora retorna o HTML diretamente, e o DownloadPdfButton lida com isso.
-      // Este botão aqui deve ser removido ou ajustado para usar o DownloadPdfButton.
-      // Por enquanto, vamos apenas garantir que o DownloadPdfButton seja usado na UI.
-      showError('Use o botão "Baixar Demonstrativo" na seção de Resultados.');
-      
-    } catch (error: any) {
-      console.error('Erro ao chamar função Edge:', error);
-      showError('Falha na geração do PDF: ' + (error.message || 'Erro desconhecido.'));
-    }
-  };
-
   if (loading) {
+    // Retorna apenas o conteúdo, o layout é fornecido pelo componente pai (CalculationResultPage)
     return <div className="container text-center py-8 text-gray-400">Carregando detalhes do cálculo...</div>;
   }
 
   if (!calculation) {
+    // Retorna apenas o conteúdo, o layout é fornecido pelo componente pai
     return <div className="container text-center py-8 text-red-400">Cálculo não encontrado.</div>;
   }
 
