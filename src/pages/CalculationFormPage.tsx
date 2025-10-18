@@ -4,64 +4,97 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 import ClientSelectField from '@/components/calculations/ClientSelectField';
 import SindicatoSelectField from '@/components/calculations/SindicatoSelectField';
 import AiPromptTemplateSelectField from '@/components/calculations/AiPromptTemplateSelectField';
-import EmployeeDetailsSection from '@/components/calculations/EmployeeDetailsSection';
-import ContractDatesSection from '@/components/calculations/ContractDatesSection';
 import AvisoTypeSelectField from '@/components/calculations/AvisoTypeSelectField';
-import SalaryAndObservationsSection from '@/components/calculations/SalaryAndObservationsSection';
-import AveragesSection from '@/components/calculations/AveragesSection';
-import ContractHistoryAndCTPS from '@/components/calculations/ContractHistoryAndCTPS';
-import { formatCurrencyForDisplay, parseCurrencyToNumber } from '@/utils/formatters';
+import RescissionTypeSelectField from '@/components/calculations/RescissionTypeSelectField';
 
-// --- Tipos e Constantes ---
+// Helper Interfaces
 interface Client { id: string; nome: string; }
 interface Sindicato { id: string; nome: string; }
 interface AiPromptTemplate { id: string; title: string; }
 
-const noticeTypes = [
-    { value: 'rescisao_sem_justa_causa', label: 'Sem Justa Causa' },
-    { value: 'pedido_de_demissao', label: 'Pedido de Demissão' },
-    { value: 'justa_causa', label: 'Justa Causa' },
-    { value: 'acordo_mutuo', label: 'Acordo Mútuo (Art. 484-A)' },
-    { value: 'rescisao_indireta', label: 'Rescisão Indireta' },
-    { value: 'termino_contrato_determinado', label: 'Término Contrato Determinado' },
+// Rescission types list
+const rescissionTypes = [
+  { label: 'Rescisão sem Justa Causa', value: 'rescisao_sem_justa_causa' },
+  { label: 'Rescisão com Justa Causa', value: 'rescisao_com_justa_causa' },
+  { label: 'Pedido de Demissão', value: 'pedido_de_demissao' },
+  { label: 'Rescisão por Acordo Mútuo', value: 'rescisao_acordo_mutuo' },
+  { label: 'Dispensa Indireta', value: 'dispensa_indireta' },
+  { label: 'Término Contrato Prazo Determinado', value: 'termino_prazo_determinado' },
+  { label: 'Encerramento da Empresa', value: 'encerramento_empresa' },
+];
+// Aviso types list
+const avisoTypes = [
+  { label: 'Aviso Prévio Trabalhado', value: 'aviso_previo_trabalhado' },
+  { label: 'Aviso Prévio Indenizado', value: 'aviso_previo_indenizado' },
+  { label: 'Sem Aviso Prévio', value: 'sem_aviso_previo' },
 ];
 
+// Initial State based on the full schema (using JS-friendly names)
 const initialCalculationState = {
+    // IDs
     cliente_id: '',
     sindicato_id: '',
     ai_template_id: '',
+
+    // Employee Info
     nome_funcionario: '',
     cpf_funcionario: '',
     funcao_funcionario: '',
+    carga_horaria: '',
+
+    // Contract Dates (ISO format: YYYY-MM-DD)
     inicio_contrato: '',
     fim_contrato: '',
-    data_aviso: '',
-    tipo_aviso: 'rescisao_sem_justa_causa',
-    salario_sindicato: 0,
+    inicio_contrat_inregular: '',
+    data_aviso: '', // NOVO CAMPO
+
+    // Rescission Info
+    tip_recisao: '',
+    tipo_aviso: '',
+
+    // Financial Info
     salario_trabalhador: 0,
-    obs_sindicato: '',
-    historia: '',
-    ctps_assinada: false,
+    salario_sindicato: 0,
     media_descontos: 0,
     media_remuneracoes: 0,
-    carga_horaria: '',
-    // Novos campos booleanos/numéricos
+    debito_com_empresa: 0,
+    valor_recebido_ferias: 0,
+    valor_recebido_13: 0,
+
+    // Detailed Info (text fields)
+    obs_sindicato: '',
+    historia: '',
+    info_hora_extra: '',
+    info_feriados: '',
+    info_folgas: '',
+    info_ferias: '',
+    info_13_salario: '',
+    info_descontos: '', // AGORA É UM CAMPO DO DB
+    info_proventos: '',
+    info_faltas: '',
+
+    // Specific Counts (numbers)
+    qunat_folgas_trabalhadas: 0,
+    qunt_feriados_trabalhados: 0,
+    qunat_faltas: 0,
+
+    // Boolean Flags (using JS-friendly names where necessary)
+    ctps_assinada: false, // Maps to DB ctps_assinada
     vale_transporte: false,
     caixa: false,
     insalubre: false,
     periculosidade: false,
-    qunat_folgas_trabalhadas: 0,
     ferias_retroativas: false,
-    '13_retroativo': false,
+    decimo_terceiro_retroativo: false, // Maps to DB 13_retroativo
     he_retroativa: false,
     isalubridade_retroativa: false,
     periculosidade_retroativa: false,
@@ -71,388 +104,443 @@ const initialCalculationState = {
     n_folgas: false,
     ignorar_salario_sindicato: false,
     info_basico: false,
-    sem_cpts_assinada: false,
-    inicio_contrat_inregular: '',
-    debito_com_empresa: 0,
-    valor_recebido_ferias: 0,
-    valor_recebido_13: 0,
+    sem_cpts_assinada: false, // Maps to DB sem_cpts_assinada
     quebra_caixa: false,
     quebra_caixa_retroativo: false,
     n_dif_salario: false,
-    qunt_feriados_trabalhados: 0,
     somente_proporcional: false,
     recebia_sem_1_3: false,
     n_calcular_descontos: false,
     somente_inss: false,
-    info_faltas: '',
-    qunat_faltas: 0,
     faltou_todo_aviso: false,
-    faltas: false,
-    info_proventos: '',
+    faltas: false, // Maps to DB faltas
     n_calcular_proventos: false,
-    info_descontos: '',
 };
 
 type Calculation = typeof initialCalculationState;
 
-const currencyFields: (keyof Calculation)[] = [
-    'salario_trabalhador',
-    'salario_sindicato',
-    'media_descontos',
-    'media_remuneracoes',
-    'debito_com_empresa',
-    'valor_recebido_ferias',
-    'valor_recebido_13',
-];
-
 const CalculationFormPage: React.FC = () => {
-    const { user } = useAuth();
-    const navigate = useNavigate();
-    const { id } = useParams<{ id: string }>();
-    const isEditing = !!id;
-    const [calculation, setCalculation] = useState<Calculation>(initialCalculationState);
-    const [clients, setClients] = useState<Client[]>([]);
-    const [sindicatos, setSindicatos] = useState<Sindicato[]>([]);
-    const [aiTemplates, setAiTemplates] = useState<AiPromptTemplate[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditing = !!id;
 
-    useEffect(() => {
-        if (user) {
-            fetchInitialData();
-        }
-    }, [user, id]);
+  const [calculation, setCalculation] = useState<Calculation>(initialCalculationState);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [sindicatos, setSindicatos] = useState<Sindicato[]>([]);
+  const [aiTemplates, setAiTemplates] = useState<AiPromptTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    const fetchInitialData = async () => {
-        setLoading(true);
-        try {
-            // 1. Fetch Clients
-            const { data: clientsData, error: clientsError } = await supabase
-                .from('tbl_clientes')
-                .select('id, nome')
-                .eq('user_id', user?.id)
-                .order('nome', { ascending: true });
-            if (clientsError) throw clientsError;
-            setClients(clientsData || []);
+  const fetchInitialData = async () => {
+    if (!user) return;
 
-            // 2. Fetch Sindicatos
-            const { data: sindicatosData, error: sindicatosError } = await supabase
-                .from('tbl_sindicatos')
-                .select('id, nome')
-                .order('nome', { ascending: true });
-            if (sindicatosError) throw sindicatosError;
-            setSindicatos(sindicatosData || []);
+    try {
+      const [clientsRes, sindicatosRes, aiTemplatesRes] = await Promise.all([
+        supabase.from('tbl_clientes').select('id, nome').eq('user_id', user.id).order('nome', { ascending: true }),
+        supabase.from('tbl_sindicatos').select('id, nome').order('nome', { ascending: true }),
+        supabase.from('tbl_ai_prompt_templates').select('id, title').eq('user_id', user.id).order('title', { ascending: true }),
+      ]);
 
-            // 3. Fetch AI Templates
-            const { data: templatesData, error: templatesError } = await supabase
-                .from('tbl_ai_prompt_templates')
-                .select('id, title')
-                .eq('user_id', user?.id)
-                .order('title', { ascending: true });
-            if (templatesError) throw templatesError;
-            setAiTemplates(templatesData || []);
+      if (clientsRes.error) throw clientsRes.error;
+      setClients(clientsRes.data || []);
 
-            // 4. Fetch Calculation Data if editing
-            if (isEditing && id) {
-                const { data: calcData, error: calcError } = await supabase
-                    .from('tbl_calculos')
-                    .select('*')
-                    .eq('id', id)
-                    .single();
+      if (sindicatosRes.error) throw sindicatosRes.error;
+      setSindicatos(sindicatosRes.data || []);
 
-                if (calcError) throw calcError;
+      if (aiTemplatesRes.error) throw aiTemplatesRes.error;
+      setAiTemplates(aiTemplatesRes.data || []);
 
-                const loadedCalculation = calcData as Calculation;
-                const initialCurrencyValues: Partial<Calculation> = {};
+      if (isEditing && id) {
+        const { data: calcData, error: calcError } = await supabase
+          .from('tbl_calculos')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-                // Aplica formatação de moeda
-                currencyFields.forEach(field => {
-                    const value = loadedCalculation[field];
-                    // Se o valor for booleano (como 'false'), trata como 0 para evitar erro de formatação de moeda.
-                    const safeValue = typeof value === 'boolean' ? 0 : value; 
-                    initialCurrencyValues[field] = formatCurrencyForDisplay(safeValue);
-                });
+        if (calcError) throw calcError;
 
-                setCalculation(prev => ({
-                    ...prev,
-                    ...loadedCalculation,
-                    ...initialCurrencyValues,
-                    // Garante que os campos de data sejam strings ISO (AAAA-MM-DD)
-                    inicio_contrato: loadedCalculation.inicio_contrato || '',
-                    fim_contrato: loadedCalculation.fim_contrato || '',
-                    inicio_contrat_inregular: loadedCalculation.inicio_contrat_inregular || '',
-                    data_aviso: loadedCalculation.data_aviso || '',
-                }));
-            } else {
-                // Se for novo cálculo, tenta preencher o template padrão do perfil
-                const { data: profileData } = await supabase
-                    .from('profiles')
-                    .select('default_ai_template_id')
-                    .eq('id', user?.id)
-                    .single();
+        // Map DB data to state, handling nulls and boolean defaults
+        setCalculation({
+          ...initialCalculationState,
+          ...calcData,
+          // Map DB 13_retroativo to state decimo_terceiro_retroativo
+          decimo_terceiro_retroativo: calcData['13_retroativo'] ?? false,
+          
+          // Ensure numeric fields default to 0
+          salario_trabalhador: calcData.salario_trabalhador ?? 0,
+          salario_sindicato: calcData.salario_sindicato ?? 0,
+          media_descontos: calcData.media_descontos ?? 0,
+          media_remuneracoes: calcData.media_remuneracoes ?? 0,
+          debito_com_empresa: calcData.debito_com_empresa ?? 0,
+          valor_recebido_ferias: calcData.valor_recebido_ferias ?? 0,
+          valor_recebido_13: calcData.valor_recebido_13 ?? 0,
+          qunat_folgas_trabalhadas: calcData.qunat_folgas_trabalhadas ?? 0,
+          qunt_feriados_trabalhados: calcData.qunt_feriados_trabalhados ?? 0,
+          qunat_faltas: calcData.qunat_faltas ?? 0,
 
-                if (profileData?.default_ai_template_id) {
-                    setCalculation(prev => ({
-                        ...prev,
-                        ai_template_id: profileData.default_ai_template_id,
-                    }));
-                }
-            }
-        } catch (error: any) {
-            showError('Erro ao carregar dados iniciais: ' + error.message);
-            console.error('Error fetching initial data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+          // Ensure boolean fields default to false
+          ctps_assinada: calcData.ctps_assinada ?? false,
+          vale_transporte: calcData.vale_transporte ?? false,
+          caixa: calcData.caixa ?? false,
+          insalubre: calcData.insalubre ?? false,
+          periculosidade: calcData.periculosidade ?? false,
+          ferias_retroativas: calcData.ferias_retroativas ?? false,
+          he_retroativa: calcData.he_retroativa ?? false,
+          isalubridade_retroativa: calcData.isalubridade_retroativa ?? false,
+          periculosidade_retroativa: calcData.periculosidade_retroativa ?? false,
+          hx_mes: calcData.hx_mes ?? false,
+          n_he: calcData.n_he ?? false,
+          n_feriados: calcData.n_feriados ?? false,
+          n_folgas: calcData.n_folgas ?? false,
+          ignorar_salario_sindicato: calcData.ignorar_salario_sindicato ?? false,
+          info_basico: calcData.info_basico ?? false,
+          sem_cpts_assinada: calcData.sem_cpts_assinada ?? false,
+          quebra_caixa: calcData.quebra_caixa ?? false,
+          quebra_caixa_retroativo: calcData.quebra_caixa_retroativo ?? false,
+          n_dif_salario: calcData.n_dif_salario ?? false,
+          somente_proporcional: calcData.somente_proporcional ?? false,
+          recebia_sem_1_3: calcData.recebia_sem_1_3 ?? false,
+          n_calcular_descontos: calcData.n_calcular_descontos ?? false,
+          somente_inss: calcData.somente_inss ?? false,
+          faltou_todo_aviso: calcData.faltou_todo_aviso ?? false,
+          faltas: calcData.faltas ?? false,
+          n_calcular_proventos: calcData.n_calcular_proventos ?? false,
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value, type } = e.target;
-
-        if (currencyFields.includes(name as keyof Calculation)) {
-            // Mantém a formatação de moeda na exibição
-            setCalculation((prev) => ({ ...prev, [name]: value }));
-        } else if (type === 'checkbox') {
-            const checked = (e.target as HTMLInputElement).checked;
-            setCalculation((prev) => ({ ...prev, [name]: checked }));
-        } else {
-            setCalculation((prev) => ({ ...prev, [name]: value }));
-        }
-    };
-
-    const handleDateChange = (name: string, dateString: string) => {
-        setCalculation((prev) => ({ ...prev, [name]: dateString }));
-    };
-
-    const handleSelectChange = (name: string, value: string) => {
-        setCalculation((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!user) {
-            showError('Usuário não autenticado.');
-            return;
-        }
-        setIsSubmitting(true);
-
-        // 1. Converte campos de moeda de volta para número
-        const numericData: Partial<Calculation> = {};
-        currencyFields.forEach(field => {
-            numericData[field] = parseCurrencyToNumber(String(calculation[field]));
+          // Handle optional foreign keys and new date field
+          sindicato_id: calcData.sindicato_id || '',
+          ai_template_id: calcData.ai_template_id || '',
+          data_aviso: calcData.data_aviso || '', // NOVO CAMPO
+          info_descontos: calcData.info_descontos || '', // NOVO CAMPO
         });
+      }
+    } catch (error: any) {
+      showError('Erro ao carregar dados iniciais: ' + error.message);
+      console.error('Error fetching initial data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        // 2. Prepara o payload
-        const payload = {
-            ...calculation,
-            ...numericData,
-            // Garante que IDs nulos sejam null, não strings vazias
-            sindicato_id: calculation.sindicato_id || null,
-            ai_template_id: calculation.ai_template_id || null,
-        };
+  useEffect(() => {
+    fetchInitialData();
+  }, [user, id, isEditing]);
 
-        let response;
-        if (isEditing) {
-            response = await supabase
-                .from('tbl_calculos')
-                .update(payload)
-                .eq('id', id);
-        } else {
-            response = await supabase
-                .from('tbl_calculos')
-                .insert(payload);
-        }
+  // Generic handler for text, number, and textarea inputs
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    const isNumber = type === 'number';
+    setCalculation(prev => ({
+      ...prev,
+      [name]: isNumber ? (value === '' ? '' : parseFloat(value)) : value,
+    }));
+  };
 
-        if (response.error) {
-            showError('Erro ao salvar cálculo: ' + response.error.message);
-            console.error('Error saving calculation:', response.error);
-        } else {
-            showSuccess(`Cálculo ${isEditing ? 'atualizado' : 'criado'} com sucesso!`);
-            navigate('/calculations');
-        }
-        setIsSubmitting(false);
+  // Generic handler for select/dropdown components
+  const handleSelectChange = (name: keyof Calculation, value: string) => {
+    setCalculation(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Generic handler for checkbox components
+  const handleCheckboxChange = (name: keyof Calculation, checked: boolean) => {
+    setCalculation(prev => ({ ...prev, [name]: checked }));
+  };
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return showError('Usuário não autenticado.');
+
+    // --- Basic Validation ---
+    if (!calculation.cliente_id) return showError('Por favor, selecione um cliente.');
+    if (!calculation.nome_funcionario) return showError('Por favor, insira o nome do funcionário.');
+    if (!calculation.inicio_contrato) return showError('Data de início do contrato é obrigatória.');
+    if (!calculation.fim_contrato) return showError('Data de fim do contrato é obrigatória.');
+
+    setLoading(true);
+
+    const calculationData = {
+      ...calculation,
+      // Map state name back to DB column name
+      '13_retroativo': calculation.decimo_terceiro_retroativo,
+      
+      // Ensure numeric fields are numbers, not strings or nulls
+      salario_trabalhador: Number(calculation.salario_trabalhador) || 0,
+      salario_sindicato: Number(calculation.salario_sindicato) || 0,
+      media_descontos: Number(calculation.media_descontos) || 0,
+      media_remuneracoes: Number(calculation.media_remuneracoes) || 0,
+      debito_com_empresa: Number(calculation.debito_com_empresa) || 0,
+      valor_recebido_ferias: Number(calculation.valor_recebido_ferias) || 0,
+      valor_recebido_13: Number(calculation.valor_recebido_13) || 0,
+      qunat_folgas_trabalhadas: Number(calculation.qunat_folgas_trabalhadas) || 0,
+      qunt_feriados_trabalhados: Number(calculation.qunt_feriados_trabalhados) || 0,
+      qunat_faltas: Number(calculation.qunat_faltas) || 0,
+
+      // Handle optional foreign keys (empty string -> null)
+      sindicato_id: calculation.sindicato_id === '' ? null : calculation.sindicato_id,
+      ai_template_id: calculation.ai_template_id === '' ? null : calculation.ai_template_id,
+      inicio_contrat_inregular: calculation.inicio_contrat_inregular === '' ? null : calculation.inicio_contrat_inregular,
+      data_aviso: calculation.data_aviso === '' ? null : calculation.data_aviso, // NOVO CAMPO
     };
 
-    if (loading) {
-        return (
-            <MainLayout>
-                <div className="container mx-auto py-8 text-center text-gray-400">Carregando dados...</div>
-            </MainLayout>
-        );
+    // Clean up the temporary fields before sending to DB
+    // @ts-ignore
+    delete calculationData.decimo_terceiro_retroativo;
+    // O campo info_descontos agora é um campo do DB, então não deve ser deletado.
+    // @ts-ignore
+    // delete calculationData.info_descontos; // REMOVIDO
+    
+    let response;
+    if (isEditing) {
+      response = await supabase.from('tbl_calculos').update(calculationData).eq('id', id).select();
+    } else {
+      response = await supabase.from('tbl_calculos').insert(calculationData).select();
     }
 
-    if (!isEditing && clients.length === 0) {
-        return (
-            <MainLayout>
-                <div className="container mx-auto py-8 text-center">
-                    <Card className="max-w-xl mx-auto bg-gray-900 border-orange-500 text-white">
-                        <CardHeader>
-                            <CardTitle className="text-2xl text-orange-500">Atenção!</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-gray-300 mb-4">Você precisa cadastrar pelo menos um Empregador antes de criar um Cálculo.</p>
-                            <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white">
-                                <a href="/clients/new">
-                                    <ArrowLeft className="mr-2 h-4 w-4" /> Cadastrar Empregador
-                                </a>
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
-            </MainLayout>
-        );
+    if (response.error) {
+      showError('Erro ao salvar cálculo: ' + response.error.message);
+      console.error('Error saving calculation:', response.error);
+    } else {
+      showSuccess(`Cálculo ${isEditing ? 'atualizado' : 'criado'} com sucesso!`);
+      // Redirect to the result page of the newly created/updated calculation
+      navigate(`/calculations/${response.data[0].id}/result`);
     }
+    setLoading(false);
+  };
 
-    return (
-        <MainLayout>
-            <div className="container mx-auto py-8">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-                    <Button variant="ghost" onClick={() => navigate('/calculations')} className="text-orange-500 hover:text-orange-600 mb-4 sm:mb-0 sm:w-auto">
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-                    </Button>
-                    <h1 className="text-3xl sm:text-4xl font-bold text-orange-500 flex-grow text-center sm:text-center">
-                        {isEditing ? 'Editar Cálculo' : 'Novo Cálculo'}
-                    </h1>
-                    <div className="w-full sm:w-24 h-0 sm:h-auto"></div>
+  if (loading) {
+    return <MainLayout><div className="container text-center py-8 text-gray-400">Carregando...</div></MainLayout>;
+  }
+
+  return (
+    <MainLayout>
+      <div className="container w-full py-8">
+        <h1 className="text-4xl font-bold text-orange-500 mb-8 text-center">
+          {isEditing ? 'Editar Cálculo' : 'Novo Cálculo de Rescisão'}
+        </h1>
+        <Card className="max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white">
+          <CardHeader>
+            <CardTitle className="text-2xl text-orange-500">Dados do Cálculo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              
+              {/* --- 1. IDENTIFICAÇÃO E MODELOS --- */}
+              <div className="space-y-4 border-b border-gray-700 pb-6">
+                <h3 className="text-lg font-semibold text-gray-300">1. Identificação e Modelos</h3>
+                <ClientSelectField cliente_id={calculation.cliente_id} clients={clients} onValueChange={(v) => handleSelectChange('cliente_id', v)} disabled={loading} />
+                <SindicatoSelectField sindicato_id={calculation.sindicato_id} sindicatos={sindicatos} onValueChange={(v) => handleSelectChange('sindicato_id', v)} disabled={loading} />
+                <AiPromptTemplateSelectField ai_template_id={calculation.ai_template_id} aiTemplates={aiTemplates} onValueChange={(v) => handleSelectChange('ai_template_id', v)} disabled={loading} />
+              </div>
+
+              {/* --- 2. DADOS DO FUNCIONÁRIO --- */}
+              <div className="space-y-4 border-b border-gray-700 pb-6">
+                <h3 className="text-lg font-semibold text-gray-300">2. Dados do Funcionário</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div><Label htmlFor="nome_funcionario" className="text-gray-300">Nome Completo</Label><Input id="nome_funcionario" name="nome_funcionario" value={calculation.nome_funcionario} onChange={handleChange} required className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                  <div><Label htmlFor="cpf_funcionario" className="text-gray-300">CPF</Label><Input id="cpf_funcionario" name="cpf_funcionario" value={calculation.cpf_funcionario} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                  <div><Label htmlFor="funcao_funcionario" className="text-gray-300">Função</Label><Input id="funcao_funcionario" name="funcao_funcionario" value={calculation.funcao_funcionario} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                  <div><Label htmlFor="carga_horaria" className="text-gray-300">Carga Horária Semanal</Label><Input id="carga_horaria" name="carga_horaria" value={calculation.carga_horaria} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
+              </div>
+
+              {/* --- 3. CONTRATO E RESCISÃO --- */}
+              <div className="space-y-4 border-b border-gray-700 pb-6">
+                <h3 className="text-lg font-semibold text-gray-300">3. Contrato e Rescisão</h3>
+                
+                {/* Datas do Contrato e Aviso (Agrupamento Solicitado) */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Datas e Documentação</h4>
+                    
+                    {/* CTPS Assinada? / Sem CTPS Assinada? */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="ctps_assinada" name="ctps_assinada" checked={calculation.ctps_assinada} onCheckedChange={(c) => handleCheckboxChange('ctps_assinada', c as boolean)} className="border border-white/50" /><Label htmlFor="ctps_assinada" className="text-gray-300">CTPS Assinada?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="sem_cpts_assinada" name="sem_cpts_assinada" checked={calculation.sem_cpts_assinada} onCheckedChange={(c) => handleCheckboxChange('sem_cpts_assinada', c as boolean)} className="border border-white/50" /><Label htmlFor="sem_cpts_assinada" className="text-gray-300">Sem CTPS Assinada?</Label></div>
+                    </div>
+
+                    {/* Datas */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div><Label htmlFor="inicio_contrato" className="text-gray-300">Início do Contrato</Label><Input id="inicio_contrato" name="inicio_contrato" type="date" value={calculation.inicio_contrato} onChange={handleChange} required disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                        <div><Label htmlFor="fim_contrato" className="text-gray-300">Fim do Contrato</Label><Input id="fim_contrato" name="fim_contrato" type="date" value={calculation.fim_contrato} onChange={handleChange} required disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                        <div><Label htmlFor="inicio_contrat_inregular" className="text-gray-300">Início Contrato Irregular (Opcional)</Label><Input id="inicio_contrat_inregular" name="inicio_contrat_inregular" type="date" value={calculation.inicio_contrat_inregular} onChange={handleChange} disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                        <div><Label htmlFor="data_aviso" className="text-gray-300">Data do Aviso (Opcional)</Label><Input id="data_aviso" name="data_aviso" type="date" value={calculation.data_aviso} onChange={handleChange} disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
                 </div>
 
-                <Card className="max-w-4xl mx-auto bg-gray-900 border-orange-500 text-white">
-                    <CardHeader>
-                        <CardTitle className="text-2xl text-orange-500">Dados da Rescisão</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-8">
-                            {/* --- SELETORES DE RELACIONAMENTO --- */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <ClientSelectField
-                                    cliente_id={calculation.cliente_id}
-                                    clients={clients}
-                                    onValueChange={(value) => handleSelectChange('cliente_id', value)}
-                                    disabled={isSubmitting}
-                                />
-                                <SindicatoSelectField
-                                    sindicato_id={calculation.sindicato_id || ''}
-                                    sindicatos={sindicatos}
-                                    onValueChange={(value) => handleSelectChange('sindicato_id', value)}
-                                    disabled={isSubmitting}
-                                />
-                            </div>
-                            <AiPromptTemplateSelectField
-                                ai_template_id={calculation.ai_template_id || ''}
-                                aiTemplates={aiTemplates}
-                                onValueChange={(value) => handleSelectChange('ai_template_id', value)}
-                                disabled={isSubmitting}
-                            />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <RescissionTypeSelectField 
+                    tipo_aviso={calculation.tip_recisao} 
+                    noticeTypes={rescissionTypes} 
+                    onValueChange={(v) => handleSelectChange('tip_recisao', v)}
+                    disabled={loading} 
+                  />
+                  <div className="space-y-2">
+                    <AvisoTypeSelectField 
+                      tipo_aviso={calculation.tipo_aviso} 
+                      noticeTypes={avisoTypes} 
+                      onValueChange={(v) => handleSelectChange('tipo_aviso', v)}
+                      disabled={loading} 
+                    />
+                    <div className="flex items-center space-x-2 pt-2">
+                        <Checkbox id="faltou_todo_aviso" name="faltou_todo_aviso" checked={calculation.faltou_todo_aviso} onCheckedChange={(c) => handleCheckboxChange('faltou_todo_aviso', c as boolean)} className="border border-white/50" /><Label htmlFor="faltou_todo_aviso" className="text-gray-300">Faltou Todo Aviso?</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* --- 4. DADOS FINANCEIROS E SINDICATO --- */}
+              <div className="space-y-4 border-b border-gray-700 pb-6">
+                <h3 className="text-lg font-semibold text-gray-300">4. Dados Financeiros e Sindicato</h3>
+                
+                {/* Salários e Débitos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div><Label htmlFor="salario_trabalhador" className="text-gray-300">Último Salário (R$)</Label><Input id="salario_trabalhador" name="salario_trabalhador" type="number" value={calculation.salario_trabalhador} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                  <div><Label htmlFor="debito_com_empresa" className="text-gray-300">Débito com a Empresa (R$)</Label><Input id="debito_com_empresa" name="debito_com_empresa" type="number" value={calculation.debito_com_empresa} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
 
-                            {/* --- DETALHES DO FUNCIONÁRIO --- */}
-                            <h3 className="text-xl font-semibold text-orange-400 border-b border-gray-700 pb-2">Dados do Funcionário</h3>
-                            <EmployeeDetailsSection
-                                nome_funcionario={calculation.nome_funcionario}
-                                cpf_funcionario={calculation.cpf_funcionario}
-                                funcao_funcionario={calculation.funcao_funcionario}
-                                carga_horaria={calculation.carga_horaria}
-                                onChange={handleChange}
-                                disabled={isSubmitting}
-                            />
+                {/* Observações Sindicato e Piso Salarial (Agrupamento Solicitado) */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Sindicato</h4>
+                    <div><Label htmlFor="salario_sindicato" className="text-gray-300">Piso Salarial Sindicato (R$)</Label><Input id="salario_sindicato" name="salario_sindicato" type="number" value={calculation.salario_sindicato} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    <div><Label htmlFor="obs_sindicato" className="text-gray-300">Observações Sindicato</Label><Textarea id="obs_sindicato" name="obs_sindicato" value={calculation.obs_sindicato} onChange={handleChange} rows={3} placeholder="Insira observações específicas da CCT ou dissídio." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
+              </div>
+              
+              {/* --- 5. DETALHES ESPECÍFICOS E FLAGS --- */}
+              <div className="space-y-6 border-b border-gray-700 pb-6">
+                <h3 className="text-lg font-semibold text-gray-300">5. Detalhes Específicos e Flags</h3>
 
-                            {/* --- DATAS E TIPO DE AVISO --- */}
-                            <h3 className="text-xl font-semibold text-orange-400 border-b border-gray-700 pb-2">Datas e Rescisão</h3>
-                            <ContractDatesSection
-                                inicio_contrato={calculation.inicio_contrato}
-                                fim_contrato={calculation.fim_contrato}
-                                inicio_contrat_inregular={calculation.inicio_contrat_inregular}
-                                data_aviso={calculation.data_aviso}
-                                onDateChange={handleDateChange}
-                                disabled={isSubmitting}
-                            />
-                            <AvisoTypeSelectField
-                                tipo_aviso={calculation.tipo_aviso}
-                                noticeTypes={noticeTypes}
-                                onValueChange={(value) => handleSelectChange('tipo_aviso', value)}
-                                disabled={isSubmitting}
-                            />
+                {/* 5.1. FÉRIAS (Agrupamento Solicitado) */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Férias</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="ferias_retroativas" name="ferias_retroativas" checked={calculation.ferias_retroativas} onCheckedChange={(c) => handleCheckboxChange('ferias_retroativas', c as boolean)} className="border border-white/50" /><Label htmlFor="ferias_retroativas" className="text-gray-300">Férias Retroativas?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="recebia_sem_1_3" name="recebia_sem_1_3" checked={calculation.recebia_sem_1_3} onCheckedChange={(c) => handleCheckboxChange('recebia_sem_1_3', c as boolean)} className="border border-white/50" /><Label htmlFor="recebia_sem_1_3" className="text-gray-300">Recebia sem 1/3?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="somente_proporcional" name="somente_proporcional" checked={calculation.somente_proporcional} onCheckedChange={(c) => handleCheckboxChange('somente_proporcional', c as boolean)} className="border border-white/50" /><Label htmlFor="somente_proporcional" className="text-gray-300">Somente Proporcional?</Label></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><Label htmlFor="valor_recebido_ferias" className="text-gray-300">Valor já Recebido de Férias (R$)</Label><Input id="valor_recebido_ferias" name="valor_recebido_ferias" type="number" value={calculation.valor_recebido_ferias} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
+                    <div><Label htmlFor="info_ferias" className="text-gray-300">Detalhes Férias</Label><Textarea id="info_ferias" name="info_ferias" value={calculation.info_ferias} onChange={handleChange} rows={3} placeholder="Ex: O Funcionário retornou de férias no mês 10/2029 ou Nunca tirou Férias Contrato rescente menos de dois anos." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
 
-                            {/* --- SALÁRIOS E OBSERVAÇÕES --- */}
-                            <h3 className="text-xl font-semibold text-orange-400 border-b border-gray-700 pb-2">Remuneração e Histórico</h3>
-                            <SalaryAndObservationsSection
-                                salario_sindicato={calculation.salario_sindicato}
-                                salario_trabalhador={calculation.salario_trabalhador}
-                                obs_sindicato={calculation.obs_sindicato}
-                                onChange={handleChange}
-                                disabled={isSubmitting}
-                            />
-                            <AveragesSection
-                                media_descontos={calculation.media_descontos}
-                                media_remuneracoes={calculation.media_remuneracoes}
-                                onChange={handleChange}
-                                disabled={isSubmitting}
-                            />
-                            <ContractHistoryAndCTPS
-                                historia={calculation.historia}
-                                ctps_assinada={calculation.ctps_assinada}
-                                onTextChange={handleChange}
-                                onCheckboxChange={(checked) => handleSelectChange('ctps_assinada', checked ? 'true' : 'false')}
-                                disabled={isSubmitting}
-                            />
+                {/* 5.2. 13º SALÁRIO (Agrupamento Solicitado) */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">13º Salário</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="decimo_terceiro_retroativo" name="decimo_terceiro_retroativo" checked={calculation.decimo_terceiro_retroativo} onCheckedChange={(c) => handleCheckboxChange('decimo_terceiro_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="decimo_terceiro_retroativo">13º Retroativo?</Label></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><Label htmlFor="valor_recebido_13" className="text-gray-300">Valor já Recebido de 13º (R$)</Label><Input id="valor_recebido_13" name="valor_recebido_13" type="number" value={calculation.valor_recebido_13} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
+                    <div><Label htmlFor="info_13_salario" className="text-gray-300">Detalhes 13º Salário</Label><Textarea id="info_13_salario" name="info_13_salario" value={calculation.info_13_salario} onChange={handleChange} rows={3} placeholder="Ex: Recebeu apenas a primeira parcela no último ano." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
 
-                            {/* --- INFORMAÇÕES ADICIONAIS (CHECKBOXES) --- */}
-                            <h3 className="text-xl font-semibold text-orange-400 border-b border-gray-700 pb-2">Informações Adicionais</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {/* Linha 1 */}
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="vale_transporte" checked={calculation.vale_transporte} onCheckedChange={(checked) => handleSelectChange('vale_transporte', checked ? 'true' : 'false')} disabled={isSubmitting} className="border-orange-500 data-[state=checked]:bg-orange-500 data-[state=checked]:text-white" />
-                                    <Label htmlFor="vale_transporte" className="text-gray-300">Vale Transporte</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="caixa" checked={calculation.caixa} onCheckedChange={(checked) => handleSelectChange('caixa', checked ? 'true' : 'false')} disabled={isSubmitting} className="border-orange-500 data-[state=checked]:bg-orange-500 data-[state=checked]:text-white" />
-                                    <Label htmlFor="caixa" className="text-gray-300">Caixa</Label>
-                                </div>
-                                {/* Linha 2 */}
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="insalubre" checked={calculation.insalubre} onCheckedChange={(checked) => handleSelectChange('insalubre', checked ? 'true' : 'false')} disabled={isSubmitting} className="border-orange-500 data-[state=checked]:bg-orange-500 data-[state=checked]:text-white" />
-                                    <Label htmlFor="insalubre" className="text-gray-300">Insalubre</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="periculosidade" checked={calculation.periculosidade} onCheckedChange={(checked) => handleSelectChange('periculosidade', checked ? 'true' : 'false')} disabled={isSubmitting} className="border-orange-500 data-[state=checked]:bg-orange-500 data-[state=checked]:text-white" />
-                                    <Label htmlFor="periculosidade" className="text-gray-300">Periculosidade</Label>
-                                </div>
-                                {/* Linha 3 */}
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="quebra_caixa" checked={calculation.quebra_caixa} onCheckedChange={(checked) => handleSelectChange('quebra_caixa', checked ? 'true' : 'false')} disabled={isSubmitting} className="border-orange-500 data-[state=checked]:bg-orange-500 data-[state=checked]:text-white" />
-                                    <Label htmlFor="quebra_caixa" className="text-gray-300">Quebra de Caixa</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox id="sem_cpts_assinada" checked={calculation.sem_cpts_assinada} onCheckedChange={(checked) => handleSelectChange('sem_cpts_assinada', checked ? 'true' : 'false')} disabled={isSubmitting} className="border-orange-500 data-[state=checked]:bg-orange-500 data-[state=checked]:text-white" />
-                                    <Label htmlFor="sem_cpts_assinada" className="text-gray-300">Sem CTPS Assinada</Label>
-                                </div>
-                            </div>
+                {/* 5.3. ADICIONAIS DE RISCO (Insalubridade e Periculosidade) (Agrupamento Solicitado) */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Adicionais de Risco</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Insalubridade */}
+                        <div className="flex items-center space-x-2"><Checkbox id="insalubre" name="insalubre" checked={calculation.insalubre} onCheckedChange={(c) => handleCheckboxChange('insalubre', c as boolean)} className="border border-white/50" /><Label htmlFor="insalubre" className="text-gray-300">Serviço Insalubre?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="isalubridade_retroativa" name="isalubridade_retroativa" checked={calculation.isalubridade_retroativa} onCheckedChange={(c) => handleCheckboxChange('isalubridade_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="isalubridade_retroativa" className="text-gray-300">Insalubridade Retroativa?</Label></div>
+                        {/* Periculosidade */}
+                        <div className="flex items-center space-x-2"><Checkbox id="periculosidade" name="periculosidade" checked={calculation.periculosidade} onCheckedChange={(c) => handleCheckboxChange('periculosidade', c as boolean)} className="border border-white/50" /><Label htmlFor="periculosidade">Serviço Periculoso?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="periculosidade_retroativa" name="periculosidade_retroativa" checked={calculation.periculosidade_retroativa} onCheckedChange={(c) => handleCheckboxChange('periculosidade_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="periculosidade_retroativa" className="text-gray-300">Periculosidade Retroativa?</Label></div>
+                    </div>
+                </div>
 
-                            {/* --- CAMPOS DE INFORMAÇÃO EXTRA --- */}
-                            <h3 className="text-xl font-semibold text-orange-400 border-b border-gray-700 pb-2">Informações para IA</h3>
-                            <div>
-                                <Label htmlFor="info_proventos" className="text-gray-300">Informações Adicionais sobre Proventos</Label>
-                                <Textarea id="info_proventos" name="info_proventos" value={calculation.info_proventos} onChange={handleChange} rows={3} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" disabled={isSubmitting} />
-                            </div>
-                            <div>
-                                <Label htmlFor="info_descontos" className="text-gray-300">Informações Adicionais sobre Descontos</Label>
-                                <Textarea id="info_descontos" name="info_descontos" value={calculation.info_descontos} onChange={handleChange} rows={3} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" disabled={isSubmitting} />
-                            </div>
+                {/* 5.4. QUEBRA DE CAIXA (Agrupamento Solicitado) */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Quebra de Caixa</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="caixa" name="caixa" checked={calculation.caixa} onCheckedChange={(c) => handleCheckboxChange('caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="caixa" className="text-gray-300">Função de Caixa?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="quebra_caixa" name="quebra_caixa" checked={calculation.quebra_caixa} onCheckedChange={(c) => handleCheckboxChange('quebra_caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="quebra_caixa" className="text-gray-300">Recebia Quebra de Caixa?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="quebra_caixa_retroativo" name="quebra_caixa_retroativo" checked={calculation.quebra_caixa_retroativo} onCheckedChange={(c) => handleCheckboxChange('quebra_caixa_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="quebra_caixa_retroativo" className="text-gray-300">QC Retroativo?</Label></div>
+                    </div>
+                </div>
 
-                            <Button type="submit" disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                                {isSubmitting ? (
-                                    <>
-                                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Salvando...
-                                    </>
-                                ) : (
-                                    isEditing ? 'Atualizar Cálculo' : 'Criar Cálculo e Enviar para IA'
-                                )}
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
-            </div>
-        </MainLayout>
-    );
+                {/* 5.5. HORAS EXTRAS (Agrupamento Solicitado) */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Horas Extras</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="he_retroativa" name="he_retroativa" checked={calculation.he_retroativa} onCheckedChange={(c) => handleCheckboxChange('he_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="he_retroativa" className="text-gray-300">HE Retroativa?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="n_he" name="n_he" checked={calculation.n_he} onCheckedChange={(c) => handleCheckboxChange('n_he', c as boolean)} className="border border-white/50" /><Label htmlFor="n_he" className="text-gray-300">Não Calcular HE?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="hx_mes" name="hx_mes" checked={calculation.hx_mes} onCheckedChange={(c) => handleCheckboxChange('hx_mes', c as boolean)} className="border border-white/50" /><Label htmlFor="hx_mes" className="text-gray-300">HE no Mês?</Label></div>
+                    </div>
+                    <div><Label htmlFor="info_hora_extra" className="text-gray-300">Detalhes Horas Extras</Label><Textarea id="info_hora_extra" name="info_hora_extra" value={calculation.info_hora_extra} onChange={handleChange} rows={3} placeholder="Ex: Fazia 2h extras por dia, de segunda a sexta." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
+
+                {/* 5.6. FALTAS, FOLGAS E FERIADOS */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Faltas, Folgas e Feriados</h4>
+                    
+                    {/* Faltas */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="faltas" name="faltas" checked={calculation.faltas} onCheckedChange={(c) => handleCheckboxChange('faltas', c as boolean)} className="border border-white/50" /><Label htmlFor="faltas" className="text-gray-300">Não Calcular Faltas?</Label></div>
+                        <div><Label htmlFor="qunat_faltas" className="text-gray-300">Qtd. Faltas</Label><Input id="qunat_faltas" name="qunat_faltas" type="number" value={calculation.qunat_faltas} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
+                    <div><Label htmlFor="info_faltas" className="text-gray-300">Detalhes Faltas</Label><Textarea id="info_faltas" name="info_faltas" value={calculation.info_faltas} onChange={handleChange} rows={3} placeholder="Ex: Faltou 5 dias no último mês sem justificativa." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+
+                    {/* Folgas */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-800">
+                        <div className="flex items-center space-x-2"><Checkbox id="n_folgas" name="n_folgas" checked={calculation.n_folgas} onCheckedChange={(c) => handleCheckboxChange('n_folgas', c as boolean)} className="border border-white/50" /><Label htmlFor="n_folgas" className="text-gray-300">Não Calcular Folgas?</Label></div>
+                        <div><Label htmlFor="qunat_folgas_trabalhadas" className="text-gray-300">Qtd. Folgas Trabalhadas</Label><Input id="qunat_folgas_trabalhadas" name="qunat_folgas_trabalhadas" type="number" value={calculation.qunat_folgas_trabalhadas} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
+                    <div><Label htmlFor="info_folgas" className="text-gray-300">Detalhes Folgas</Label><Textarea id="info_folgas" name="info_folgas" value={calculation.info_folgas} onChange={handleChange} rows={3} placeholder="Ex: Tinha apenas 2 domingos de folga por mês." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+
+                    {/* Feriados */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-800">
+                        <div className="flex items-center space-x-2"><Checkbox id="n_feriados" name="n_feriados" checked={calculation.n_feriados} onCheckedChange={(c) => handleCheckboxChange('n_feriados', c as boolean)} className="border border-white/50" /><Label htmlFor="n_feriados" className="text-gray-300">Não Calcular Feriados?</Label></div>
+                        <div><Label htmlFor="qunt_feriados_trabalhados" className="text-gray-300">Qtd. Feriados Trabalhados</Label><Input id="qunt_feriados_trabalhados" name="qunt_feriados_trabalhados" type="number" value={calculation.qunt_feriados_trabalhados} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
+                    <div><Label htmlFor="info_feriados" className="text-gray-300">Detalhes Feriados</Label><Textarea id="info_feriados" name="info_feriados" value={calculation.info_feriados} onChange={handleChange} rows={3} placeholder="Ex: Trabalhou nos últimos 3 feriados nacionais sem folga." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
+
+                {/* 5.7. PROVENTOS */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Proventos (Remunerações)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="n_calcular_proventos" name="n_calcular_proventos" checked={calculation.n_calcular_proventos} onCheckedChange={(c) => handleCheckboxChange('n_calcular_proventos', c as boolean)} className="border border-white/50" /><Label htmlFor="n_calcular_proventos" className="text-gray-300">Não Calcular Proventos?</Label></div>
+                        <div><Label htmlFor="media_remuneracoes" className="text-gray-300">Média de Proventos (R$)</Label><Input id="media_remuneracoes" name="media_remuneracoes" type="number" value={calculation.media_remuneracoes} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
+                    <div><Label htmlFor="info_proventos" className="text-gray-300">Detalhes Proventos</Label><Textarea id="info_proventos" name="info_proventos" value={calculation.info_proventos} onChange={handleChange} rows={3} placeholder="Ex: O funcionário possui em seu contra-cheque proventos referentes a..." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
+
+                {/* 5.8. DESCONTOS (Agrupamento Solicitado) */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Descontos</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="n_calcular_descontos" name="n_calcular_descontos" checked={calculation.n_calcular_descontos} onCheckedChange={(c) => handleCheckboxChange('n_calcular_descontos', c as boolean)} className="border border-white/50" /><Label htmlFor="n_calcular_descontos" className="text-gray-300">Não Calcular Descontos?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="somente_inss" name="somente_inss" checked={calculation.somente_inss} onCheckedChange={(c) => handleCheckboxChange('somente_inss', c as boolean)} className="border border-white/50" /><Label htmlFor="somente_inss" className="text-gray-300">Calcular Desconto Somente INSS?</Label></div>
+                        <div><Label htmlFor="media_descontos" className="text-gray-300">Média de Descontos (R$)</Label><Input id="media_descontos" name="media_descontos" type="number" value={calculation.media_descontos} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
+                    {/* NOVO CAMPO DE DETALHES DE DESCONTOS */}
+                    <div><Label htmlFor="info_descontos" className="text-gray-300">Detalhes Descontos</Label><Textarea id="info_descontos" name="info_descontos" value={calculation.info_descontos} onChange={handleChange} rows={3} placeholder="Ex: O funcionário possui em seu contra-cheque descontos referentes a..." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
+
+                {/* 5.9. HISTÓRICO FINAL */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Histórico / Resumo do Caso</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="info_basico" name="info_basico" checked={calculation.info_basico} onCheckedChange={(c) => handleCheckboxChange('info_basico', c as boolean)} className="border border-white/50" /><Label htmlFor="info_basico" className="text-gray-300">Usar Info Básica (IA)?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="ignorar_salario_sindicato" name="ignorar_salario_sindicato" checked={calculation.ignorar_salario_sindicato} onCheckedChange={(c) => handleCheckboxChange('ignorar_salario_sindicato', c as boolean)} className="border border-white/50" /><Label htmlFor="ignorar_salario_sindicato" className="text-gray-300">Ignorar Piso Sindical?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="n_dif_salario" name="n_dif_salario" checked={calculation.n_dif_salario} onCheckedChange={(c) => handleCheckboxChange('n_dif_salario', c as boolean)} className="border border-white/50" /><Label htmlFor="n_dif_salario" className="text-gray-300">Não Calcular Dif. Salário?</Label></div>
+                    </div>
+                    <div>
+                        <Label htmlFor="historia" className="text-gray-300">Histórico / Resumo do Caso</Label>
+                        <Textarea id="historia" name="historia" value={calculation.historia} onChange={handleChange} rows={5} placeholder="Descreva aqui um resumo completo do caso e outras observações importantes." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
+                    </div>
+                </div>
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3">
+                {loading ? 'Salvando...' : (isEditing ? 'Atualizar Cálculo' : 'Criar Cálculo')}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </MainLayout>
+  );
 };
 
 export default CalculationFormPage;

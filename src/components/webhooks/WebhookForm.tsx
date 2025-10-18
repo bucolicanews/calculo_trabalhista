@@ -1,13 +1,12 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { WebhookFormState } from '@/hooks/useWebhookManagement';
-import { availableTables } from '@/utils/webhookFields';
 import WebhookFieldSelector from './WebhookFieldSelector';
-import { RefreshCw } from 'lucide-react';
+import { availableTables, FieldDefinition } from '@/utils/webhookFields';
+import { WebhookFormState } from '@/hooks/useWebhookManagement';
 
 interface WebhookFormProps {
   isDialogOpen: boolean;
@@ -17,7 +16,8 @@ interface WebhookFormProps {
   loading: boolean;
   fieldPopoverOpen: boolean;
   setFieldPopoverOpen: (open: boolean) => void;
-  currentTableAvailableFields: any[];
+  currentTableAvailableFields: FieldDefinition[];
+  // areAllFieldsSelected: boolean; // Removido, pois não é usado diretamente aqui
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleTableChange: (value: string) => void;
   handleFieldToggle: (fieldKey: string) => void;
@@ -34,74 +34,48 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
   fieldPopoverOpen,
   setFieldPopoverOpen,
   currentTableAvailableFields,
+  // areAllFieldsSelected, // Removido
   handleChange,
   handleTableChange,
   handleFieldToggle,
   handleToggleSelectAllFields,
   handleSubmit,
 }) => {
-
-  // Handler para campos booleanos/selects que precisam simular um evento de input
-  const handleValeTransporteChange = (value: string) => {
-    // Simula o evento de mudança para que o hook useWebhookManagement possa processar
-    handleChange({
-      target: {
-        name: 'vale_transporte',
-        value: value === 'true',
-      },
-    } as any);
-  };
-
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent className="sm:max-w-[600px] bg-gray-900 border-orange-500 text-white">
+      <DialogContent className="w-full max-w-full sm:max-w-[600px] bg-gray-900 border-orange-500 text-white overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-orange-500">{isEditing ? 'Editar Webhook' : 'Novo Webhook'}</DialogTitle>
           <DialogDescription className="text-gray-300">
-            Configure o endpoint e os dados que serão enviados quando um evento ocorrer.
+            Configure qual tabela e quais campos você deseja enviar para um endpoint de webhook.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <Label htmlFor="title" className="text-gray-300">Título (Opcional)</Label>
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="title" className="text-left sm:text-right text-gray-300">Título do Webhook</Label>
             <Input
               id="title"
               name="title"
               value={currentWebhook.title}
               onChange={handleChange}
-              className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-              disabled={loading}
-            />
-          </div>
-          <div>
-            <Label htmlFor="webhook_url" className="text-gray-300">URL do Webhook</Label>
-            <Input
-              id="webhook_url"
-              name="webhook_url"
-              value={currentWebhook.webhook_url}
-              onChange={handleChange}
               required
-              className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+              className="col-span-full sm:col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
               disabled={loading}
             />
           </div>
-          
-          {/* Tabela de Origem */}
-          <div>
-            <Label htmlFor="table_name" className="text-gray-300">Tabela de Origem</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="table_name" className="text-left sm:text-right text-gray-300">Tabela</Label>
             <Select
-              name="table_name"
               value={currentWebhook.table_name}
               onValueChange={handleTableChange}
-              required
               disabled={loading}
             >
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus:ring-orange-500">
-                <SelectValue placeholder="Selecione a tabela de origem" />
+              <SelectTrigger className="col-span-full sm:col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500">
+                <SelectValue placeholder="Selecione a tabela" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700 text-white">
+              <SelectContent className="bg-gray-900 border-orange-500 text-white">
                 {availableTables.map((table) => (
-                  <SelectItem key={table.value} value={table.value} className="hover:bg-gray-700 focus:bg-gray-700">
+                  <SelectItem key={table.value} value={table.value}>
                     {table.label}
                   </SelectItem>
                 ))}
@@ -109,68 +83,35 @@ const WebhookForm: React.FC<WebhookFormProps> = ({
             </Select>
           </div>
 
-          {/* Seletor de Campos */}
-          {currentWebhook.table_name && (
-            <div className="space-y-2">
-              <Label className="text-gray-300 block">Campos a Enviar</Label>
-              <WebhookFieldSelector
-                selectedFields={currentWebhook.selected_fields}
-                availableFields={currentTableAvailableFields}
-                onFieldToggle={handleFieldToggle}
-                onToggleSelectAll={handleToggleSelectAllFields}
-                disabled={loading}
-                fieldPopoverOpen={fieldPopoverOpen}
-                setFieldPopoverOpen={setFieldPopoverOpen}
-              />
-              <p className="text-xs text-gray-500">Selecione quais campos da tabela serão incluídos no payload do webhook.</p>
-            </div>
-          )}
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="selected_fields" className="text-left sm:text-right text-gray-300">Campos</Label>
+            <WebhookFieldSelector 
 
-          {/* Exemplo de campo booleano (para resolver o erro de sintaxe do snippet anterior) */}
-          {/* Este bloco é adicionado para garantir que o JSX seja válido, mas não é funcional sem a prop 'vale_transporte' no hook */}
-          {currentWebhook.table_name === 'tbl_calculos' && (
-            <div>
-              <Label htmlFor="vale_transporte" className="text-gray-300">Exemplo: Vale Transporte</Label>
-              <Select
-                // O erro TS2339 (vale_transporte) ainda pode ocorrer aqui se a interface não for atualizada,
-                // mas o erro de sintaxe (TS17008, TS1005) é resolvido.
-                value={String((currentWebhook as any).vale_transporte || 'false')} 
-                onValueChange={handleValeTransporteChange}
-                disabled={loading}
-              >
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus:ring-orange-500">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                  <SelectItem value="true">Sim</SelectItem>
-                  <SelectItem value="false">Não</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+              selectedFields={currentWebhook.selected_fields}
+              availableFields={currentTableAvailableFields}
+              onFieldToggle={handleFieldToggle}
+              onToggleSelectAll={handleToggleSelectAllFields}
+              disabled={!currentWebhook.table_name || loading}
+              fieldPopoverOpen={fieldPopoverOpen}
+              setFieldPopoverOpen={setFieldPopoverOpen}
+            />
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="webhook_url" className="text-left sm:text-right text-gray-300">URL do Webhook</Label>
+            <Input
+              id="webhook_url"
+              name="webhook_url"
+              value={currentWebhook.webhook_url}
+              onChange={handleChange}
+              required
+              className="col-span-full sm:col-span-3 bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+              disabled={loading}
+            />
+          </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setIsDialogOpen(false)}
-              className="bg-gray-700 text-white hover:bg-gray-600"
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Salvando...
-                </>
-              ) : (
-                isEditing ? 'Atualizar Webhook' : 'Criar Webhook'
-              )}
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white">
+              {loading ? 'Salvando...' : (isEditing ? 'Atualizar Webhook' : 'Criar Webhook')}
             </Button>
           </DialogFooter>
         </form>
