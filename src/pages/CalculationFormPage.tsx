@@ -423,7 +423,7 @@ const CalculationFormPage: React.FC = () => {
 
                 {/* 5.2. 13º SALÁRIO (Agrupamento Solicitado) */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
-                    <h4 className="text-md font-semibold text-orange-400}>13º Salário</h4>
+                    <h4 className="text-md font-semibold text-orange-400">13º Salário</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-2"><Checkbox id="decimo_terceiro_retroativo" name="decimo_terceiro_retroativo" checked={calculation.decimo_terceiro_retroativo} onCheckedChange={(c) => handleCheckboxChange('decimo_terceiro_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="decimo_terceiro_retroativo">13º Retroativo?</Label></div>
                     </div>
@@ -435,7 +435,7 @@ const CalculationFormPage: React.FC = () => {
 
                 {/* 5.3. ADICIONAIS DE RISCO (Insalubridade e Periculosidade) (Agrupamento Solicitado) */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
-                    <h4 className="text-md font-semibold text-orange-400}>Adicionais de Risco</h4>
+                    <h4 className="text-md font-semibold text-orange-400">Adicionais de Risco</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {/* Insalubridade */}
                         <div className="flex items-center space-x-2"><Checkbox id="insalubre" name="insalubre" checked={calculation.insalubre} onCheckedChange={(c) => handleCheckboxChange('insalubre', c as boolean)} className="border border-white/50" /><Label htmlFor="insalubre" className="text-gray-300">Serviço Insalubre?</Label></div>
@@ -448,7 +448,7 @@ const CalculationFormPage: React.FC = () => {
 
                 {/* 5.4. QUEBRA DE CAIXA (Agrupamento Solicitado) */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
-                    <h4 className="text-md font-semibold text-orange-400}>Quebra de Caixa</h4>
+                    <h4 className="text-md font-semibold text-orange-400">Quebra de Caixa</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-2"><Checkbox id="caixa" name="caixa" checked={calculation.caixa} onCheckedChange={(c) => handleCheckboxChange('caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="caixa" className="text-gray-300">Função de Caixa?</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id="quebra_caixa" name="quebra_caixa" checked={calculation.quebra_caixa} onCheckedChange={(c) => handleCheckboxChange('quebra_caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="quebra_caixa" className="text-gray-300">Recebia Quebra de Caixa?</Label></div>
@@ -458,7 +458,7 @@ const CalculationFormPage: React.FC = () => {
 
                 {/* 5.5. HORAS EXTRAS (Agrupamento Solicitado) */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
-                    <h4 className="text-md font-semibold text-orange-400}>Horas Extras</h4>
+                    <h4 className="text-md font-semibold text-orange-400">Horas Extras</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-2"><Checkbox id="he_retroativa" name="he_retroativa" checked={calculation.he_retroativa} onCheckedChange={(c) => handleCheckboxChange('he_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="he_retroativa" className="text-gray-300">HE Retroativa?</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id="n_he" name="n_he" checked={calculation.n_he} onCheckedChange={(c) => handleCheckboxChange('n_he', c as boolean)} className="border border-white/50" /><Label htmlFor="n_he" className="text-gray-300">Não Calcular HE?</Label></div>
@@ -469,7 +469,7 @@ const CalculationFormPage: React.FC = () => {
 
                 {/* 5.6. FALTAS, FOLGAS E FERIADOS */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
-                    <h4 className="text-md font-semibold text-orange-400}>Faltas, Folgas e Feriados</h4>
+                    <h4 className="text-md font-semibold text-orange-400">Faltas, Folgas e Feriados</h4>
                     
                     {/* Faltas */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
