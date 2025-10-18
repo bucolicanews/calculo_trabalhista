@@ -36,7 +36,7 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'calculo_funcao_funcionario', label: 'Cálculo (Função Funcionário)', baseSupabasePath: 'funcao_funcionario', sourceTable: 'tbl_calculos' },
   { key: 'calculo_inicio_contrato', label: 'Cálculo (Início Contrato)', baseSupabasePath: 'inicio_contrato', sourceTable: 'tbl_calculos' },
   { key: 'calculo_fim_contrato', label: 'Cálculo (Fim Contrato)', baseSupabasePath: 'fim_contrato', sourceTable: 'tbl_calculos' },
-  { key: 'calculo_data_aviso', label: 'Cálculo (Data Aviso)', baseSupabasePath: 'data_aviso', sourceTable: 'tbl_calculos' }, // NOVO CAMPO
+  { key: 'calculo_data_aviso', label: 'Cálculo (Data Aviso)', baseSupabasePath: 'data_aviso', sourceTable: 'tbl_calculos' },
   { key: 'calculo_tipo_aviso', label: 'Cálculo (Tipo de Aviso)', baseSupabasePath: 'tipo_aviso', sourceTable: 'tbl_calculos' },
   { key: 'calculo_salario_sindicato', label: 'Cálculo (Piso Salarial Sindicato)', baseSupabasePath: 'salario_sindicato', sourceTable: 'tbl_calculos' },
   { key: 'calculo_salario_trabalhador', label: 'Cálculo (Salário do Trabalhador)', baseSupabasePath: 'salario_trabalhador', sourceTable: 'tbl_calculos' },
@@ -90,6 +90,47 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'calculo_faltas', label: 'Cálculo (Não Calcular Faltas)', baseSupabasePath: 'faltas', sourceTable: 'tbl_calculos' },
   { key: 'calculo_info_proventos', label: 'Cálculo (Info Proventos)', baseSupabasePath: 'info_proventos', sourceTable: 'tbl_calculos' },
   { key: 'calculo_n_calcular_proventos', label: 'Cálculo (Não Calcular Proventos)', baseSupabasePath: 'n_calcular_proventos', sourceTable: 'tbl_calculos' },
+
+
+  // tbl_ai_prompt_templates fields (agora acessíveis via tbl_calculos)
+  { key: 'ai_template_title', label: 'Modelo IA (Título)', baseSupabasePath: 'title', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_identificacao', label: 'Modelo IA (Identificação)', baseSupabasePath: 'identificacao', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_comportamento', label: 'Modelo IA (Comportamento)', baseSupabasePath: 'comportamento', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_restricoes', label: 'Modelo IA (Restrições)', baseSupabasePath: 'restricoes', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_atribuicoes', label: 'Modelo IA (Atribuições)', baseSupabasePath: 'atribuicoes', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_leis', label: 'Modelo IA (Leis)', baseSupabasePath: 'leis', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_proventos_text', label: 'Modelo IA (Proventos Texto)', baseSupabasePath: 'proventos', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_descontos_text', label: 'Modelo IA (Descontos Texto)', baseSupabasePath: 'descontos', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_observacoes_base_legal', label: 'Modelo IA (Obs. Base Legal)', baseSupabasePath: 'observacoes_base_legal', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_estrutura_json_modelo_saida', label: 'Modelo IA (Estrutura JSON Saída)', baseSupabasePath: 'estrutura_json_modelo_saida', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_instrucoes_entrada_dados_rescisao', label: 'Modelo IA (Instruções Entrada Dados Rescisão)', baseSupabasePath: 'instrucoes_entrada_dados_rescisao', sourceTable: 'tbl_ai_prompt_templates' },
+  { key: 'ai_template_created_at', label: 'Modelo IA (Criado Em)', baseSupabasePath: 'created_at', sourceTable: 'tbl_ai_prompt_templates' },
+
+  // tbl_proventos fields (agora com o novo nome da tabela)
+  { key: 'provento_id', label: 'Provento (ID)', baseSupabasePath: 'id', sourceTable: 'tbl_proventos' },
+  { key: 'provento_id_calculo', label: 'Provento (ID Cálculo)', baseSupabasePath: 'id_calculo', sourceTable: 'tbl_proventos' },
+  { key: 'provento_nome_provento', label: 'Provento (Nome)', baseSupabasePath: 'nome_provento', sourceTable: 'tbl_proventos' },
+  { key: 'provento_valor_calculado', label: 'Provento (Valor Calculado)', baseSupabasePath: 'valor_calculado', sourceTable: 'tbl_proventos' },
+  { key: 'provento_natureza_da_verba', label: 'Provento (Natureza da Verba)', baseSupabasePath: 'natureza_da_verba', sourceTable: 'tbl_proventos' },
+  { key: 'provento_legislacao', label: 'Provento (Legislação)', baseSupabasePath: 'legislacao', sourceTable: 'tbl_proventos' },
+  { key: 'provento_exemplo_aplicavel', label: 'Provento (Exemplo Aplicável)', baseSupabasePath: 'exemplo_aplicavel', sourceTable: 'tbl_proventos' },
+  { key: 'provento_formula_sugerida', label: 'Provento (Fórmula Sugerida)', baseSupabasePath: 'formula_sugerida', sourceTable: 'tbl_proventos' },
+  { key: 'provento_parametro_calculo', label: 'Provento (Parâmetro Cálculo)', baseSupabasePath: 'parametro_calculo', sourceTable: 'tbl_proventos' },
+  { key: 'provento_json_completo', label: 'Provento (JSON Completo)', baseSupabasePath: 'json_completo', sourceTable: 'tbl_proventos' },
+  { key: 'provento_memoria_calculo', label: 'Provento (Memória Cálculo)', baseSupabasePath: 'memoria_calculo', sourceTable: 'tbl_proventos' },
+
+  // tbl_descontos fields (agora com o novo nome da tabela)
+  { key: 'desconto_id', label: 'Desconto (ID)', baseSupabasePath: 'id', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_id_calculo', label: 'Desconto (ID Cálculo)', baseSupabasePath: 'id_calculo', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_nome_desconto', label: 'Desconto (Nome)', baseSupabasePath: 'nome_desconto', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_valor_calculado', label: 'Desconto (Valor Calculado)', baseSupabasePath: 'valor_calculado', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_natureza_da_verba', label: 'Desconto (Natureza da Verba)', baseSupabasePath: 'natureza_da_verba', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_legislacao', label: 'Desconto (Legislação)', baseSupabasePath: 'legislacao', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_exemplo_aplicavel', label: 'Desconto (Exemplo Aplicável)', baseSupabasePath: 'exemplo_aplicavel', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_formula_sugerida', label: 'Desconto (Fórmula Sugerida)', baseSupabasePath: 'formula_sugerida', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_parametro_calculo', label: 'Desconto (Parâmetro Cálculo)', baseSupabasePath: 'parametro_calculo', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_json_completo', label: 'Desconto (JSON Completo)', baseSupabasePath: 'json_completo', sourceTable: 'tbl_descontos' },
+  { key: 'desconto_memoria_calculo', label: 'Desconto (Memória Cálculo)', baseSupabasePath: 'memoria_calculo', sourceTable: 'tbl_descontos' },
 ];
 
 // Helper to construct the full Supabase path for a field based on the main table
@@ -147,6 +188,7 @@ export const getDisplayFieldsForTable = (selectedTable: string): FieldDefinition
     field => field.sourceTable === selectedTable
   );
 
+  // Remove duplicatas e ordena
   const uniqueFields = Array.from(new Set(relevantFields.map(f => f.key)))
     .map(key => relevantFields.find(f => f.key === key)!);
 
