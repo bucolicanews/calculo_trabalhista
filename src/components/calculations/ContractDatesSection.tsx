@@ -7,6 +7,7 @@ interface ContractDatesSectionProps {
   inicio_contrato: string;
   fim_contrato: string;
   inicio_contrat_inregular: string;
+  data_aviso: string; // NOVO CAMPO ADICIONADO
   // A função de mudança recebe o nome do campo e a string ISO.
   onDateChange: (name: string, dateString: string) => void;
   disabled: boolean;
@@ -16,6 +17,7 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
   inicio_contrato,
   fim_contrato,
   inicio_contrat_inregular,
+  data_aviso, // NOVO CAMPO
   onDateChange,
   disabled,
 }) => {
@@ -68,6 +70,20 @@ const ContractDatesSection: React.FC<ContractDatesSectionProps> = ({
           name="inicio_contrat_inregular"
           type="date"
           value={inicio_contrat_inregular}
+          onChange={handleChange}
+          disabled={disabled}
+          className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
+        />
+      </div>
+
+      {/* --- Data do Aviso (Opcional) --- */}
+      <div>
+        <Label htmlFor="data_aviso" className="text-gray-300">Data do Aviso (Opcional)</Label>
+        <Input
+          id="data_aviso"
+          name="data_aviso"
+          type="date"
+          value={data_aviso}
           onChange={handleChange}
           disabled={disabled}
           className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"

@@ -56,6 +56,7 @@ const initialCalculationState = {
     inicio_contrato: '',
     fim_contrato: '',
     inicio_contrat_inregular: '',
+    data_aviso: '', // NOVO CAMPO
 
     // Rescission Info
     tip_recisao: '',
@@ -206,9 +207,10 @@ const CalculationFormPage: React.FC = () => {
           faltas: calcData.faltas ?? false,
           n_calcular_proventos: calcData.n_calcular_proventos ?? false,
 
-          // Handle optional foreign keys
+          // Handle optional foreign keys and new date field
           sindicato_id: calcData.sindicato_id || '',
           ai_template_id: calcData.ai_template_id || '',
+          data_aviso: calcData.data_aviso || '', // NOVO CAMPO
         });
       }
     } catch (error: any) {
@@ -282,6 +284,7 @@ const CalculationFormPage: React.FC = () => {
       sindicato_id: calculation.sindicato_id === '' ? null : calculation.sindicato_id,
       ai_template_id: calculation.ai_template_id === '' ? null : calculation.ai_template_id,
       inicio_contrat_inregular: calculation.inicio_contrat_inregular === '' ? null : calculation.inicio_contrat_inregular,
+      data_aviso: calculation.data_aviso === '' ? null : calculation.data_aviso, // NOVO CAMPO
     };
 
     // Clean up the temporary fields before sending to DB
@@ -347,13 +350,15 @@ const CalculationFormPage: React.FC = () => {
               {/* --- 3. CONTRATO E RESCISÃO --- */}
               <div className="space-y-4 border-b border-gray-700 pb-6">
                 <h3 className="text-lg font-semibold text-gray-300">3. Contrato e Rescisão</h3>
-                <ContractDatesSection
-                  inicio_contrato={calculation.inicio_contrato}
-                  fim_contrato={calculation.fim_contrato}
-                  inicio_contrat_inregular={calculation.inicio_contrat_inregular}
-                  onDateChange={handleDateInputChange}
-                  disabled={loading}
-                />
+                
+                {/* Datas do Contrato e Aviso */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div><Label htmlFor="inicio_contrato" className="text-gray-300">Início do Contrato</Label><Input id="inicio_contrato" name="inicio_contrato" type="date" value={calculation.inicio_contrato} onChange={handleChange} required disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    <div><Label htmlFor="fim_contrato" className="text-gray-300">Fim do Contrato</Label><Input id="fim_contrato" name="fim_contrato" type="date" value={calculation.fim_contrato} onChange={handleChange} required disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    <div><Label htmlFor="inicio_contrat_inregular" className="text-gray-300">Início Contrato Irregular (Opcional)</Label><Input id="inicio_contrat_inregular" name="inicio_contrat_inregular" type="date" value={calculation.inicio_contrat_inregular} onChange={handleChange} disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    <div><Label htmlFor="data_aviso" className="text-gray-300">Data do Aviso (Opcional)</Label><Input id="data_aviso" name="data_aviso" type="date" value={calculation.data_aviso} onChange={handleChange} disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <RescissionTypeSelectField 
                     tipo_aviso={calculation.tip_recisao} 
@@ -361,12 +366,17 @@ const CalculationFormPage: React.FC = () => {
                     onValueChange={(v) => handleSelectChange('tip_recisao', v)}
                     disabled={loading} 
                   />
-                  <AvisoTypeSelectField 
-                    tipo_aviso={calculation.tipo_aviso} 
-                    noticeTypes={avisoTypes} 
-                    onValueChange={(v) => handleSelectChange('tipo_aviso', v)}
-                    disabled={loading} 
-                  />
+                  <div className="space-y-2">
+                    <AvisoTypeSelectField 
+                      tipo_aviso={calculation.tipo_aviso} 
+                      noticeTypes={avisoTypes} 
+                      onValueChange={(v) => handleSelectChange('tipo_aviso', v)}
+                      disabled={loading} 
+                    />
+                    <div className="flex items-center space-x-2 pt-2">
+                        <Checkbox id="faltou_todo_aviso" name="faltou_todo_aviso" checked={calculation.faltou_todo_aviso} onCheckedChange={(c) => handleCheckboxChange('faltou_todo_aviso', c as boolean)} className="border border-white/50" /><Label htmlFor="faltou_todo_aviso" className="text-gray-300">Faltou Todo Aviso?</Label>
+                    </div>
+                  </div>
                 </div>
               </div>
               
@@ -375,78 +385,79 @@ const CalculationFormPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-300">4. Dados Financeiros e Sindicato</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div><Label htmlFor="salario_trabalhador" className="text-gray-300">Último Salário (R$)</Label><Input id="salario_trabalhador" name="salario_trabalhador" type="number" value={calculation.salario_trabalhador} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
-                  <div><Label htmlFor="salario_sindicato" className="text-gray-300">Piso Salarial Sindicato (R$)</Label><Input id="salario_sindicato" name="salario_sindicato" type="number" value={calculation.salario_sindicato} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                   <div><Label htmlFor="debito_com_empresa" className="text-gray-300">Débito com a Empresa (R$)</Label><Input id="debito_com_empresa" name="debito_com_empresa" type="number" value={calculation.debito_com_empresa} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
-                  <div><Label htmlFor="valor_recebido_ferias" className="text-gray-300">Valor já Recebido de Férias (R$)</Label><Input id="valor_recebido_ferias" name="valor_recebido_ferias" type="number" value={calculation.valor_recebido_ferias} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
-                  <div><Label htmlFor="valor_recebido_13" className="text-gray-300">Valor já Recebido de 13º (R$)</Label><Input id="valor_recebido_13" name="valor_recebido_13" type="number" value={calculation.valor_recebido_13} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                  
+                  {/* Observações Sindicato e Piso Salarial Juntos */}
+                  <div className="space-y-4 col-span-full md:col-span-2 lg:col-span-1">
+                    <div><Label htmlFor="salario_sindicato" className="text-gray-300">Piso Salarial Sindicato (R$)</Label><Input id="salario_sindicato" name="salario_sindicato" type="number" value={calculation.salario_sindicato} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    <div><Label htmlFor="obs_sindicato" className="text-gray-300">Observações Sindicato</Label><Textarea id="obs_sindicato" name="obs_sindicato" value={calculation.obs_sindicato} onChange={handleChange} rows={3} placeholder="Insira observações específicas da CCT ou dissídio." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                  </div>
                 </div>
-                <div><Label htmlFor="obs_sindicato" className="text-gray-300">Observações Sindicato</Label><Textarea id="obs_sindicato" name="obs_sindicato" value={calculation.obs_sindicato} onChange={handleChange} rows={3} placeholder="Insira observações específicas da CCT ou dissídio." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
               </div>
               
-              {/* --- 5. FLAGS E SITUAÇÕES IRREGULARES --- */}
+              {/* --- 5. DETALHES ESPECÍFICOS E FLAGS --- */}
               <div className="space-y-6 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">5. Flags e Situações Irregulares</h3>
+                <h3 className="text-lg font-semibold text-gray-300">5. Detalhes Específicos e Flags</h3>
 
-                {/* 5.1. Flags Gerais */}
-                <div className="space-y-4 border-b border-gray-800 pb-4">
-                    <h4 className="text-md font-semibold text-gray-400">Gerais e Documentação</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="flex items-center space-x-2"><Checkbox id="ctps_assinada" name="ctps_assinada" checked={calculation.ctps_assinada} onCheckedChange={(c) => handleCheckboxChange('ctps_assinada', c as boolean)} className="border border-white/50" /><Label htmlFor="ctps_assinada" className="text-gray-300">CTPS Assinada?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="sem_cpts_assinada" name="sem_cpts_assinada" checked={calculation.sem_cpts_assinada} onCheckedChange={(c) => handleCheckboxChange('sem_cpts_assinada', c as boolean)} className="border border-white/50" /><Label htmlFor="sem_cpts_assinada" className="text-gray-300">Sem CTPS Assinada?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="vale_transporte" name="vale_transporte" checked={calculation.vale_transporte} onCheckedChange={(c) => handleCheckboxChange('vale_transporte', c as boolean)} className="border border-white/50" /><Label htmlFor="vale_transporte" className="text-gray-300">Recebe Vale Transporte?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="faltou_todo_aviso" name="faltou_todo_aviso" checked={calculation.faltou_todo_aviso} onCheckedChange={(c) => handleCheckboxChange('faltou_todo_aviso', c as boolean)} className="border border-white/50" /><Label htmlFor="faltou_todo_aviso" className="text-gray-300">Faltou Todo Aviso?</Label></div>
-                    </div>
-                </div>
-
-                {/* 5.2. Adicionais de Risco e Caixa */}
-                <div className="space-y-4 border-b border-gray-800 pb-4">
-                    <h4 className="text-md font-semibold text-gray-400">Adicionais de Risco e Caixa</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="flex items-center space-x-2"><Checkbox id="caixa" name="caixa" checked={calculation.caixa} onCheckedChange={(c) => handleCheckboxChange('caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="caixa" className="text-gray-300">Função de Caixa?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="quebra_caixa" name="quebra_caixa" checked={calculation.quebra_caixa} onCheckedChange={(c) => handleCheckboxChange('quebra_caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="quebra_caixa" className="text-gray-300">Recebia Quebra de Caixa?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="insalubre" name="insalubre" checked={calculation.insalubre} onCheckedChange={(c) => handleCheckboxChange('insalubre', c as boolean)} className="border border-white/50" /><Label htmlFor="insalubre" className="text-gray-300">Serviço Insalubre?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="periculosidade" name="periculosidade" checked={calculation.periculosidade} onCheckedChange={(c) => handleCheckboxChange('periculosidade', c as boolean)} className="border border-white/50" /><Label htmlFor="periculosidade">Serviço Periculoso?</Label></div>
-                    </div>
-                </div>
-
-                {/* 5.3. Retroativos */}
-                <div className="space-y-4">
-                    <h4 className="text-md font-semibold text-gray-400">Retroativos</h4>
+                {/* 5.1. FÉRIAS */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Férias</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-2"><Checkbox id="ferias_retroativas" name="ferias_retroativas" checked={calculation.ferias_retroativas} onCheckedChange={(c) => handleCheckboxChange('ferias_retroativas', c as boolean)} className="border border-white/50" /><Label htmlFor="ferias_retroativas" className="text-gray-300">Férias Retroativas?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="decimo_terceiro_retroativo" name="decimo_terceiro_retroativo" checked={calculation.decimo_terceiro_retroativo} onCheckedChange={(c) => handleCheckboxChange('decimo_terceiro_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="decimo_terceiro_retroativo" className="text-gray-300">13º Retroativo?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="he_retroativa" name="he_retroativa" checked={calculation.he_retroativa} onCheckedChange={(c) => handleCheckboxChange('he_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="he_retroativa" className="text-gray-300">HE Retroativa?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="quebra_caixa_retroativo" name="quebra_caixa_retroativo" checked={calculation.quebra_caixa_retroativo} onCheckedChange={(c) => handleCheckboxChange('quebra_caixa_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="quebra_caixa_retroativo" className="text-gray-300">QC Retroativo?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="isalubridade_retroativa" name="isalubridade_retroativa" checked={calculation.isalubridade_retroativa} onCheckedChange={(c) => handleCheckboxChange('isalubridade_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="isalubridade_retroativa" className="text-gray-300">Insalubridade Retroativa?</Label></div>
-                        <div className="flex items-center space-x-2"><Checkbox id="periculosidade_retroativa" name="periculosidade_retroativa" checked={calculation.periculosidade_retroativa} onCheckedChange={(c) => handleCheckboxChange('periculosidade_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="periculosidade_retroativa" className="text-gray-300">Periculosidade Retroativa?</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id="recebia_sem_1_3" name="recebia_sem_1_3" checked={calculation.recebia_sem_1_3} onCheckedChange={(c) => handleCheckboxChange('recebia_sem_1_3', c as boolean)} className="border border-white/50" /><Label htmlFor="recebia_sem_1_3" className="text-gray-300">Recebia sem 1/3?</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id="somente_proporcional" name="somente_proporcional" checked={calculation.somente_proporcional} onCheckedChange={(c) => handleCheckboxChange('somente_proporcional', c as boolean)} className="border border-white/50" /><Label htmlFor="somente_proporcional" className="text-gray-300">Somente Proporcional?</Label></div>
                     </div>
-                </div>
-              </div>
-
-              {/* --- 6. DETALHES ADICIONAIS E HISTÓRICO (Agrupados por Assunto) --- */}
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-gray-300">6. Detalhes Específicos e Histórico</h3>
-                
-                {/* 6.1. FÉRIAS E 13º SALÁRIO */}
-                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
-                    <h4 className="text-md font-semibold text-orange-400">Férias e 13º Salário</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><Label htmlFor="valor_recebido_ferias" className="text-gray-300">Valor já Recebido de Férias (R$)</Label><Input id="valor_recebido_ferias" name="valor_recebido_ferias" type="number" value={calculation.valor_recebido_ferias} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
                     <div><Label htmlFor="info_ferias" className="text-gray-300">Detalhes Férias</Label><Textarea id="info_ferias" name="info_ferias" value={calculation.info_ferias} onChange={handleChange} rows={3} placeholder="Ex: O Funcionário retornou de férias no mês 10/2029 ou Nunca tirou Férias Contrato rescente menos de dois anos." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                </div>
+
+                {/* 5.2. 13º SALÁRIO */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">13º Salário</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="decimo_terceiro_retroativo" name="decimo_terceiro_retroativo" checked={calculation.decimo_terceiro_retroativo} onCheckedChange={(c) => handleCheckboxChange('decimo_terceiro_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="decimo_terceiro_retroativo">13º Retroativo?</Label></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><Label htmlFor="valor_recebido_13" className="text-gray-300">Valor já Recebido de 13º (R$)</Label><Input id="valor_recebido_13" name="valor_recebido_13" type="number" value={calculation.valor_recebido_13} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
                     <div><Label htmlFor="info_13_salario" className="text-gray-300">Detalhes 13º Salário</Label><Textarea id="info_13_salario" name="info_13_salario" value={calculation.info_13_salario} onChange={handleChange} rows={3} placeholder="Ex: Recebeu apenas a primeira parcela no último ano." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
-                {/* 6.2. HORAS EXTRAS */}
+                {/* 5.3. ADICIONAIS DE RISCO (Insalubridade e Periculosidade) */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Adicionais de Risco (Insalubridade/Periculosidade)</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="insalubre" name="insalubre" checked={calculation.insalubre} onCheckedChange={(c) => handleCheckboxChange('insalubre', c as boolean)} className="border border-white/50" /><Label htmlFor="insalubre" className="text-gray-300">Serviço Insalubre?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="isalubridade_retroativa" name="isalubridade_retroativa" checked={calculation.isalubridade_retroativa} onCheckedChange={(c) => handleCheckboxChange('isalubridade_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="isalubridade_retroativa" className="text-gray-300">Insalubridade Retroativa?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="periculosidade" name="periculosidade" checked={calculation.periculosidade} onCheckedChange={(c) => handleCheckboxChange('periculosidade', c as boolean)} className="border border-white/50" /><Label htmlFor="periculosidade">Serviço Periculoso?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="periculosidade_retroativa" name="periculosidade_retroativa" checked={calculation.periculosidade_retroativa} onCheckedChange={(c) => handleCheckboxChange('periculosidade_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="periculosidade_retroativa" className="text-gray-300">Periculosidade Retroativa?</Label></div>
+                    </div>
+                </div>
+
+                {/* 5.4. QUEBRA DE CAIXA */}
+                <div className="space-y-4 p-4 border border-gray-700 rounded-md">
+                    <h4 className="text-md font-semibold text-orange-400">Quebra de Caixa</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="caixa" name="caixa" checked={calculation.caixa} onCheckedChange={(c) => handleCheckboxChange('caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="caixa" className="text-gray-300">Função de Caixa?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="quebra_caixa" name="quebra_caixa" checked={calculation.quebra_caixa} onCheckedChange={(c) => handleCheckboxChange('quebra_caixa', c as boolean)} className="border border-white/50" /><Label htmlFor="quebra_caixa" className="text-gray-300">Recebia Quebra de Caixa?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="quebra_caixa_retroativo" name="quebra_caixa_retroativo" checked={calculation.quebra_caixa_retroativo} onCheckedChange={(c) => handleCheckboxChange('quebra_caixa_retroativo', c as boolean)} className="border border-white/50" /><Label htmlFor="quebra_caixa_retroativo" className="text-gray-300">QC Retroativo?</Label></div>
+                    </div>
+                </div>
+
+                {/* 5.5. HORAS EXTRAS */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Horas Extras</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="he_retroativa" name="he_retroativa" checked={calculation.he_retroativa} onCheckedChange={(c) => handleCheckboxChange('he_retroativa', c as boolean)} className="border border-white/50" /><Label htmlFor="he_retroativa" className="text-gray-300">HE Retroativa?</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id="n_he" name="n_he" checked={calculation.n_he} onCheckedChange={(c) => handleCheckboxChange('n_he', c as boolean)} className="border border-white/50" /><Label htmlFor="n_he" className="text-gray-300">Não Calcular HE?</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id="hx_mes" name="hx_mes" checked={calculation.hx_mes} onCheckedChange={(c) => handleCheckboxChange('hx_mes', c as boolean)} className="border border-white/50" /><Label htmlFor="hx_mes" className="text-gray-300">HE no Mês?</Label></div>
                     </div>
                     <div><Label htmlFor="info_hora_extra" className="text-gray-300">Detalhes Horas Extras</Label><Textarea id="info_hora_extra" name="info_hora_extra" value={calculation.info_hora_extra} onChange={handleChange} rows={3} placeholder="Ex: Fazia 2h extras por dia, de segunda a sexta." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
-                {/* 6.3. FALTAS E FOLGAS */}
+                {/* 5.6. FALTAS, FOLGAS E FERIADOS */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Faltas, Folgas e Feriados</h4>
                     
@@ -472,7 +483,7 @@ const CalculationFormPage: React.FC = () => {
                     <div><Label htmlFor="info_feriados" className="text-gray-300">Detalhes Feriados</Label><Textarea id="info_feriados" name="info_feriados" value={calculation.info_feriados} onChange={handleChange} rows={3} placeholder="Ex: Trabalhou nos últimos 3 feriados nacionais sem folga." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
-                {/* 6.4. PROVENTOS */}
+                {/* 5.7. PROVENTOS */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Proventos (Remunerações)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -482,7 +493,7 @@ const CalculationFormPage: React.FC = () => {
                     <div><Label htmlFor="info_proventos" className="text-gray-300">Detalhes Proventos</Label><Textarea id="info_proventos" name="info_proventos" value={calculation.info_proventos} onChange={handleChange} rows={3} placeholder="Ex: O funcionário possui em seu contra-cheque proventos referentes a..." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
-                {/* 6.5. DESCONTOS */}
+                {/* 5.8. DESCONTOS */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Descontos</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -492,9 +503,14 @@ const CalculationFormPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 6.6. HISTÓRICO FINAL */}
+                {/* 5.9. HISTÓRICO FINAL */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Histórico / Resumo do Caso</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center space-x-2"><Checkbox id="info_basico" name="info_basico" checked={calculation.info_basico} onCheckedChange={(c) => handleCheckboxChange('info_basico', c as boolean)} className="border border-white/50" /><Label htmlFor="info_basico" className="text-gray-300">Usar Info Básica (IA)?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="ignorar_salario_sindicato" name="ignorar_salario_sindicato" checked={calculation.ignorar_salario_sindicato} onCheckedChange={(c) => handleCheckboxChange('ignorar_salario_sindicato', c as boolean)} className="border border-white/50" /><Label htmlFor="ignorar_salario_sindicato" className="text-gray-300">Ignorar Piso Sindical?</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id="n_dif_salario" name="n_dif_salario" checked={calculation.n_dif_salario} onCheckedChange={(c) => handleCheckboxChange('n_dif_salario', c as boolean)} className="border border-white/50" /><Label htmlFor="n_dif_salario" className="text-gray-300">Não Calcular Dif. Salário?</Label></div>
+                    </div>
                     <div>
                         <Label htmlFor="historia" className="text-gray-300">Histórico / Resumo do Caso</Label>
                         <Textarea id="historia" name="historia" value={calculation.historia} onChange={handleChange} rows={5} placeholder="Descreva aqui um resumo completo do caso e outras observações importantes." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
