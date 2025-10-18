@@ -1,0 +1,28 @@
+<TITULO>
+{{ $json.tipoModelo }}
+<\TITULO>
+<IDENTIFICAÇÃO>
+{{ $json.indentificacao }}
+<\IDENTIFICAÇÃO>
+<COMPORTAMENTO>
+{{ $json.comportamento }}
+<\COMPORTAMENTO>
+<ATRIBUTOS>
+{{ $json.atribuicao }}
+<\ATRIBUTOS>
+<RESTRIÇOES>
+{{ $json.restricoes }}
+<\RESTRIÇOES>
+<ESTRUTURA_SAIDA_REGRA>
+{{ $json.struturaJSON.replace(/\s+/g, ' ').trim() }}
+<\ESTRUTURA_SAIDA_REGRA>
+<BASE_LEGAL>
+{{ $json.baseLegal.replace(/\s+/g, ' ').trim() }}
+<\BASE_LEGAL>
+<LEIS>
+{{ $json.leis }}
+<\LEIS>
+<REGRAS DO SINDICATO>
+{{ $('Webhook').item.json.body.body.sindicato_resumo_dissidio }}
+<\REGRAS DO SINDICATO>
+
