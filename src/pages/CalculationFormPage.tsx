@@ -14,7 +14,6 @@ import ClientSelectField from '@/components/calculations/ClientSelectField';
 import SindicatoSelectField from '@/components/calculations/SindicatoSelectField';
 import AiPromptTemplateSelectField from '@/components/calculations/AiPromptTemplateSelectField';
 import AvisoTypeSelectField from '@/components/calculations/AvisoTypeSelectField';
-// import ContractDatesSection from '@/components/calculations/ContractDatesSection'; // REMOVIDO
 import RescissionTypeSelectField from '@/components/calculations/RescissionTypeSelectField';
 
 // Helper Interfaces
@@ -238,11 +237,6 @@ const CalculationFormPage: React.FC = () => {
   // Generic handler for select/dropdown components
   const handleSelectChange = (name: keyof Calculation, value: string) => {
     setCalculation(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Generic handler for custom date input components that return an ISO string (YYYY-MM-DD)
-  const handleDateInputChange = (name: string, dateString: string) => {
-    setCalculation(prev => ({ ...prev, [name as keyof Calculation]: dateString }));
   };
 
   // Generic handler for checkbox components
