@@ -19,6 +19,7 @@ interface CalculationDetailsCardProps {
     carga_horaria: string | null;
     obs_sindicato: string | null;
     historia: string | null;
+    info_descontos: string | null; // NOVO CAMPO
     tbl_clientes: { nome: string } | null;
     tbl_sindicatos: { nome: string } | null;
     tbl_ai_prompt_templates: {
@@ -138,6 +139,7 @@ const CalculationDetailsCard: React.FC<CalculationDetailsCardProps> = ({ calcula
         {/* === INSTRUÇÕES / HISTÓRICO === */}
         {calculation.obs_sindicato && <p className="col-span-full break-words"><strong>Obs. Sindicato:</strong> {calculation.obs_sindicato}</p>}
         {calculation.historia && <p className="col-span-full break-words"><strong>Histórico:</strong> {calculation.historia}</p>}
+        {calculation.info_descontos && <p className="col-span-full break-words"><strong>Detalhes Descontos:</strong> {calculation.info_descontos}</p>} {/* NOVO CAMPO */}
 
       </CardContent>
     </Card>

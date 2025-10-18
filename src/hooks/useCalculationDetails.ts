@@ -53,6 +53,7 @@ export interface CalculationDetails {
   carga_horaria: string | null;
   created_at: string;
   resposta_ai: any | null; // Changed from string to any to reflect JSONB type
+  info_descontos: string | null; // NOVO CAMPO ADICIONADO
   tbl_clientes: { nome: string } | null;
   tbl_sindicatos: { nome: string } | null;
   tbl_ai_prompt_templates: { 
@@ -102,6 +103,7 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
         .select(`
           *,
           resposta_ai,
+          info_descontos,
           tbl_clientes(nome),
           tbl_sindicatos(nome),
           tbl_ai_prompt_templates(

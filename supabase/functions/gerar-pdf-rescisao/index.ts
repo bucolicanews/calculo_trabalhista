@@ -65,7 +65,7 @@ serve(async (req: Request) => {
     const { data: calculation, error: fetchError } = await supabaseClient
       .from('tbl_calculos')
       .select(`
-        *, resposta_ai, tbl_clientes(nome), tbl_sindicatos(nome),
+        *, resposta_ai, info_descontos, tbl_clientes(nome), tbl_sindicatos(nome),
         tbl_ai_prompt_templates(title, estrutura_json_modelo_saida, instrucoes_entrada_dados_rescisao),
         tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
         tbl_proventos(*), tbl_descontos(*)
@@ -177,6 +177,7 @@ serve(async (req: Request) => {
                   ${calculation.carga_horaria ? `<p><strong>Carga Horária:</strong> ${calculation.carga_horaria}</p>` : ''}
                   ${calculation.obs_sindicato ? `<p class="col-span-2"><strong>Obs. Sindicato:</strong> ${calculation.obs_sindicato}</p>` : ''}
                   ${calculation.historia ? `<p class="col-span-2"><strong>Histórico:</strong> ${calculation.historia}</p>` : ''}
+                  ${calculation.info_descontos ? `<p class="col-span-2"><strong>Detalhes Descontos:</strong> ${calculation.info_descontos}</p>` : ''}
               </div>
 
               ${(calculation.tbl_proventos && calculation.tbl_proventos.length > 0) ? `
