@@ -78,7 +78,7 @@ const initialCalculationState = {
     info_folgas: '',
     info_ferias: '',
     info_13_salario: '',
-    info_descontos: '', // Not in schema, but kept for form logic
+    info_descontos: '', // AGORA É UM CAMPO DO DB
     info_proventos: '',
     info_faltas: '',
 
@@ -210,6 +210,7 @@ const CalculationFormPage: React.FC = () => {
           sindicato_id: calcData.sindicato_id || '',
           ai_template_id: calcData.ai_template_id || '',
           data_aviso: calcData.data_aviso || '', // NOVO CAMPO
+          info_descontos: calcData.info_descontos || '', // NOVO CAMPO
         });
       }
     } catch (error: any) {
@@ -284,8 +285,9 @@ const CalculationFormPage: React.FC = () => {
     // Clean up the temporary fields before sending to DB
     // @ts-ignore
     delete calculationData.decimo_terceiro_retroativo;
+    // O campo info_descontos agora é um campo do DB, então não deve ser deletado.
     // @ts-ignore
-    delete calculationData.info_descontos; // Remove non-schema field
+    // delete calculationData.info_descontos; // REMOVIDO
     
     let response;
     if (isEditing) {
@@ -511,6 +513,8 @@ const CalculationFormPage: React.FC = () => {
                         <div className="flex items-center space-x-2"><Checkbox id="somente_inss" name="somente_inss" checked={calculation.somente_inss} onCheckedChange={(c) => handleCheckboxChange('somente_inss', c as boolean)} className="border border-white/50" /><Label htmlFor="somente_inss" className="text-gray-300">Calcular Desconto Somente INSS?</Label></div>
                         <div><Label htmlFor="media_descontos" className="text-gray-300">Média de Descontos (R$)</Label><Input id="media_descontos" name="media_descontos" type="number" value={calculation.media_descontos} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                     </div>
+                    {/* NOVO CAMPO DE DETALHES DE DESCONTOS */}
+                    <div><Label htmlFor="info_descontos" className="text-gray-300">Detalhes Descontos</Label><Textarea id="info_descontos" name="info_descontos" value={calculation.info_descontos} onChange={handleChange} rows={3} placeholder="Ex: O funcionário possui em seu contra-cheque descontos referentes a..." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
                 {/* 5.9. HISTÓRICO FINAL */}

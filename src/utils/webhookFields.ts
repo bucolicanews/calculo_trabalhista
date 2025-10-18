@@ -90,6 +90,7 @@ export const allAvailableFieldsDefinition: FieldDefinition[] = [
   { key: 'calculo_faltas', label: 'Cálculo (Não Calcular Faltas)', baseSupabasePath: 'faltas', sourceTable: 'tbl_calculos' },
   { key: 'calculo_info_proventos', label: 'Cálculo (Info Proventos)', baseSupabasePath: 'info_proventos', sourceTable: 'tbl_calculos' },
   { key: 'calculo_n_calcular_proventos', label: 'Cálculo (Não Calcular Proventos)', baseSupabasePath: 'n_calcular_proventos', sourceTable: 'tbl_calculos' },
+  { key: 'calculo_info_descontos', label: 'Cálculo (Info Descontos)', baseSupabasePath: 'info_descontos', sourceTable: 'tbl_calculos' }, // NOVO CAMPO AQUI
 
 
   // tbl_ai_prompt_templates fields (agora acessíveis via tbl_calculos)
