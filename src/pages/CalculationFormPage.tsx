@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
 import { Input } from '@/components/ui/input';
-import { Textarea } => '@/components/ui/textarea';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import ClientSelectField from '@/components/calculations/ClientSelectField';
 import SindicatoSelectField from '@/components/calculations/SindicatoSelectField';
 import AiPromptTemplateSelectField from '@/components/calculations/AiPromptTemplateSelectField';
 import AvisoTypeSelectField from '@/components/calculations/AvisoTypeSelectField';
-import ContractDatesSection from '@/components/calculations/ContractDatesSection';
+// import ContractDatesSection from '@/components/calculations/ContractDatesSection'; // REMOVIDO
 import RescissionTypeSelectField from '@/components/calculations/RescissionTypeSelectField';
 
 // Helper Interfaces
@@ -354,18 +354,20 @@ const CalculationFormPage: React.FC = () => {
                 {/* Datas do Contrato e Aviso (Agrupamento Solicitado) */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Datas e Documentação</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    {/* CTPS Assinada? / Sem CTPS Assinada? */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-2"><Checkbox id="ctps_assinada" name="ctps_assinada" checked={calculation.ctps_assinada} onCheckedChange={(c) => handleCheckboxChange('ctps_assinada', c as boolean)} className="border border-white/50" /><Label htmlFor="ctps_assinada" className="text-gray-300">CTPS Assinada?</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id="sem_cpts_assinada" name="sem_cpts_assinada" checked={calculation.sem_cpts_assinada} onCheckedChange={(c) => handleCheckboxChange('sem_cpts_assinada', c as boolean)} className="border border-white/50" /><Label htmlFor="sem_cpts_assinada" className="text-gray-300">Sem CTPS Assinada?</Label></div>
                     </div>
-                    <ContractDatesSection
-                        inicio_contrato={calculation.inicio_contrato}
-                        fim_contrato={calculation.fim_contrato}
-                        inicio_contrat_inregular={calculation.inicio_contrat_inregular}
-                        data_aviso={calculation.data_aviso} // NOVO CAMPO
-                        onDateChange={handleDateInputChange}
-                        disabled={loading}
-                    />
+
+                    {/* Datas */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div><Label htmlFor="inicio_contrato" className="text-gray-300">Início do Contrato</Label><Input id="inicio_contrato" name="inicio_contrato" type="date" value={calculation.inicio_contrato} onChange={handleChange} required disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                        <div><Label htmlFor="fim_contrato" className="text-gray-300">Fim do Contrato</Label><Input id="fim_contrato" name="fim_contrato" type="date" value={calculation.fim_contrato} onChange={handleChange} required disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                        <div><Label htmlFor="inicio_contrat_inregular" className="text-gray-300">Início Contrato Irregular (Opcional)</Label><Input id="inicio_contrat_inregular" name="inicio_contrat_inregular" type="date" value={calculation.inicio_contrat_inregular} onChange={handleChange} disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                        <div><Label htmlFor="data_aviso" className="text-gray-300">Data do Aviso (Opcional)</Label><Input id="data_aviso" name="data_aviso" type="date" value={calculation.data_aviso} onChange={handleChange} disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
