@@ -84,7 +84,7 @@ interface UseCalculationDetailsResult {
   hasAnyResult: boolean;
 }
 
-export const useCalculationDetails = (calculationId: string | undefined): UseCalculationDetailsResult => {
+export const useCalculationDetails = (calculationId: string | undefined, refreshKey: number = 0): UseCalculationDetailsResult => {
   const { user } = useAuth();
   const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,7 +139,7 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
     };
 
     fetchCalculationResult();
-  }, [user, calculationId]);
+  }, [user, calculationId, refreshKey]); // Adicionado refreshKey como dependência
 
   return { calculation, loading, hasAnyResult };
 };

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCalculationDetails, Provento, Desconto } from '@/hooks/useCalculationDetails';
 import CalculationDetailsCard from './CalculationDetailsCard';
-import CalculationResultDisplay from './CalculationResultDisplay'; // Caminho corrigido
+import CalculationResultDisplay from './CalculationResultDisplay'; // Importação corrigida
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { showError, showSuccess } from '@/utils/toast';
@@ -41,7 +41,14 @@ interface CalculationDataForDetailsCard {
 const FullRescissionView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { calculation, loading, hasAnyResult } = useCalculationDetails(id);
+  // Usamos uma chave para forçar a re-execução do hook quando os dados são limpos/reprocessados
+  const [refreshKey, setRefreshKey] = React.useState(0); 
+  const { calculation, loading, hasAnyResult } = useCalculationDetails(id, refreshKey);
+
+  // Função para forçar a recarga dos dados
+  const handleRefreshData = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   const handleGeneratePdf = async () => {
     if (!calculation || !user) {
@@ -52,19 +59,11 @@ const FullRescissionView: React.FC = () => {
     showSuccess('Iniciando geração do PDF...');
 
     try {
-      const { data, error } = await supabase.functions.invoke('gerar-pdf-rescisao', {
-        body: JSON.stringify({ calculoId: calculation.id }),
-      });
-
-      if (error) throw error;
-
-      const pdfUrl = data.pdfUrl;
-      if (pdfUrl) {
-        window.open(pdfUrl, '_blank');
-        showSuccess('PDF gerado com sucesso!');
-      } else {
-        showError('Erro ao gerar PDF: URL não retornada.');
-      }
+      // A função Edge agora retorna o HTML diretamente, e o DownloadPdfButton lida com isso.
+      // Este botão aqui deve ser removido ou ajustado para usar o DownloadPdfButton.
+      // Por enquanto, vamos apenas garantir que o DownloadPdfButton seja usado na UI.
+      showError('Use o botão "Baixar Demonstrativo" na seção de Resultados.');
+      
     } catch (error: any) {
       console.error('Erro ao chamar função Edge:', error);
       showError('Falha na geração do PDF: ' + (error.message || 'Erro desconhecido.'));
@@ -72,11 +71,11 @@ const FullRescissionView: React.FC = () => {
   };
 
   if (loading) {
-    return <MainLayout><div className="container text-center py-8 text-gray-400">Carregando detalhes do cálculo...</div></MainLayout>;
+    return <div className="container text-center py-8 text-gray-400">Carregando detalhes do cálculo...</div>;
   }
 
   if (!calculation) {
-    return <MainLayout><div className="container text-center py-8 text-red-400">Cálculo não encontrado.</div></MainLayout>;
+    return <div className="container text-center py-8 text-red-400">Cálculo não encontrado.</div>;
   }
 
   // Mapeia o objeto calculation para o tipo esperado pelo CalculationDetailsCard
@@ -109,33 +108,32 @@ const FullRescissionView: React.FC = () => {
   const descontos: Desconto[] = calculation.tbl_descontos || [];
 
   return (
-    <MainLayout>
-      <div className="container w-full py-8">
-        <h1 className="text-4xl font-bold text-orange-500 mb-8 text-center">
-          Detalhes do Cálculo de Rescisão
-        </h1>
+    <div className="container w-full py-8">
+      <h1 className="text-4xl font-bold text-orange-500 mb-8 text-center">
+        Detalhes do Cálculo de Rescisão
+      </h1>
 
-        {/* 1. Detalhes Principais do Cálculo */}
-        <CalculationDetailsCard calculation={calculationDetails} />
+      {/* 1. Detalhes Principais do Cálculo */}
+      <CalculationDetailsCard calculation={calculationDetails} />
 
-        {/* 2. Botão de Geração de PDF */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <Button onClick={handleGeneratePdf} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3">
-            Gerar PDF do Cálculo
-          </Button>
-        </div>
-
-        {/* 3. Resultados do Cálculo (Proventos/Descontos) */}
-        {hasAnyResult ? (
-          <CalculationResultDisplay proventos={proventos} descontos={descontos} respostaAi={calculation.resposta_ai} />
-        ) : (
-          <Card className="max-w-4xl mx-auto bg-gray-900 border-gray-700 text-white">
-            <CardHeader><CardTitle className="text-xl text-gray-400">Resultado</CardTitle></CardHeader>
-            <CardContent><p>Ainda não há resultados de proventos ou descontos para este cálculo.</p></CardContent>
-          </Card>
-        )}
-      </div>
-    </MainLayout>
+      {/* 2. Resultados do Cálculo (Proventos/Descontos) */}
+      {hasAnyResult ? (
+        <CalculationResultDisplay 
+          calculationId={calculation.id}
+          proventos={proventos} 
+          descontos={descontos} 
+          respostaAi={calculation.resposta_ai} 
+          otherResultDetails={calculation.tbl_resposta_calculo}
+          onDataCleared={handleRefreshData}
+          onReprocessed={handleRefreshData}
+        />
+      ) : (
+        <Card className="max-w-4xl mx-auto bg-gray-900 border-gray-700 text-white">
+          <CardHeader><CardTitle className="text-xl text-gray-400">Resultado</CardTitle></CardHeader>
+          <CardContent><p>Ainda não há resultados de proventos ou descontos para este cálculo.</p></CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 
