@@ -19,15 +19,15 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
     
     // === LÓGICA AUXILIAR DE AGRUPAMENTO ===
     
-    // 🛑 CORRIGIDO: Garante que 'Provento' ou 'Desconto' nunca é null/undefined antes de ser processado.
-    const getVerbaName = (item: VerbaItem) => {
-        let name;
+    // 🛑 CORREÇÃO CRÍTICA: Garante que 'Provento' ou 'Desconto' sempre retorna uma string.
+    const getVerbaName = (item: VerbaItem): string => {
+        let name: string | null | undefined;
         if (item.hasOwnProperty('Provento')) {
             name = (item as ProventoDisplay).Provento;
         } else {
             name = (item as DescontoDisplay).Desconto;
         }
-        // Retorna a string ou uma string de fallback segura
+        // Retorna a string, ou 'Verba Desconhecida' se for nulo/undefined
         return name || 'Verba Desconhecida';
     };
 

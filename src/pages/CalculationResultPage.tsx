@@ -1,6 +1,6 @@
 // src/pages/CalculationResultPage.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -13,10 +13,7 @@ import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView';
 import ClearEntriesButton from '@/components/calculations/ClearEntriesButton';
 import DownloadPdfButton from '@/components/calculations/DownloadPdfButton';
-import { Provento, Desconto, useCalculationDetails, CalculationDetails } from '@/hooks/useCalculationDetails';
-
-// TIPAGEM (sem alterações)
-// A interface CalculationDetails é importada do hook useCalculationDetails
+import { useCalculationDetails } from '@/hooks/useCalculationDetails';
 
 const CalculationResultPage: React.FC = () => {
   const { user } = useAuth();
@@ -29,34 +26,12 @@ const CalculationResultPage: React.FC = () => {
     displayProventos, 
     displayDescontos, 
     loading, 
-    hasAnyResult 
+    // hasAnyResult // Removido, pois não é usado
   } = useCalculationDetails(id);
 
   const [isReprocessing, setIsReprocessing] = useState(false);
 
-  // A função fetchCalculationResult agora é apenas um wrapper para o hook, 
-  // mas precisamos de uma forma de re-executar o fetch após o reprocessamento.
-  // Como o hook useCalculationDetails não expõe o fetcher, vamos manter a lógica 
-  // de re-fetch manual aqui, mas simplificando a busca.
-  const fetchCalculationResult = async () => {
-    if (!user || !id) return;
-    
-    // Re-fetch simplificado para atualizar o estado do hook
-    const { data, error } = await supabase
-      .from('tbl_calculos')
-      .select(`id`)
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      showError('Erro ao recarregar cálculo: ' + error.message);
-    }
-    // O hook useCalculationDetails será re-executado se o ID mudar, 
-    // mas como o ID não muda, precisamos forçar a atualização do estado.
-    // A maneira mais simples é recarregar a página ou forçar uma mudança de estado, 
-    // mas vamos confiar que o hook será re-executado se o componente for re-renderizado.
-    // Para garantir, vamos usar um estado dummy ou simplesmente confiar no reload.
-  };
+  // A função fetchCalculationResult foi removida pois não é mais utilizada.
 
   const handleReprocess = async () => {
     if (!id || isReprocessing) return;
