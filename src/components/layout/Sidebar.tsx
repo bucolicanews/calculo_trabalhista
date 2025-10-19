@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Calculator, LogOut, Building2, BellRing, Brain } from 'lucide-react';
+import { Home, Users, Calculator, LogOut, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
@@ -29,8 +29,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
     { name: 'Empregadores', icon: Users, path: '/clients' },
     { name: 'Cálculos', icon: Calculator, path: '/calculations' },
     { name: 'Sindicatos', icon: Building2, path: '/sindicatos' },
-    { name: 'Webhooks', icon: BellRing, path: '/webhooks' },
-    { name: 'Modelos IA', icon: Brain, path: '/ai-templates' },
+   // { name: 'Webhooks', icon: BellRing, path: '/webhooks' },
+   // { name: 'Modelos IA', icon: Brain, path: '/ai-templates' },
   ];
 
   return (

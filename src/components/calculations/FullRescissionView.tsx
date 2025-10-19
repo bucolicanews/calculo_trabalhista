@@ -4,8 +4,8 @@ import React from 'react';
 import CalculationDetailsCard from './CalculationDetailsCard';
 import ProventosDescontosDisplay from './ProventosDescontosDisplay';
 
-// Importar as interfaces de Provento e Desconto
-import { Provento, Desconto } from '@/hooks/useCalculationDetails';
+// Importar as interfaces de ProventoDisplay e DescontoDisplay
+import { ProventoDisplay, DescontoDisplay } from '@/hooks/useCalculationDetails';
 
 // Interface para os dados principais do cálculo
 interface CalculationDataForDetailsCard {
@@ -35,8 +35,8 @@ interface CalculationDataForDetailsCard {
 // Interface para o componente FullRescissionView
 interface FullRescissionViewProps {
     calculationDetails: CalculationDataForDetailsCard;
-    proventos: Provento[];
-    descontos: Desconto[];
+    proventos: ProventoDisplay[];
+    descontos: DescontoDisplay[];
 }
 
 export const FullRescissionView: React.FC<FullRescissionViewProps> = ({

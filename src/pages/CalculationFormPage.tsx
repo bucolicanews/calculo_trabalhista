@@ -326,7 +326,7 @@ const CalculationFormPage: React.FC = () => {
               
               {/* --- 1. IDENTIFICAÇÃO E MODELOS --- */}
               <div className="space-y-4 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">1. Identificação e Modelos</h3>
+                <h3 className="text-lg font-semibold text-gray-300">1. Empregador</h3>
                 <ClientSelectField cliente_id={calculation.cliente_id} clients={clients} onValueChange={(v) => handleSelectChange('cliente_id', v)} disabled={loading} />
                 <SindicatoSelectField sindicato_id={calculation.sindicato_id} sindicatos={sindicatos} onValueChange={(v) => handleSelectChange('sindicato_id', v)} disabled={loading} />
                 <AiPromptTemplateSelectField ai_template_id={calculation.ai_template_id} aiTemplates={aiTemplates} onValueChange={(v) => handleSelectChange('ai_template_id', v)} disabled={loading} />
@@ -334,7 +334,7 @@ const CalculationFormPage: React.FC = () => {
 
               {/* --- 2. DADOS DO FUNCIONÁRIO --- */}
               <div className="space-y-4 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">2. Dados do Funcionário</h3>
+                <h3 className="text-lg font-semibold text-gray-300">2.Funcionário</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div><Label htmlFor="nome_funcionario" className="text-gray-300">Nome Completo</Label><Input id="nome_funcionario" name="nome_funcionario" value={calculation.nome_funcionario} onChange={handleChange} required className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                   <div><Label htmlFor="cpf_funcionario" className="text-gray-300">CPF</Label><Input id="cpf_funcionario" name="cpf_funcionario" value={calculation.cpf_funcionario} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
@@ -355,15 +355,17 @@ const CalculationFormPage: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-2"><Checkbox id="ctps_assinada" name="ctps_assinada" checked={calculation.ctps_assinada} onCheckedChange={(c) => handleCheckboxChange('ctps_assinada', c as boolean)} className="border border-white/50" /><Label htmlFor="ctps_assinada" className="text-gray-300">CTPS Assinada?</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id="sem_cpts_assinada" name="sem_cpts_assinada" checked={calculation.sem_cpts_assinada} onCheckedChange={(c) => handleCheckboxChange('sem_cpts_assinada', c as boolean)} className="border border-white/50" /><Label htmlFor="sem_cpts_assinada" className="text-gray-300">Sem CTPS Assinada?</Label></div>
+                        <div className="flex items-center space-x-2 "><Checkbox id="faltou_todo_aviso" name="faltou_todo_aviso" checked={calculation.faltou_todo_aviso} onCheckedChange={(c) => handleCheckboxChange('faltou_todo_aviso', c as boolean)} className="border border-white/50" /><Label htmlFor="faltou_todo_aviso" className="text-gray-300">Faltou Todo Aviso?</Label></div>
                     </div>
 
                     {/* Datas */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div><Label htmlFor="inicio_contrato" className="text-gray-300">Início do Contrato</Label><Input id="inicio_contrato" name="inicio_contrato" type="date" value={calculation.inicio_contrato} onChange={handleChange} required disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                         <div><Label htmlFor="fim_contrato" className="text-gray-300">Fim do Contrato</Label><Input id="fim_contrato" name="fim_contrato" type="date" value={calculation.fim_contrato} onChange={handleChange} required disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
-                        <div><Label htmlFor="inicio_contrat_inregular" className="text-gray-300">Início Contrato Irregular (Opcional)</Label><Input id="inicio_contrat_inregular" name="inicio_contrat_inregular" type="date" value={calculation.inicio_contrat_inregular} onChange={handleChange} disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
+                        <div><Label htmlFor="inicio_contrat_inregular" className="text-gray-300">Início sem CTPS Assinada</Label><Input id="inicio_contrat_inregular" name="inicio_contrat_inregular" type="date" value={calculation.inicio_contrat_inregular} onChange={handleChange} disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                         <div><Label htmlFor="data_aviso" className="text-gray-300">Data do Aviso (Opcional)</Label><Input id="data_aviso" name="data_aviso" type="date" value={calculation.data_aviso} onChange={handleChange} disabled={loading} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                     </div>
+                    
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -380,16 +382,14 @@ const CalculationFormPage: React.FC = () => {
                       onValueChange={(v) => handleSelectChange('tipo_aviso', v)}
                       disabled={loading} 
                     />
-                    <div className="flex items-center space-x-2 pt-2">
-                        <Checkbox id="faltou_todo_aviso" name="faltou_todo_aviso" checked={calculation.faltou_todo_aviso} onCheckedChange={(c) => handleCheckboxChange('faltou_todo_aviso', c as boolean)} className="border border-white/50" /><Label htmlFor="faltou_todo_aviso" className="text-gray-300">Faltou Todo Aviso?</Label>
-                    </div>
+                   
                   </div>
                 </div>
               </div>
               
               {/* --- 4. DADOS FINANCEIROS E SINDICATO --- */}
               <div className="space-y-4 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">4. Dados Financeiros e Sindicato</h3>
+                <h3 className="text-lg font-semibold text-gray-300">4. Salário e Sindicato</h3>
                 
                 {/* Salários e Débitos */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -407,7 +407,7 @@ const CalculationFormPage: React.FC = () => {
               
               {/* --- 5. DETALHES ESPECÍFICOS E FLAGS --- */}
               <div className="space-y-6 border-b border-gray-700 pb-6">
-                <h3 className="text-lg font-semibold text-gray-300">5. Detalhes Específicos e Flags</h3>
+                <h3 className="text-lg font-semibold text-gray-300">5. Férias</h3>
 
                 {/* 5.1. FÉRIAS (Agrupamento Solicitado) */}
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
@@ -423,7 +423,9 @@ const CalculationFormPage: React.FC = () => {
                     <div><Label htmlFor="info_ferias" className="text-gray-300">Detalhes Férias</Label><Textarea id="info_ferias" name="info_ferias" value={calculation.info_ferias} onChange={handleChange} rows={3} placeholder="Ex: O Funcionário retornou de férias no mês 10/2029 ou Nunca tirou Férias Contrato rescente menos de dois anos." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
-                {/* 5.2. 13º SALÁRIO (Agrupamento Solicitado) */}
+{/* 5.2. 13º SALÁRIO (Agrupamento Solicitado) */ }
+                                <h3 className="text-lg font-semibold text-gray-300">6. Decimo Terceiro</h3>
+
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">13º Salário</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -435,7 +437,9 @@ const CalculationFormPage: React.FC = () => {
                     <div><Label htmlFor="info_13_salario" className="text-gray-300">Detalhes 13º Salário</Label><Textarea id="info_13_salario" name="info_13_salario" value={calculation.info_13_salario} onChange={handleChange} rows={3} placeholder="Ex: Recebeu apenas a primeira parcela no último ano." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
-                {/* 5.3. ADICIONAIS DE RISCO (Insalubridade e Periculosidade) (Agrupamento Solicitado) */}
+{/* 5.3. ADICIONAIS DE RISCO (Insalubridade e Periculosidade) (Agrupamento Solicitado) */ }
+                                <h3 className="text-lg font-semibold text-gray-300">7. Adicionais de Risco</h3>
+
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Adicionais de Risco</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -448,7 +452,9 @@ const CalculationFormPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 5.4. QUEBRA DE CAIXA (Agrupamento Solicitado) */}
+                {/* 5.4. QUEBRA DE CAIXA (Agrupamento Solicitado) */ }
+                <h3 className="text-lg font-semibold text-gray-300">8. Quebra de Caixa</h3>
+
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Quebra de Caixa</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -458,7 +464,8 @@ const CalculationFormPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 5.5. HORAS EXTRAS (Agrupamento Solicitado) */}
+                {/* 5.5. HORAS EXTRAS (Agrupamento Solicitado) */ }
+                <h3 className="text-lg font-semibold text-gray-300">9. Horas Extras</h3>
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Horas Extras</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -469,25 +476,29 @@ const CalculationFormPage: React.FC = () => {
                     <div><Label htmlFor="info_hora_extra" className="text-gray-300">Detalhes Horas Extras</Label><Textarea id="info_hora_extra" name="info_hora_extra" value={calculation.info_hora_extra} onChange={handleChange} rows={3} placeholder="Ex: Fazia 2h extras por dia, de segunda a sexta." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
-                {/* 5.6. FALTAS, FOLGAS E FERIADOS */}
+{/* 5.6. FALTAS, FOLGAS E FERIADOS */ }
+                <h3 className="text-lg font-semibold text-gray-300">10. Faltas, Folgas e Feriados</h3>
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
-                    <h4 className="text-md font-semibold text-orange-400">Faltas, Folgas e Feriados</h4>
+                    <h4 className="text-md font-semibold text-orange-400">Faltas</h4>
                     
                     {/* Faltas */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-2"><Checkbox id="faltas" name="faltas" checked={calculation.faltas} onCheckedChange={(c) => handleCheckboxChange('faltas', c as boolean)} className="border border-white/50" /><Label htmlFor="faltas" className="text-gray-300">Não Calcular Faltas?</Label></div>
                         <div><Label htmlFor="qunat_faltas" className="text-gray-300">Qtd. Faltas</Label><Input id="qunat_faltas" name="qunat_faltas" type="number" value={calculation.qunat_faltas} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
-                    </div>
+                          </div>
+                          
                     <div><Label htmlFor="info_faltas" className="text-gray-300">Detalhes Faltas</Label><Textarea id="info_faltas" name="info_faltas" value={calculation.info_faltas} onChange={handleChange} rows={3} placeholder="Ex: Faltou 5 dias no último mês sem justificativa." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
 
-                    {/* Folgas */}
+{/* Folgas */ }
+                     <h4 className="text-md font-semibold text-orange-400">Folgas</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-800">
                         <div className="flex items-center space-x-2"><Checkbox id="n_folgas" name="n_folgas" checked={calculation.n_folgas} onCheckedChange={(c) => handleCheckboxChange('n_folgas', c as boolean)} className="border border-white/50" /><Label htmlFor="n_folgas" className="text-gray-300">Não Calcular Folgas?</Label></div>
                         <div><Label htmlFor="qunat_folgas_trabalhadas" className="text-gray-300">Qtd. Folgas Trabalhadas</Label><Input id="qunat_folgas_trabalhadas" name="qunat_folgas_trabalhadas" type="number" value={calculation.qunat_folgas_trabalhadas} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                     </div>
                     <div><Label htmlFor="info_folgas" className="text-gray-300">Detalhes Folgas</Label><Textarea id="info_folgas" name="info_folgas" value={calculation.info_folgas} onChange={handleChange} rows={3} placeholder="Ex: Tinha apenas 2 domingos de folga por mês." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
 
-                    {/* Feriados */}
+{/* Feriados */ }
+                     <h4 className="text-md font-semibold text-orange-400">Feriados</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-800">
                         <div className="flex items-center space-x-2"><Checkbox id="n_feriados" name="n_feriados" checked={calculation.n_feriados} onCheckedChange={(c) => handleCheckboxChange('n_feriados', c as boolean)} className="border border-white/50" /><Label htmlFor="n_feriados" className="text-gray-300">Não Calcular Feriados?</Label></div>
                         <div><Label htmlFor="qunt_feriados_trabalhados" className="text-gray-300">Qtd. Feriados Trabalhados</Label><Input id="qunt_feriados_trabalhados" name="qunt_feriados_trabalhados" type="number" value={calculation.qunt_feriados_trabalhados} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
@@ -495,7 +506,9 @@ const CalculationFormPage: React.FC = () => {
                     <div><Label htmlFor="info_feriados" className="text-gray-300">Detalhes Feriados</Label><Textarea id="info_feriados" name="info_feriados" value={calculation.info_feriados} onChange={handleChange} rows={3} placeholder="Ex: Trabalhou nos últimos 3 feriados nacionais sem folga." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
-                {/* 5.7. PROVENTOS */}
+{/* 5.7. PROVENTOS */ }
+                                <h3 className="text-lg font-semibold text-gray-300">11. Proventos</h3>
+
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Proventos (Remunerações)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -505,7 +518,9 @@ const CalculationFormPage: React.FC = () => {
                     <div><Label htmlFor="info_proventos" className="text-gray-300">Detalhes Proventos</Label><Textarea id="info_proventos" name="info_proventos" value={calculation.info_proventos} onChange={handleChange} rows={3} placeholder="Ex: O funcionário possui em seu contra-cheque proventos referentes a..." className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" /></div>
                 </div>
 
-                {/* 5.8. DESCONTOS (Agrupamento Solicitado) */}
+{/* 5.8. DESCONTOS (Agrupamento Solicitado) */ }
+                                <h3 className="text-lg font-semibold text-gray-300">12. Descontos</h3>
+
                 <div className="space-y-4 p-4 border border-gray-700 rounded-md">
                     <h4 className="text-md font-semibold text-orange-400">Descontos</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
