@@ -57,6 +57,8 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
     const groupItemsForRendering = (items: VerbaItem[]) => {
         const grouped: { [key: string]: VerbaItem[] } = {};
         items.forEach(item => {
+            // Garante que o item é válido antes de tentar obter o nome
+            if (!item) return; 
             const name = getVerbaName(item);
             const { group: groupName } = getGroupNameAndOrder(name);
             
@@ -123,8 +125,22 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
     );
 
     const TableItem = ({ item }: { item: VerbaItem }) => {
+        // Adiciona verificação de segurança aqui também, embora o agrupamento já deva ter filtrado
+        if (!item) return null; 
+        
         const isP = isProvento(item);
         const name = getVerbaName(item);
+        
+        // Verifica se o nome é válido antes de chamar replace
+        if (!name || name === 'Verba Desconhecida') {
+             // Se o nome for inválido, renderiza uma linha de erro ou ignora
+             return (
+                <TableRow className="border-gray-700 bg-red-900/50 text-red-400">
+                    <TableCell colSpan={4}>Erro: Nome da verba não encontrado.</TableCell>
+                </TableRow>
+             );
+        }
+
         const value = item.Cálculo?.Valor || 0;
         
         // Remove o prefixo de agrupamento

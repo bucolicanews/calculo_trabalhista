@@ -16,7 +16,7 @@ import DownloadPdfButton from '@/components/calculations/DownloadPdfButton';
 import { useCalculationDetails } from '@/hooks/useCalculationDetails';
 
 const CalculationResultPage: React.FC = () => {
-  const { user } = useAuth();
+  const { /* user */ } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   
