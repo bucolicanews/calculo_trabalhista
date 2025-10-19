@@ -28,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
     { name: 'Dashboard', icon: Home, path: '/dashboard' },
     { name: 'Empregadores', icon: Users, path: '/clients' },
     { name: 'Cálculos', icon: Calculator, path: '/calculations' },
-    { name: 'Sindicatos', icon: Building2, path: '/sindicatos' },
+   // { name: 'Sindicatos', icon: Building2, path: '/sindicatos' },
    // { name: 'Webhooks', icon: BellRing, path: '/webhooks' },
    // { name: 'Modelos IA', icon: Brain, path: '/ai-templates' },
   ];

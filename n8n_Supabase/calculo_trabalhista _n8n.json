@@ -1,0 +1,648 @@
+{
+  "name": "calculo_trabalhista",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resumo",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -528,
+        -96
+      ],
+      "id": "7a34f1c8-6dad-4320-9fed-0c7274e75d1b",
+      "name": "Webhook",
+      "webhookId": "95378f01-d475-477e-9879-92f3c3b3947f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oqiycpjayuzuyefkdujp.supabase.co/functions/v1/store-calculation-result",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "idCalculo",
+              "value": "={{ $('Edit Fields').item.json.idCalculo }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"calculationId\": \"{{ $('Edit Fields').item.json.idCalculo }}\",\n  \"aiResponse\": {{ JSON.stringify($json.aiResponse, null, 2) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        -96
+      ],
+      "id": "7b0877c1-3475-487b-8c53-d33f8ea3190a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Prompt para a IA: Análise e Cálculo de Verbas Rescisórias\nObjetivo: Atuar como um especialista em direito trabalhista brasileiro e realizar o cálculo completo e detalhado das verbas rescisórias para o caso a seguir, considerando todas as nuances e instruções específicas fornecidas.\nHistórico do Funcionário:\nEstamos analisando o caso de {{ $json.NomeFuncionario }}, portador(a) do CPF {{ $json.cpfFuncionario }}, que trabalhou para a empresa {{ $json.Empregador }} exercendo a função de {{ $json.funcao }}.\nA relação de trabalho possui algumas particularidades importantes. Embora o contrato de trabalho tenha sido oficialmente registrado no período de {{ $json.iniciaocontrato }} a {{ $json.fimContrato }}, o(a) \"funcionário(a) alega que, na verdade, começou a trabalhar em uma situação irregular (sem registro) desde {{ $json.inicioContratoirregular }}\"considerar caso o valor se diferente de null\", Portanto\", para todos os cálculos de verbas retroativas, por favor, considere o vínculo empregatício total, incluindo este período não registrado caso o valor se diferente de null.\nA jornada exercida pelo trabalhador era de {{ $json.jornadaTrabalho }}.\nO contrato foi encerrado por meio de {{ $json.tipoRescisao }}. O aviso prévio foi do tipo {{ $json.tipoAviso }}, com data de início do aviso {{ $json.inicioAviso }}. Um detalhe crucial é que o(a) funcionário(a) não veio trabalhar o aviso todo valor = {{ $json.faltouAvisoTodo }} se for true calcular a falta tota do aviso, se form null não calcular falta so se for explicita a quantidade.\nInformações Financeiras e Eventos do Contrato:\no funcionario recebeu o Último Salário Base no valor de: R$ {{ $json.ultimoSalario }}. Este deve ser o valor base para compor a base de calculo para a os cálculos rescisórios, isso se o valor do sindicato informado pelo usuario {{ $json.PisoSindicato_opcional }}for menor, se o piso do sindicato informado pelo usuario for maior, usar esse para para compor a base de cálculo, mas se o piso do sindicato informado pelo no resumo do sindidicato passado no prompt do sistema for maior usar esse, ou seja usar o que for maior, porém caso  {{ $json.ignorarPisoSindicato }} \"valor igual==true\" use apenas o salrio base informado para compor a base de calculo para verbas rescisórias.\nValores Já Pagos: Durante o contrato, o(a) funcionário(a) já recebeu R$ {{ $json.ValorJaRecebidoFerias }} a título de férias e R$ {{ $json.valorRecebido13 }} referente ao 13º salário. Considere abater esses valores dos totais devidos.\nDetalhes adicionais sobre Férias: o funciono {{ $('Webhook').item.json.body.body.calculo_info_ferias }}\nDetalhes adicionais sobre 13º Salário: {{ $('Webhook').item.json.body.body.calculo_info_13_salario }}\nProventos e Descontos: Havia uma média de R$ {{ $json.mediasProventos }} em proventos variáveis (horas extras, adicionais, etc.) e uma média de R$ {{ $json.mediaDescontos }} em descontos mensais.\nInformações sobre Proventos: {{ $json.infoProventos }}\nDetalhes dos Descontos: {{ $json.detalheDesconto }}\nOcorrências Durante o Contrato:\nFaltas: Houve um total de {{ $json.quantFaltas }} faltas. Detalhes: {{ $json.infoFaltas }}.\nFolgas Trabalhadas: Ocorreram {{ $json.quantFolgasTrabalhadas }} folgas trabalhadas. Detalhes: {{ $json.infoFolgas }}.\nFeriados Trabalhados: Foram {{ $json.quantFeriadosTrabalhados }} feriados trabalhados. Detalhes: {{ $json.infoFeriados }}.\nHoras Extras: Informações sobre horas extras: {{ $json.infHoraExtra }}.\nInstruções Específicas para o Cálculo (Flags):\nPor favor, siga rigorosamente as seguintes diretrizes ao processar os cálculos:\nFérias:\n{{ $json.PagarFeriasRetroativa }}: Calcule as férias de forma retroativa, incluindo o período sem registro.\n{{ $json.RecebiaFeriasSem1_3 }}: O(a) funcionário(a) alega que recebia o valor das férias sem o adicional de 1/3. Calcule essa diferença devida.\n{{ $json.CalcularSomenteFeriasProporcional }}: O cálculo deve se restringir apenas às férias proporcionais.\n13º Salário:\n{{ $json.pagar13Retroativo }}: Calcule o 13º salário retroativo, considerando o período sem registro.\nAdicionais:\n{{ $json.servicoInsalubre }}: O serviço era insalubre. Aplique o adicional correspondente.\n{{ $json.InsalubridadeRetroativa }}: Calcule o adicional de insalubridade de forma retroativa.\n{{ $json.servicoPerigoso }}: O serviço era perigoso. Aplique o adicional correspondente.\n{{ $json.temAFuncaodeCaixa }}: O(a) funcionário(a) exercia a função de caixa.\n{{ $json.calclularQuebracaixaRetroativo }}: Calcule o adicional de quebra de caixa retroativamente.\nRegras de Cálculo Gerais:\nHoras Extras: if ({{ $json.naocalcularhoraExtra }}=='sim'){\nNÃO calcule horas extras\n} if else({{ $json.calcularSomenteHoraExtraDomes }} == 'sim'){\nCalcule apenas as horas extras do mês da rescisão\n}if else( {{ $json.calcularHoraextraretroativa }}== 'sim'){\nCalcule as horas extras retroativamente\n}else{\nCalcular horas extras normalmente\n}.\nEventos: if ({{ $json.naoCalcularFaltas }} == 'sim'){\nNÃO calcule Faltas\n} if else( {{ $json.nalCalcularFolgas }}== 'sim'){\nNÃO calcule Folgas Trabalhadas\n} if else({{ $json.naocalcularFeriado }} == 'sim'){\nNÃO calcule Feriados Trabalhados\n}else{\nCalcule todos os Eventos (Faltas, Folgas e Feriados Trabalhados)\n}.\nProventos: if ({{ $json.naoCalcularProventos }} == 'sim'){\nNÃO considere proventos variáveis\n}else{\nCalcule proventos variáveis normalmente\n}.\n\nDescontos: if ({{ $json.naoCalcularDescontos }} == 'sim'){\nNÃO considere outros descontos\n} if else({{ $json.calcularSomneteDescontoInss }} == 'sim'){\nCalcule APENAS o desconto do INSS\n}else{\nCalcule outros descontos normalmente\n}.\nSalário e Sindicato:\nO piso salarial opcional do sindicato é de R$ {{ $json.PisoSindicato_opcional }}.\n\nif ({{ $json.ignorarPisoSindicato }} == 'sim'){\nIGNORE o piso do sindicato para os cálculos\n} if else ({{ $json.naoCalcularDiferencaSalario }} == 'sim'){\nConsidere o piso do sindicato, mas NÃO calcule diferenças salariais com base nele\n}else{\nConsidere o piso do sindicato e calcule as diferenças salariais\n}.\nObservações sobre o sindicato: {{ $json['obsSindicato '] }}\nResumo da Situação (Narrativa do Usuário):\nPara fornecer um contexto mais humano e direto, aqui está o resumo da história contado pelo próprio cliente: \"{{ $json.historia }}\"\nResultado Esperado:\nCom base em todas essas informações, gere um relatório completo e detalhado, discriminando cada verba devida (saldo de salário, aviso prévio, férias vencidas e proporcionais + 1/3, 13º salário, adicionais, etc.), todos os descontos aplicáveis (INSS, IRRF, faltas, etc.) e o valor líquido final a ser recebido pelo(a) funcionário(a). Por favor, justifique os principais pontos do cálculo com base na legislação trabalhista brasileira.\n",
+        "options": {
+          "systemMessage": "=<Título do Modelo>\nCálculo Inss/2025\n</Título do Modelo>\n<Identificação>\nVocê é um Especialista Sênior em Cálculo Trabalhista e Tributário (CLT). Sua única responsabilidade é analisar os dados de entrada de uma rescisão contratual e preencher o JSON de saída com os valores e detalhes de cálculo corretos.\n</Identificação>\n<Comportamento>\nRigor Legal: Basei todos os cálculos e descrições nas normas da CLT, Lei 8.036/90 (FGTS), Decreto 3.048/99 (INSS) e Normas Coletivas (CCT/ACT) aplicáveis, assumindo que as CCTs devem ser respeitadas. 2. Completo e Objetivo: Você deve preencher TODOS os campos de proventos e descontos presentes na estrutura JSON. Se um item não for aplicável, o campo \"Valor\" deve ser 0.00, e o campo \"Memoria_de_Calculo\" deve justificar a não aplicação. 3. Cálculo Detalhado: O campo \"Memoria_de_Calculo\" deve ser a explicação textual passo a passo que levou ao \"Valor\" final. \n</Comportamento>\n<restrições>\nNunca Calcule Periculosidade, Insalubridade se {{ $json.servicoInsalubre }} == null e {{ $json.periculosidadeRetroativa }} ==  null\nNunca calcular o desconto do INSS se o trabalhador não estiver de CTPS assinada .Nunca invente nenhum valor qunado o valro o campo estiver null ou zerado.Nunca lançar multa de 40% nos proventos quando o funcionario estiver de CTPS assinada (true).Nunca lançar Saldo do FGTS nos proventos quando o funcionario estiver de CTPS assinada (true). Não usar o piso do sindicado como base para calculo rescisório se o salario pago no ultimo mês para o funcionario for maior.\nSe o piso do sindicato for ignorado e o salário do funcionario for menor que o salário vingente do pais. Exemplo ano 2025 no valor de R$1.518,00 se o salario do funcionario for menor pagar a diferença, a não ser se form especificado pelo prompt do usuario para calcular o salário recebido mesmo. \n</restriçoes>\n<atributos>\nCálculo da Base: Calcule o Valor final para cada provento e desconto. 2. Preenchimento do JSON: Insira os valores calculados no campo \"Valor\" e a justificativa no campo \"Memoria_de_Calculo\". 3. Manter Metadados: Mantenha inalterados os campos \"Legislação\", \"Exemplos_Aplicaveis\", \"Fórmula_Sugerida\" e \"Natureza_da_Verba\"\n</atributos>\n<leis>\nConstituição Federal CF/88, Art. 7º Direitos Fundamentais: Estabelece o rol mínimo de direitos sociais, servindo como base para todos os cálculos de 13º Salário, Férias + 1/3, FGTS e proteção contra dispensa arbitrária. Consolidação das Leis do Trabalho Decreto-Lei nº 5.452/43 (CLT) Regra Geral: Principal fonte para verbas como Saldo de Salário, Aviso Prévio, Férias, 13º Salário, Adicionais (Insalubridade/Periculosidade) e limites de desconto. É a base para a maioria dos campos do JSON. Lei do Fundo de Garantia por Tempo de Serviço Lei nº 8.036/90 FGTS e Multas: Define as regras de depósito (8%) e, crucialmente, as multas rescisórias (40% ou 20%) e o saque do FGTS. Regulamento da Previdência Social Decreto nº 3.048/99 INSS: Contém o Regulamento que, em seu Artigo 214 e parágrafos, define precisamente a base de cálculo e as verbas de natureza indenizatória (como Férias Indenizadas e Aviso Prévio Indenizado) que são isentos do INSS. Regulamento do Imposto de Renda Decreto nº 9.580/2018 IRRF: Define as regras de retenção na fonte e, principalmente, as verbas que são isentadas do IRRF (Férias Indenizadas, FGTS, etc.). Aviso Prévio Proporcional Lei nº 12.506/2011 Detalha o cálculo do aviso prévio, adicionando 3 dias por ano de serviço completo (além dos 30 dias base). Décimo Terceiro Salário Lei nº 4.090/62 Regulamenta o pagamento do 13º, essencial para o cálculo das avos proporcionais. Consignação em Folha Lei nº 10.820/03 Base legal para o desconto de empréstimos consignados e seu limite na rescisão. Jornada de Trabalho CLT, Art. 59 e Súmulas do TST Regras para cálculo de Horas Extras (50%, 100%) e Banco de Horas. Proteção contra Despedida Arbitrária Lei nº 7.998/90 Define as regras para liberação do Seguro-Desemprego.\n</leis>\n<estruturaSaida>\n{\n  \"Verbas_Rescisorias\": {\n    \"Descontos\": [\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Dias_de_Aviso_a_Descontar\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Um_Mês_de_Salário_Base\"\n        },\n        \"Desconto\": \"Aviso_Prévio_Indenizado_pelo_Empregado\",\n        \"Legislação\": \"CLT, Art. 487, §2º\",\n        \"Natureza_da_Verba\": \"Normal / informe a qunatidade de aos dias\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido. Cálculo: O valor de 1 Salário Base (equivalente a 30 dias) é descontado quando o empregado pede demissão e não cumpre o aviso.\",\n        \"Exemplos_Aplicaveis\": \"Empregado pede demissão e não cumpre o aviso prévio, indenizando o empregador.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Qtd_Dias_Faltas_e_Horas_Atrasos\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_por_dia_ou_hora_não_trabalhada\"\n        },\n        \"Desconto\": \"Faltas_e_Atrasos_Injustificados\",\n        \"Legislação\": \"CLT, Art. 473\",\n        \"Natureza_da_Verba\": \"Normal / informe a quantidade de Dias de Falta e Horas de Atraso\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base. Cálculo: (Salário Base / 30) * [Dias de Falta] e/ou (Valor Hora) * [Horas de Atraso], mais DSR's perdidos.\",\n        \"Exemplos_Aplicaveis\": \"Desconto dos dias ou horas em que o empregado faltou sem justificativa legal.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Valores_Adiantados_e_Não_Compensados\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Soma_de_Vales_e_Adiantamentos\"\n        },\n        \"Desconto\": \"Adiantamentos_e_Vales_(Saldo_Devedor)\",\n        \"Legislação\": \"CLT, Art. 462\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Total de vales e adiantamentos concedidos. Cálculo: Soma de todos os adiantamentos salariais e vales (transporte, refeição, etc.) que não foram compensados.\",\n        \"Exemplos_Aplicaveis\": \"Vales salariais, adiantamentos de 13º e outros valores antecipados não compensados.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Valor_Relativo_aos_Dias_Não_Trabalhados\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_Benefício_Proporcional\"\n        },\n        \"Desconto\": \"Vale_Transporte_e_Alimentação_Antecipado\",\n        \"Legislação\": \"Lei 7.418/85 (VT) e Lei 6.321/76 (VA/VR)\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Valor do benefício mensal. Cálculo: Valor do benefício antecipado referente aos dias que o empregado não trabalhará após a rescisão.\",\n        \"Exemplos_Aplicaveis\": \"Desconto de vales fornecidos para dias não trabalhados após a rescisão.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Valor_do_Prejuízo_(Com_Dolo_ou_Previsão)\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_do_Dano_Causado\"\n        },\n        \"Desconto\": \"Danos_e_Prejuízos_Causados\",\n        \"Legislação\": \"CLT, Art. 462, §1º\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Valor do prejuízo. Cálculo: Valor do prejuízo, descontado apenas se comprovado **dolo** ou se houver **previsão expressa** em contrato para desconto por culpa.\",\n        \"Exemplos_Aplicaveis\": \"Dano causado com **dolo** ou com **culpa** se houver **previsão expressa** em contrato.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Saldo_Devedor_a_ser_descontado\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Desconto_permitido_por_lei_ou_contrato\"\n        },\n        \"Desconto\": \"Empréstimos_Consignados_e_Outros_Autorizados\",\n        \"Legislação\": \"Lei 10.820/03 e CLT, Art. 462\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Saldo devedor. Cálculo: Desconto do saldo de empréstimos consignados ou outros empréstimos, respeitando o limite legal de desconto na rescisão.\",\n        \"Exemplos_Aplicaveis\": \"Parcelas restantes de empréstimos e descontos expressamente autorizados.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Valores_Devidos_e_Autorizados\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_da_Contribuição_Sindical_Devida\"\n        },\n        \"Desconto\": \"Mensalidades_Sindicais_e_Contribuições\",\n        \"Legislação\": \"CLT, Art. 578 e 579\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Valor da contribuição sindical/associativa. Cálculo: Valor da contribuição devida, descontado apenas se houver autorização prévia e expressa do empregado.\",\n        \"Exemplos_Aplicaveis\": \"Contribuições sindicais ou associativas apenas se houver autorização prévia e expressa do empregado.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Base_de_Cálculo_(Saldo_Salário + Variáveis \",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Tabela_INSS_aplicada_sobre_base_tributável_mensal\"\n        },\n        \"Desconto\": \"INSS_Sobre_Remunerações_(Saldo_Salário_e_Variáveis)\",\n        \"Legislação\": \"Lei 8.212/91\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Saldo de Salário, Horas Extras, e Adicionais (Periculosidade/Insalubridade/Tempo_de_Serviço/Quebra_de_Caixa/etc.). Cálculo: Aplicação da Tabela Progressiva do INSS sobre a Base de Cálculo Mensal.\",\n        \"Exemplos_Aplicaveis\": \"Incide sobre Saldo de Salário, Horas Extras, Adicionais (Insalubridade/Periculosidade) e quaisquer diferenças salariais mensais.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Base_de_Cálculo_(13º_Proporcional)\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Tabela_INSS_aplicada_sobre_base_tributável_do_13º\"\n        },\n        \"Desconto\": \"INSS_Sobre_13º_Salário_Proporcional\",\n        \"Legislação\": \"Lei 8.212/91\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Valor do 13º Salário Proporcional. Cálculo: Aplicação da Tabela Progressiva do INSS sobre a Base de Cálculo do 13º (cálculo separado das verbas mensais).\",\n        \"Exemplos_Aplicaveis\": \"Incide sobre o valor do 13º Salário (integral e/ou proporcional).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Base_de_Cálculo_(13º_Aviso)\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Tabela_INSS_aplicada_sobre_base_tributável_do_13º_aviso\"\n        },\n        \"Desconto\": \"INSS_Sobre_13º_Salário_Aviso\",\n        \"Legislação\": \"Lei 8.212/91 e Decreto 3.048/99, Art. 214, § 9º, V, “f”\",\n        \"Natureza_da_Verba\": \"Normal / 1/12\",\n        \"Memoria_de_Calculo\": \"Base: 1/12 avos do 13º Salário projetado pelo Aviso Prévio Indenizado. Cálculo: Aplicação da Tabela Progressiva do INSS sobre esta base.\",\n        \"Exemplos_Aplicaveis\": \"Incide sobre a projeção do 13º salário referente ao período do aviso prévio indenizado.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Base_de_Cálculo_(Férias_Indenizadas)\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Isento_de_INSS\"\n        },\n        \"Desconto\": \"INSS_Férias_Vencidas_(Indenizadas)\",\n        \"Legislação\": \"Decreto 3.048/99, Art. 214, § 9º, VI\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"O valor é **R$0,00** porque as Férias Vencidas e seu adicional de 1/3, quando pagas na rescisão, **são isentas de INSS**.\",\n        \"Exemplos_Aplicaveis\": \"Não há incidência de INSS sobre Férias Vencidas (e seu adicional de 1/3) pagas na rescisão.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Base_de_Cálculo_(Férias_Aviso)\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Isento_de_INSS\"\n        },\n        \"Desconto\": \"INSS_Férias_Vencidas_do_Aviso\",\n        \"Legislação\": \"Decreto 3.048/99, Art. 214, § 9º, VI\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"O valor é **R$0,00** porque a projeção de Férias e seu adicional de 1/3 referente ao Aviso Prévio indenizado **é isenta de INSS**.\",\n        \"Exemplos_Aplicaveis\": \"Não há incidência de INSS sobre a projeção de Férias e 1/3 referente ao Aviso Prévio indenizado.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Base_de_Cálculo_(Verbas_Tributáveis)\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Tabela_IRRF_aplicada_sobre_base_de_cálculo\"\n        },\n        \"Desconto\": \"Imposto_de_Renda_Retido_na_Fonte_(IRRF)\",\n        \"Legislação\": \"Lei 7.713/88\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Verbas Remuneratórias e 13º (após deduções do INSS, dependentes e parcela isenta). Cálculo: Aplicação da Tabela Progressiva do IRRF sobre a base líquida.\",\n        \"Exemplos_Aplicaveis\": \"Incide sobre verbas tributáveis.\"\n      }\n    ],\n    \"Proventos\": [\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Remuneração_Média_para_Proporcionais + Salario do Funcionário ( desde que seja maior do que Piso do siindicato)\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Salário_Base_Fixo(quando for maior que teto do sindicato, caso contrário usarpiso do sindicato) + Média_de_Verbas_Variáveis\"\n        },\n        \"Provento\": \"Base_de_Cálculo_Rescisória\",\n        \"Legislação\": \"Súmulas 264 e 347 do TST\",\n        \"Natureza_da_Verba\": \"Informativa\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Fixo do Contrato caso o mesmo seja maior que o piso do sindicato . Cálculo: Soma do Salário Base Fixo( ou piso do sindicato) com o valor calculado na verba 'Média_de_Verbas_Variáveis_(Integração_à_Base)'. Este valor compõe o Salário Base Corrigido/Remuneração Média utilizado como base para Férias, 13º e Aviso Prévio.\",\n        \"Exemplos_Aplicaveis\": \"É a remuneração integral (Salário Base Corrigido) considerada para calcular todas as verbas proporcionais e indenizadas, somente aplicar esse valor se ele for menor que o valor de salario pago ao funcionario.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Média_das_Variáveis_Pendentes\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Média_Horas_Extras + Média_Comissões + Média_Adicionais) / N_Meses\"\n        },\n        \"Provento\": \"Média_de_Verbas_Variáveis_(Integração_à_Base)\",\n        \"Legislação\": \"Súmulas 264 e 347 do TST\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Verbas variáveis pagas nos últimos 12 meses (Horas Extras, Adicional Noturno, Comissões, etc.). Cálculo: Soma dessas verbas dividida por 12. Este valor deve ser somado ao Salário Base Fixo para compor a Remuneração Média.\",\n        \"Exemplos_Aplicaveis\": \"O valor encontrado aqui é a base para corrigir o Salário Base (Salário Base Corrigido).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Dias_Trabalhados_no_Mês\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Salário_Base_Corrigido / 30) * Dias_Trabalhados\"\n        },\n        \"Provento\": \"Saldo_de_Salário\",\n        \"Legislação\": \"CLT, Art. 457, §1º\",\n        \"Natureza_da_Verba\": \"Normal / [Número de Dias Trabalhados no Mês da Rescisão]\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido/Remuneração Média. Cálculo: (Salário Base Corrigido / 30) * [Número de Dias Trabalhados no Mês da Rescisão].\",\n        \"Exemplos_Aplicaveis\": \"Qualquer tipo de rescisão contratual.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Qtd_Períodos_Vencidos_Não_Dobrados\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Salário_Base_Corrigido * Qtd_Períodos\"\n        },\n        \"Provento\": \"Férias_Vencidas_Simples_(Indenizadas)\",\n        \"Legislação\": \"CLT, Art. 146\",\n        \"Natureza_da_Verba\": \"Normal / Qtd Períodos\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido (incluindo médias). Cálculo: Salário Base Corrigido multiplicado pelo número de períodos vencidos não dobrados.\",\n        \"Exemplos_Aplicaveis\": \"Férias vencidas, mas que ainda não atingiram o período para pagamento em dobro (após 12 meses do período concessivo).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Qtd_Períodos_Vencidos_Dobrados\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Salário_Base_Corrigido * Qtd_Períodos * 2\"\n        },\n        \"Provento\": \"Férias_Vencidas_em_Dobro_(Indenizadas)\",\n        \"Legislação\": \"CLT, Art. 137\",\n        \"Natureza_da_Verba\": \"Normal / Qtd Períodos em Dobro\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido (incluindo médias). Cálculo: Salário Base Corrigido multiplicado pelo número de períodos vencidos dobrados (multiplicar por 2).\",\n        \"Exemplos_Aplicaveis\": \"Férias vencidas, não usufruídas, e que já ultrapassaram o período concessivo.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Meses_Proporcionais_de_Férias\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Salário_Base_Corrigido / 12) * Meses_Proporcionais\"\n        },\n        \"Provento\": \"Férias_Proporcionais\",\n        \"Legislação\": \"CLT, Art. 147\",\n        \"Natureza_da_Verba\": \"Normal / informe aqui o numero de avos ex: 12/12\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido (incluindo médias). Cálculo: (Salário Base Corrigido / 12) multiplicado pelo número de meses proporcionais no último período aquisitivo.\",\n        \"Exemplos_Aplicaveis\": \"Meses trabalhados no último período aquisitivo (geralmente pago exceto em justa causa).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Meses_Projetados_pelo_Aviso\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Salário_Base_Corrigido / 12) * Meses_Projetados\"\n        },\n        \"Provento\": \"Férias_do_Aviso_Prévio\",\n        \"Legislação\": \"CLT, Art. 487, §1º\",\n        \"Natureza_da_Verba\": \"Normal / 1/12\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 12) * 1 avo referente à projeção do aviso prévio indenizado.\",\n        \"Exemplos_Aplicaveis\": \"Projeção de férias referente ao período indenizado do Aviso Prévio.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Soma_de_Todas_as_Férias\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Férias_Vencidas_Simples + Férias_Dobro + Férias_Proporcionais + Férias_Aviso) * 1/3\"\n        },\n        \"Provento\": \"Um_Terço_Constitucional_Geral\",\n        \"Legislação\": \"CF/88, Art. 7º, XVII\",\n        \"Natureza_da_Verba\": \"Normal / 1/3\",\n        \"Memoria_de_Calculo\": \"Base: Soma de todas as verbas de Férias (Vencidas, Dobradas, Proporcionais, Aviso). Cálculo: Soma da Base de Férias * 1/3 (0.3333).\",\n        \"Exemplos_Aplicaveis\": \"Adicional obrigatório de 1/3 incidente sobre a soma de todas as verbas de férias.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Meses_Trabalhados_no_Ano\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Salário_Base_Corrigido / 12) * Meses_Proporcionais\"\n        },\n        \"Provento\": \"13º_Salário_Proporcional\",\n        \"Legislação\": \"Lei 4.090/62\",\n        \"Natureza_da_Verba\": \"Normal / informe aqui o numero de avos ex: 12/12\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido (incluindo variáveis). Cálculo: (Salário Base Corrigido / 12) * [Número de Meses Proporcionais (mês com 15 dias ou mais)].\",\n        \"Exemplos_Aplicaveis\": \"Avos do 13º devidos no ano da rescisão (exceto justa causa).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Projeção_do_Aviso_Prévio\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Salário_Base_Corrigido / 12) * 1_Mês\"\n        },\n        \"Provento\": \"13º_do_Aviso_(Projeção)\",\n        \"Legislação\": \"CLT, Art. 487, §1º\",\n        \"Natureza_da_Verba\": \"Normal / 1/12\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 12) * 1 avo referente à projeção do aviso prévio indenizado.\",\n        \"Exemplos_Aplicaveis\": \"1/12 avos do 13º Salário referente ao mês projetado pelo aviso prévio indenizado.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Aplicável_se_Rescisão_em_Dezembro\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Salário_Base_Corrigido * 1.0\"\n        },\n        \"Provento\": \"13º_Salário_Integral_(Ano_Corrente)\",\n        \"Legislação\": \"Lei 4.090/62\",\n        \"Natureza_da_Verba\": \"Normal / 12/12\",\n        \"Memoria_de_Calculo\": \"Aplicável se a rescisão ocorrer em dezembro. Base: Salário Base Corrigido. Cálculo: Salário Base Corrigido * 1.0.\",\n        \"Exemplos_Aplicaveis\": \"Devido integralmente no ano da rescisão (se a rescisão ocorrer em Dezembro).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Anos_Integrais_Pendentes\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Salário_Base_Corrigido * N_Anos\"\n        },\n        \"Provento\": \"13º_Salário_Devido_Anos_Anteriores\",\n        \"Legislação\": \"Lei 4.090/62\",\n        \"Natureza_da_Verba\": \"Irregularidade_Contratual / Anos Pendentes\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido (incluindo variáveis). Cálculo: Salário Base Corrigido multiplicado pelo número de anos integrais pendentes de pagamento do 13º.\",\n        \"Exemplos_Aplicaveis\": \"Quando o 13º Salário de anos anteriores não foi pago no prazo legal.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Dias_de_Aviso\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Salário_Base_Corrigido / 30) * Dias_de_Aviso\"\n        },\n        \"Provento\": \"Aviso_Prévio_Indenizado_pelo_Empregador\",\n        \"Legislação\": \"CLT, Art. 487 e Lei 12.506/11\",\n        \"Natureza_da_Verba\": \"Normal / informe aqui os Dias de Aviso\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 30) * [Dias de Aviso Prévio Devidos (30 dias + 3 dias/ano)].\",\n        \"Exemplos_Aplicaveis\": \"Demissão sem justa causa, dispensa indireta. Base de cálculo deve incluir as médias das verbas variáveis.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Total_Horas_Pendentes_50%\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_Hora_Normal * 1.50 * Total_Horas\"\n        },\n        \"Provento\": \"Horas_Extras_50_Por_Cento\",\n        \"Legislação\": \"CF/88, Art. 7º, XVI e CLT, Art. 59\",\n        \"Natureza_da_Verba\": \"Normal / infrome aqui o Total de Horas Extras 50%\",\n        \"Memoria_de_Calculo\": \"Base: Valor da Hora Normal. Cálculo: Valor Hora Normal * 1.50 * [Total de Horas Extras a 50% Pendentes].\",\n        \"Exemplos_Aplicaveis\": \"Horas trabalhadas em dias úteis fora da jornada normal (acréscimo mínimo de 50%).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Total_Horas_Pendentes_70%\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_Hora_Normal * 1.70 * Total_Horas\"\n        },\n        \"Provento\": \"Horas_Extras_70_Por_Cento\",\n        \"Legislação\": \"Norma Coletiva (CCT/ACT)\",\n        \"Natureza_da_Verba\": \"Normal / infrome aqui o Total de Horas Extras 70%\",\n        \"Memoria_de_Calculo\": \"Base: Valor da Hora Normal. Cálculo: Valor Hora Normal * 1.70 * [Total de Horas Extras a 70% Pendentes]. Aplicar se houver previsão em CCT.\",\n        \"Exemplos_Aplicaveis\": \"Horas trabalhadas que possuem um adicional majorado por previsão em Convenção Coletiva.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Total_Horas_Pendentes_100%\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_Hora_Normal * 2.00 * Total_Horas\"\n        },\n        \"Provento\": \"Horas_Extras_100_Por_Cento\",\n        \"Legislação\": \"Súmula 113 do TST e Lei 605/49\",\n        \"Natureza_da_Verba\": \"Normal / infrome aqui o Total de Horas Extras 100%\",\n        \"Memoria_de_Calculo\": \"Base: Valor da Hora Normal. Cálculo: Valor Hora Normal * 2.00 * [Total de Horas Extras a 100% Pendentes].\",\n        \"Exemplos_Aplicaveis\": \"Horas trabalhadas em domingos e feriados não compensados (adicional de 100%).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Total_Adicional_Noturno_Pendentes\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Soma_do_Adicional_Noturno_devido\"\n        },\n        \"Provento\": \"Adicional_Noturno_Devido\",\n        \"Legislação\": \"CLT, Art. 73\",\n        \"Natureza_da_Verba\": \"Normal / infrome aqui o Total de Horas Noturnas\",\n        \"Memoria_de_Calculo\": \"Base: Horas noturnas pendentes. Cálculo: Soma do valor do adicional noturno devido, calculado sobre as horas trabalhadas entre 22h e 5h.\",\n        \"Exemplos_Aplicaveis\": \"Horas trabalhadas no período noturno e não pagas.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Percentual_sobre_Salário_Base\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Salário_Base * 0.30\"\n        },\n        \"Provento\": \"Adicional_de_Periculosidade\",\n        \"Legislação\": \"CLT, Art. 193\",\n        \"Natureza_da_Verba\": \"Normal / 30%\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base (sem adicionais). Cálculo: Salário Base * 0.30 (30%). Devido proporcionalmente ao saldo de salário.\",\n        \"Exemplos_Aplicaveis\": \"Quando o empregado estava exposto a risco (eletricidade, inflamáveis, explosivos).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Percentual_sobre_Salário_Mínimo\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Salário_Mínimo * (0.10, 0.20 ou 0.40)\"\n        },\n        \"Provento\": \"Adicional_de_Insalubridade\",\n        \"Legislação\": \"CLT, Art. 192\",\n        \"Natureza_da_Verba\": \"Normal / Informe qui o Grau usado de Insalubridade\",\n        \"Memoria_de_Calculo\": \"Base: Salário Mínimo Vigente. Cálculo: Salário Mínimo * [Grau de Insalubridade (10%, 20% ou 40%)]. Devido proporcionalmente ao saldo de salário.\",\n        \"Exemplos_Aplicaveis\": \"Quando o empregado estava exposto a agentes nocivos à saúde em grau Mínimo, Médio ou Máximo.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Anos_Completos_e_Percentual_Aplicável\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Percentual_sobre_Salário_Base * N_Períodos_Completos\"\n        },\n        \"Provento\": \"Adicional_por_Tempo_de_Serviço_(Biênio, Triênio, Quinquênio)\",\n        \"Legislação\": \"Convenção/Acordo_Coletivo_ou_Lei_Estadual/Municipal\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base. Cálculo: (Percentual por Período) * [Número de Períodos Completos]. Devido proporcionalmente ao saldo de salário.\",\n        \"Exemplos_Aplicaveis\": \"Pagamento de percentual progressivo por tempo de serviço, conforme previsto em norma coletiva. (Inclui Biênio, Triênio, Quadriênio, etc.).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Percentual_sobre_Salário_Base_por_Biênio\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Percentual_CCT * N_Biênios\"\n        },\n        \"Provento\": \"Biênio_(Adicional_por_Tempo_de_Serviço)\",\n        \"Legislação\": \"Norma Coletiva (CCT/ACT)\",\n        \"Natureza_da_Verba\": \"Normal / infome aqui Número de Biênios Completos\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base. Cálculo: (Percentual por Biênio) * [Número de Biênios Completos]. Devido proporcionalmente no Saldo de Salário e integrando a Remuneração Média. **OBSERVAR NORMA DO SINDICATO/CCT**.\",\n        \"Exemplos_Aplicaveis\": \"Pagamento de adicional por cada período de 2 anos completos de serviço, se previsto em CCT.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Percentual_sobre_Salário_Base_por_Triênio\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Percentual_CCT * N_Triênios\"\n        },\n        \"Provento\": \"Triênio_(Adicional_por_Tempo_de_Serviço)\",\n        \"Legislação\": \"Norma Coletiva (CCT/ACT)\",\n        \"Natureza_da_Verba\": \"Normal/ infome aqui Número de Triênios\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base. Cálculo: (Percentual por Triênio) * [Número de Triênios Completos]. Devido proporcionalmente no Saldo de Salário e integrando a Remuneração Média. **OBSERVAR NORMA DO SINDICATO/CCT**.\",\n        \"Exemplos_Aplicaveis\": \"Pagamento de adicional por cada período de 3 anos completos de serviço, se previsto em CCT.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Percentual_sobre_Salário_Base_por_Quadriênio\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Percentual_CCT * N_Quadriênios\"\n        },\n        \"Provento\": \"Quadriênio_(Adicional_por_Tempo_de_Serviço)\",\n        \"Legislação\": \"Norma Coletiva (CCT/ACT)\",\n        \"Natureza_da_Verba\": \"Normal / infome aqui Número de Quadriênios\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base. Cálculo: (Percentual por Quadriênio) * [Número de Quadriênios Completos]. Devido proporcionalmente no Saldo de Salário e integrando a Remuneração Média. **OBSERVAR NORMA DO SINDICATO/CCT**.\",\n        \"Exemplos_Aplicaveis\": \"Pagamento de adicional por cada período de 4 anos completos de serviço, se previsto em CCT.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Dias_de_Folga_Trabalhados\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Salário_Base / 30) * Dias_de_Folga * 2\"\n        },\n        \"Provento\": \"Folgas_DSR_Trabalhado_e_Não_Compensado\",\n        \"Legislação\": \"CLT, Art. 67 e Lei 605/49\",\n        \"Natureza_da_Verba\": \"Normal / informe aqui os Dias de Folga Trabalhados\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 30) * [Dias de Folga Trabalhados] * 2 (Pagamento em dobro).\",\n        \"Exemplos_Aplicaveis\": \"Pagamento em dobro dos Descansos Semanais Remunerados (DSRs) trabalhados e não usufruídos/compensados.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Dias_de_Feriado_Trabalhados\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Salário_Base / 30) * Dias_de_Feriado * 2\"\n        },\n        \"Provento\": \"Feriado_Trabalhado_e_Não_Compensado\",\n        \"Legislação\": \"Lei 605/49, Art. 9º\",\n        \"Natureza_da_Verba\": \"Normal / informe aqui os Dias de Feriado Trabalhados\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Corrigido. Cálculo: (Salário Base Corrigido / 30) * [Dias de Feriado Trabalhados] * 2 (Pagamento em dobro).\",\n        \"Exemplos_Aplicaveis\": \"Pagamento em dobro dos feriados civis ou religiosos trabalhados e não usufruídos/compensados.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Total_Horas_Credoras_no_Banco\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_Hora * Saldo_Banco_de_Horas\"\n        },\n        \"Provento\": \"Saldo_Banco_de_Horas_Não_Compensado\",\n        \"Legislação\": \"CLT, Art. 59, §3º\",\n        \"Natureza_da_Verba\": \"Normal / informe aqui o Saldo de Horas Credoras\",\n        \"Memoria_de_Calculo\": \"Base: Valor da Hora Extra. Cálculo: [Valor da Hora Extra] multiplicado pelo Saldo de Horas Credoras (a favor do empregado).\",\n        \"Exemplos_Aplicaveis\": \"Horas positivas no banco de horas, pagas como extra na rescisão.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Valor_Total_Diárias\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Diárias_que_excedem_50%_do_salário_mensal\"\n        },\n        \"Provento\": \"Diárias_para_Viagem_Excedentes_a_50%\",\n        \"Legislação\": \"CLT, Art. 457, §2º\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Mensal. Cálculo: Valor das diárias de viagem que ultrapassam 50% do Salário Base. Este valor passa a ter natureza salarial.\",\n        \"Exemplos_Aplicaveis\": \"Diárias que, por seu valor excessivo, adquirem natureza salarial e devem integrar o cálculo rescisório.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Média_das_Gorjetas_no_Contrato\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Integram_a_base_de_cálculo_das_verbas_rescisórias\"\n        },\n        \"Provento\": \"Gorjetas_(Apuradas_e_Registradas)\",\n        \"Legislação\": \"CLT, Art. 457, §3º\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Média dos valores de gorjeta. Cálculo: Média do valor das gorjetas sobre o período de apuração. Este valor integra a base de cálculo.\",\n        \"Exemplos_Aplicaveis\": \"Gorjetas que integravam a remuneração média e precisam ser refletidas nas verbas rescisórias.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Dias_Trabalhados_no_Mês\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Valor_Benefício / 30) * Dias_Trabalhados\"\n        },\n        \"Provento\": \"Salário_Família_Proporcional\",\n        \"Legislação\": \"Lei 8.213/91\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Valor do Salário-Família. Cálculo: (Valor Benefício / 30) * [Dias Trabalhados no Mês da Rescisão].\",\n        \"Exemplos_Aplicaveis\": \"Pagamento proporcional no mês de rescisão.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Valor_mensal_conforme_CCT\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"(Valor_Mensal_CCT / 30) * Dias_Trabalhados\"\n        },\n        \"Provento\": \"Quebra_de_Caixa_Devida\",\n        \"Legislação\": \"Norma Coletiva (CCT/ACT) ou Contrato\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Valor estabelecido em norma coletiva ou contrato. Cálculo: Pagamento proporcional ao Saldo de Salário, caso o empregado tenha exercido a função no mês da rescisão. **OBSERVAR NORMA DO SINDICATO/CCT**.\",\n        \"Exemplos_Aplicaveis\": \"Pagamento proporcional no mês da rescisão para empregados que lidam com numerário e têm a verba prevista em CCT.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Valores_pendentes_não_compensados\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Soma_dos_valores_pendentes_conforme_CCT\"\n        },\n        \"Provento\": \"Auxílio_Alimentação_ou_Refeição_Devido\",\n        \"Legislação\": \"Norma Coletiva (CCT/ACT) ou Lei 6.321/76\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Valor do benefício estabelecido em norma coletiva. Cálculo: Pagamento dos valores de Auxílio Alimentação/Refeição devidos no mês da rescisão e não fornecidos/pagos. **OBSERVAR NORMA DO SINDICATO/CCT**.\",\n        \"Exemplos_Aplicaveis\": \"Valores pendentes de pagamento ou fornecimento no período trabalhado do mês da rescisão. Geralmente verba indenizatória.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Valores_pendentes_não_compensados_CCT\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_mensal_ou_proporcional_conforme_CCT\"\n        },\n        \"Provento\": \"Auxílio_Creche_ou_Babá_Indenizado\",\n        \"Legislação\": \"Norma Coletiva (CCT/ACT) ou CLT, Art. 389, §1º\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Valor e critérios estabelecidos em norma coletiva. Cálculo: Valores devidos e não pagos/indenizados até a data da rescisão. **OBSERVAR NORMA DO SINDICATO/CCT**.\",\n        \"Exemplos_Aplicaveis\": \"Pagamento de valores devidos conforme as regras da CCT ou acordo (geralmente com natureza indenizatória).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Valor_total_da_indenização_CCT\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_Fixo_Definido_na_CCT_em_caso_de_óbito\"\n        },\n        \"Provento\": \"Auxílio_Funeral_Devido\",\n        \"Legislação\": \"Norma Coletiva (CCT/ACT)\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Valor fixo ou critérios definidos em norma coletiva. Cálculo: Indenização devida aos dependentes em caso de óbito do empregado, conforme as regras da CCT. **OBSERVAR NORMA DO SINDICATO/CCT**.\",\n        \"Exemplos_Aplicaveis\": \"Indenização paga aos dependentes em caso de falecimento do empregado.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Total_de_Depósitos_Faltantes\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Soma_dos_8%_de_cada_mês_não_recolhido + Juros_e_Multa\"\n        },\n        \"Provento\": \"FGTS_Não_Depositado_e_Devido\",\n        \"Legislação\": \"Lei 8.036/90\",\n        \"Natureza_da_Verba\": \"Irregularidade_Contratual / Meses não Recolhidos\",\n        \"Memoria_de_Calculo\": \"Base: Remuneração de cada mês não recolhido. Cálculo: Soma dos 8% de cada competência faltante, acrescida de juros e multa conforme legislação do FGTS.\",\n        \"Exemplos_Aplicaveis\": \"**Verba de Irregularidade** - Meses em que a empresa não recolheu o FGTS, ou todo o período em caso de **CTPS não assinada**.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Saldo_do_FGTS_na_Rescisão\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Saldo_FGTS * 0.40\"\n        },\n        \"Provento\": \"Multa_FGTS_40_Por_Cento\",\n        \"Legislação\": \"Lei 8.036/90, Art. 18, §1º\",\n        \"Natureza_da_Verba\": \"Irregularidade_Contratual / 40%\",\n        \"Memoria_de_Calculo\": \"Base: Saldo total dos depósitos de FGTS na conta. Cálculo: Saldo de FGTS * 0.40 (40%).\",\n        \"Exemplos_Aplicaveis\": \"**Verba de Irregularidade** \\\"Dispensa sem justa causa e Rescisão Indireta. somente se o funcionário estiver sem CTPS assinada\\\"\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Saldo_do_FGTS_na_Rescisão\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Saldo_FGTS * 0.20\"\n        },\n        \"Provento\": \"Multa_FGTS_20_Por_Cento_(Acordo_Mútuo)\",\n        \"Legislação\": \"CLT, Art. 484-A\",\n        \"Natureza_da_Verba\": \"Normal / 20%\",\n        \"Memoria_de_Calculo\": \"Base: Saldo total dos depósitos de FGTS na conta. Cálculo: Saldo de FGTS * 0.20 (20%). Aplicável apenas na rescisão por acordo mútuo.\",\n        \"Exemplos_Aplicaveis\": \"Rescisão por acordo entre empregado e empregador (demissão consensual).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Aplicável_se_Pagamento_Atrasado\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Salário_Base\"\n        },\n        \"Provento\": \"Multa_Art_477_CLT_(Atraso_na_Quitação)\",\n        \"Legislação\": \"CLT, Art. 477, §8º\",\n        \"Natureza_da_Verba\": \"Irregularidade_Contratual\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base Mensal. Cálculo: Salário Base Integral. Aplicável se as verbas rescisórias não forem pagas no prazo legal (10 dias após o término do contrato).\",\n        \"Exemplos_Aplicaveis\": \"**Verba de Irregularidade** - Atraso no pagamento da rescisão.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Meses_de_Diferença_a_ser_Paga\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Soma_das_diferenças_mensais (Salário_Devido - Salário_Pago) * Meses_do_Contrato\"\n        },\n        \"Provento\": \"Diferença_Salarial_Retroativa_(Piso_ou_Função)\",\n        \"Legislação\": \"CLT, Art. 460 e Norma Coletiva (CCT/ACT)\",\n        \"Natureza_da_Verba\": \"Irregularidade_Contratual / Meses de Diferença\",\n        \"Memoria_de_Calculo\": \"Cálculo: (Piso Salarial da Categoria - Salário Pago) multiplicado pelo número de meses em que a diferença foi devida.\",\n        \"Exemplos_Aplicaveis\": \"**Verba de Irregularidade** - Aplica-se quando o salário pago é inferior ao piso da categoria ou quando há acúmulo/desvio de função.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Dias_Faltantes_para_Fim_do_Contrato\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Metade_da_Remuneração_a_que_teria_direito\"\n        },\n        \"Provento\": \"Indenização_Art_479_CLT_(Prazo_Determinado)\",\n        \"Legislação\": \"CLT, Art. 479\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Remuneração restante até o fim do contrato. Cálculo: Metade da remuneração que o empregado teria direito até o fim do contrato por prazo determinado.\",\n        \"Exemplos_Aplicaveis\": \"Contrato por prazo determinado (ex: experiência) rescindido antecipadamente e sem justa causa pelo empregador.\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Decisão_Judicial_ou_Acordo\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Valor_Definido_em_Sentença_ou_Acordo\"\n        },\n        \"Provento\": \"Indenização_por_Dispensa_Indireta\",\n        \"Legislação\": \"CLT, Art. 483\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Remuneração Devida. Cálculo: Conforme decisão judicial ou acordo. Verbas equivalentes à demissão sem justa causa.\",\n        \"Exemplos_Aplicaveis\": \"Empregado demite o empregador por falta grave (resulta em verbas de demissão sem justa causa).\"\n      },\n      {\n        \"Cálculo\": {\n          \"Parametro\": \"Aplicável_se_Dispensa_Próximo_Data_Base\",\n          \"Valor\": 0.00,\n          \"Fórmula_Sugerida\": \"Geralmente_Equivalente_a_Um_Salário\"\n        },\n        \"Provento\": \"Indenização_Adicional_(Lei_6.708/79)\",\n        \"Legislação\": \"Lei 6.708/79 (Verificar CCT)\",\n        \"Natureza_da_Verba\": \"Normal\",\n        \"Memoria_de_Calculo\": \"Base: Salário Base. Cálculo: Geralmente equivalente a 1 Salário Base. Aplicável se a dispensa sem justa causa ocorrer nos 30 dias que antecedem a data base.\",\n        \"Exemplos_Aplicaveis\": \"Dispensa nos 30 dias que antecedem a data base de correção salarial.\"\n      }\n    ]\n  }\n}\n</estruturaSaida>\n<dadosRescisorios>\n{\n  \"identificacao\": {\n    \"nomeFuncionario\": \"{{ $json.NomeFuncionario }}\",\n    \"cpfFuncionario\": \"{{ $json.cpfFuncionario }}\",\n    \"empregador\": \"{{ $json.Empregador }}\",\n    \"funcao\": \"{{ $json.funcao }}\"\n  },\n  \"contrato\": {\n    \"dataInicioContrato\": \"{{ $json.iniciaocontrato }}\",\n    \"dataFimContrato\": \"{{ $json.fimContrato }}\",\n    \"dataInicioIrregular\": \"{{ $json.inicioContratoirregular }}\",\n    \"dataFimIrregular\": \"{{ $json.iniciaocontrato }}\",\n    \"jornadaTrabalho\": \"{{ $json.jornadaTrabalho }}\"\n  },\n  \"rescisao\": {\n    \"tipoRescisao\": \"{{ $json.tipoRescisao }}\",\n    \"dataInicioAviso\": \"{{ $json.inicioAviso }}\",\n    \"tipoAviso\": \"{{ $json.tipoAviso }}\",\n    \"faltouTodoAviso\": \"{{ $json.faltouAvisoTodo }}\"\n  },\n  \"verbas\": {\n    \"ultimoSalario\": \"{{ $json.ultimoSalario }}\",\n    \"valorRecebidoFerias\": \"{{ $json.ValorJaRecebidoFerias }}\",\n    \"infoFerias\": \"{{ $('Webhook').item.json.body.body.calculo_info_ferias }}\",\n    \"valorRecebido13\": \"{{ $json.valorRecebido13 }}\",\n    \"info13Salario\": \"{{ $('Webhook').item.json.body.body.calculo_info_13_salario }}\",\n    \"mediaDescontos\": \"{{ $json.mediaDescontos }}\",\n    \"detalheDescontos\": \"{{ $json.detalheDesconto }}\",\n    \"mediaProventos\": \"{{ $json.mediasProventos }}\",\n    \"infoProventos\": \"{{ $json.infoProventos }}\"\n  },\n  \"eventos\": {\n    \"quantidadeFaltas\": \"{{ $json.quantFaltas }}\",\n    \"infoFaltas\": \"{{ $json.infoFaltas }}\",\n    \"quantidadeFolgasTrabalhadas\": \"{{ $json.quantFolgasTrabalhadas }}\",\n    \"infoFolgas\": \"{{ $json.infoFolgas }}\",\n    \"quantidadeFeriadosTrabalhados\": \"{{ $json.quantFeriadosTrabalhados }}\",\n    \"infoFeriados\": \"{{ $json.infoFeriados }}\",\n    \"infoHoraExtra\": \"{{ $json.infHoraExtra }}\"\n  },\n  \"sindicato\": {\n    \"pisoSindicatoOpcional\": \"{{ $json.PisoSindicato_opcional }}\",\n    \"obsSindicato\": \"{{ $json['obsSindicato '] }}\"},\n  \"flagsCalculo\": {\n    \"calcularFeriasRetroativas\": \"{{ $json.PagarFeriasRetroativa }}\",\n    \"recebiaFeriasSemUmTerco\": \"{{ $json.RecebiaFeriasSem1_3 }}\",\n    \"calcularSomenteFeriasProporcional\": \"{{ $json.CalcularSomenteFeriasProporcional }}\",\n    \"calcular13Retroativo\": \"{{ $json.pagar13Retroativo }}\",\n    \"servicoInsalubre\": \"{{ $json.servicoInsalubre }}\",\n    \"servicoPerigoso\": \"{{ $json.servicoPerigoso }}\",\n    \"calcularInsalubridadeRetroativa\": \"{{ $json.InsalubridadeRetroativa }}\",\n    \"funcaoDeCaixa\": \"{{ $json.temAFuncaodeCaixa }}\",\n    \"calcularQuebraCaixaRetroativo\": \"{{ $json.calclularQuebracaixaRetroativo }}\",\n    \"calcularHoraExtraRetroativa\": \"{{ $json.calcularHoraextraretroativa }}\",\n    \"naoCalcularHoraExtra\": \"{{ $json.naocalcularhoraExtra }}\",\n    \"calcularSomenteHoraExtraDoMes\": \"{{ $json.calcularSomenteHoraExtraDomes }}\",\n    \"naoCalcularFaltas\": \"{{ $json.naoCalcularFaltas }}\",\n    \"naoCalcularFolgas\": \"{{ $json.nalCalcularFolgas }}\",\n    \"naoCalcularFeriados\": \"{{ $json.naocalcularFeriado }}\",\n    \"naoCalcularProventos\": \"{{ $json.naoCalcularProventos }}\",\n    \"naoCalcularDescontos\": \"{{ $json.naoCalcularDescontos }}\",\n    \"calcularSomenteDescontoINSS\": \"{{ $json.calcularSomneteDescontoInss }}\",\n    \"calcularInfoBasica\": \"{{ $json.infoBasica }}\",\n    \"ignorarPisoSindicato\": \"{{ $json.ignorarPisoSindicato }}\",\n    \"naoCalcularDiferencaSalario\": \"{{ $json.naoCalcularDiferencaSalario }}\"\n  },\n  \"resumo\": {\n    \"historia\": \"{{ $json.historia }}\"\n  }\n}\n</dadosRescisorios>"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -96,
+        -96
+      ],
+      "id": "d2e364dd-cbb7-4c52-89f9-e37fcd57020d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        128
+      ],
+      "id": "87cf375c-8c76-4954-a335-e97928a0a731",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FlYgz578AkLOeocc",
+          "name": "jmoka"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "Jota1@@jota100",
+        "contextWindowLength": 0
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        128
+      ],
+      "id": "a73f5dd1-5f6a-40ba-b4a2-b8b39708a84b",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "17c8bdf0-948c-4b1e-b28f-c999775c9909",
+              "name": "=Empregador",
+              "value": "={{ $json.body.body.cliente_nome }}",
+              "type": "string"
+            },
+            {
+              "id": "a6816b60-7ce5-4942-85ba-073dd6b1686e",
+              "name": "SindicatoNome",
+              "value": "={{ $json.body.body.sindicato_nome }}",
+              "type": "string"
+            },
+            {
+              "id": "9ae91adc-2be1-4f60-ae22-7b2ed12a4443",
+              "name": "NomeFuncionario",
+              "value": "={{ $json.body.body.calculo_nome_funcionario }}",
+              "type": "string"
+            },
+            {
+              "id": "09accaae-6dd7-4203-b56b-2b24188cf0d0",
+              "name": "cpfFuncionario",
+              "value": "={{ $json.body.body.calculo_cpf_funcionario }}",
+              "type": "string"
+            },
+            {
+              "id": "61a01e9d-392f-4c8e-b387-fc1fe6e7c057",
+              "name": "cpfResponsavel",
+              "value": "={{ $json.body.body.cliente_cpf_responsavel }}",
+              "type": "string"
+            },
+            {
+              "id": "155d9fbf-c0c6-40c2-9fec-5a5a1b457fa7",
+              "name": "funcao",
+              "value": "={{ $json.body.body.calculo_funcao_funcionario }}",
+              "type": "string"
+            },
+            {
+              "id": "b4384a51-2872-4b87-a269-3175662f66cc",
+              "name": "jornadaTrabalho",
+              "value": "={{ $json.body.body.calculo_carga_horaria }}",
+              "type": "string"
+            },
+            {
+              "id": "044ea056-fbe4-428c-9555-37822a899b1e",
+              "name": "iniciaocontrato",
+              "value": "={{ $json.body.body.calculo_inicio_contrato }}",
+              "type": "string"
+            },
+            {
+              "id": "0e672821-74ce-4c9e-8dc6-7a79a84d6ac3",
+              "name": "inicioContratoirregular",
+              "value": "={{ $json.body.body.calculo_inicio_contrat_inregular }}",
+              "type": "string"
+            },
+            {
+              "id": "5a35c730-0b4e-4608-9752-5178c2184a19",
+              "name": "fimContrato",
+              "value": "={{ $json.body.body.calculo_fim_contrato }}",
+              "type": "string"
+            },
+            {
+              "id": "574847b2-b06d-403d-a0b9-1d4adde18f13",
+              "name": "inicioAviso",
+              "value": "={{ $json.body.body.calculo_data_aviso }}",
+              "type": "string"
+            },
+            {
+              "id": "53c1088b-9752-449f-a0ad-4643b1a390b8",
+              "name": "tipoRescisao",
+              "value": "={{ $json.body.body.calculo_tip_recisao }}",
+              "type": "string"
+            },
+            {
+              "id": "d8e70bf8-f8ce-42d4-9a9e-8465999981df",
+              "name": "tipoAviso",
+              "value": "={{ $json.body.body.calculo_tipo_aviso }}",
+              "type": "string"
+            },
+            {
+              "id": "a918e3c7-5290-47a8-9a36-f2f041a5600e",
+              "name": "faltouAvisoTodo",
+              "value": "={{ $json.body.body.calculo_faltou_todo_aviso }}",
+              "type": "string"
+            },
+            {
+              "id": "3510465f-23bc-4135-b04b-88db63479743",
+              "name": "ultimoSalario",
+              "value": "={{ $json.body.body.calculo_salario_trabalhador }}",
+              "type": "string"
+            },
+            {
+              "id": "fed0fa2d-2b53-4559-9704-29e7ef35b9e3",
+              "name": "debitoComEmpresa",
+              "value": "={{ $json.body.body.calculo_debito_com_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "c1ad0a99-27b6-4125-a48a-bd14800fb0fc",
+              "name": "PisoSindicato_opcional",
+              "value": "={{ $json.body.body.calculo_salario_sindicato }}",
+              "type": "string"
+            },
+            {
+              "id": "fcdd2d0a-1085-4ba9-a44a-6b838cbd13a0",
+              "name": "obsSindicato ",
+              "value": "={{ $json.body.body.calculo_obs_sindicato }}",
+              "type": "string"
+            },
+            {
+              "id": "5ba23c0b-adc1-4c39-a628-5468121566c7",
+              "name": "PagarFeriasRetroativa",
+              "value": "={{ $json.body.body.calculo_ferias_retroativas }}",
+              "type": "string"
+            },
+            {
+              "id": "26c11156-8660-4601-b67f-b0d63c9a36a0",
+              "name": "RecebiaFeriasSem1_3",
+              "value": "={{ $json.body.body.calculo_recebia_sem_1_3 }}",
+              "type": "string"
+            },
+            {
+              "id": "75992787-5104-40b4-a2ba-92064e6701df",
+              "name": "CalcularSomenteFeriasProporcional",
+              "value": "={{ $json.body.body.calculo_somente_proporcional }}",
+              "type": "string"
+            },
+            {
+              "id": "724c9f76-feb5-45e5-822c-f7e7dc9eedd9",
+              "name": "ValorJaRecebidoFerias",
+              "value": "={{ $json.body.body.calculo_valor_recebido_ferias }}",
+              "type": "string"
+            },
+            {
+              "id": "6ce1d673-a51a-44b7-a6fc-eb4ddfada1b6",
+              "name": "pagar13Retroativo",
+              "value": "={{ $json.body.body.calculo_13_retroativo }}",
+              "type": "string"
+            },
+            {
+              "id": "e89864f3-9fc2-448c-a300-c49be6ea1765",
+              "name": "valorRecebido13",
+              "value": "={{ $json.body.body.calculo_valor_recebido_13 }}",
+              "type": "string"
+            },
+            {
+              "id": "aa3995db-fec5-4242-9047-70bf560e0492",
+              "name": "detalhe13",
+              "value": "={{ $json.body.body.calculo_info_13_salario }}",
+              "type": "string"
+            },
+            {
+              "id": "06fb87f0-7bfa-4d95-b75c-c3d10a3259d5",
+              "name": "servicoInsalubre",
+              "value": "={{ $json.body.body.calculo_insalubre }}",
+              "type": "string"
+            },
+            {
+              "id": "08451470-dc0d-460c-b0f8-20d2b5f58ecf",
+              "name": "InsalubridadeRetroativa",
+              "value": "={{ $json.body.body.calculo_isalubridade_retroativa }}",
+              "type": "string"
+            },
+            {
+              "id": "0d4497fa-a43b-4c86-9d98-56021789d4c2",
+              "name": "servicoPerigoso",
+              "value": "={{ $json.body.body.calculo_periculosidade }}",
+              "type": "string"
+            },
+            {
+              "id": "682d325c-2797-44f7-9f63-34a32f9b3f3d",
+              "name": "periculosidadeRetroativa",
+              "value": "={{ $json.body.body.calculo_periculosidade_retroativa }}",
+              "type": "string"
+            },
+            {
+              "id": "dd8140ac-7402-4833-9ea2-8115d3af8da7",
+              "name": "temAFuncaodeCaixa",
+              "value": "={{ $json.body.body.calculo_caixa }}",
+              "type": "string"
+            },
+            {
+              "id": "413e35f6-88c9-4104-aafb-d5b30e8625e9",
+              "name": "recebiaQuebraCaixa",
+              "value": "={{ $json.body.body.calculo_quebra_caixa }}",
+              "type": "string"
+            },
+            {
+              "id": "7e4bd680-74c1-470c-bdb1-99248ac008fb",
+              "name": "calclularQuebracaixaRetroativo",
+              "value": "={{ $json.body.body.calculo_quebra_caixa_retroativo }}",
+              "type": "string"
+            },
+            {
+              "id": "c6fdccfe-5c2c-49f5-b252-6f64cfada192",
+              "name": "calcularHoraextraretroativa",
+              "value": "={{ $json.body.body.calculo_he_retroativa }}",
+              "type": "string"
+            },
+            {
+              "id": "4285b9f7-802d-4513-a706-12d66f9d9820",
+              "name": "naocalcularhoraExtra",
+              "value": "={{ $json.body.body.calculo_n_he }}",
+              "type": "string"
+            },
+            {
+              "id": "cd581603-c50d-45d0-abcd-c43ab1e8fd1a",
+              "name": "calcularSomenteHoraExtraDomes",
+              "value": "={{ $json.body.body.calculo_hx_mes }}",
+              "type": "string"
+            },
+            {
+              "id": "8bdacc22-0ae1-4db7-81fc-9b23d2e2d663",
+              "name": "infHoraExtra",
+              "value": "={{ $json.body.body.calculo_info_hora_extra }}",
+              "type": "string"
+            },
+            {
+              "id": "0c54d3b1-0f1d-433d-b199-a96dddac65a1",
+              "name": "naoCalcularFaltas",
+              "value": "={{ $json.body.body.calculo_faltas }}",
+              "type": "string"
+            },
+            {
+              "id": "85338b2f-16e0-4edd-ac15-fabafbea1689",
+              "name": "quantFaltas",
+              "value": "={{ $json.body.body.calculo_qunat_faltas }}",
+              "type": "string"
+            },
+            {
+              "id": "4e1c89bb-998a-4867-8392-8bc66f6f3c0c",
+              "name": "infoFaltas",
+              "value": "={{ $json.body.body.calculo_info_faltas }}",
+              "type": "string"
+            },
+            {
+              "id": "49d5e506-5fd8-44e8-96de-663d77d63f17",
+              "name": "nalCalcularFolgas",
+              "value": "={{ $json.body.body.calculo_n_folgas }}",
+              "type": "string"
+            },
+            {
+              "id": "39a598ce-04b0-4787-99e1-b5084edc6038",
+              "name": "quantFolgasTrabalhadas",
+              "value": "={{ $json.body.body.calculo_qunat_folgas_trabalhadas }}",
+              "type": "string"
+            },
+            {
+              "id": "5918d9fe-dd15-409d-91dd-58da27e90a1f",
+              "name": "infoFolgas",
+              "value": "={{ $json.body.body.calculo_info_folgas }}",
+              "type": "string"
+            },
+            {
+              "id": "dca172a4-fbc0-480f-917d-62ba8d274890",
+              "name": "naocalcularFeriado",
+              "value": "={{ $json.body.body.calculo_n_feriados }}",
+              "type": "string"
+            },
+            {
+              "id": "55b371b3-d73b-4ff8-a771-6a110e50505c",
+              "name": "quantFeriadosTrabalhados",
+              "value": "={{ $json.body.body.calculo_qunt_feriados_trabalhados }}",
+              "type": "string"
+            },
+            {
+              "id": "e0eb1633-44a3-4413-a1ed-4d4ee6f8a325",
+              "name": "infoFeriados",
+              "value": "={{ $json.body.body.calculo_info_feriados }}",
+              "type": "string"
+            },
+            {
+              "id": "77d9f0b6-795d-4937-a5ab-234573c3ca81",
+              "name": "naoCalcularProventos",
+              "value": "={{ $json.body.body.calculo_n_calcular_proventos }}",
+              "type": "string"
+            },
+            {
+              "id": "cb891db8-35fd-4644-a0d5-d1c0c25ce611",
+              "name": "mediasProventos",
+              "value": "={{ $json.body.body.calculo_media_remuneracoes }}",
+              "type": "string"
+            },
+            {
+              "id": "7b1d5aa0-5118-4ae5-ad79-cfadbefa335f",
+              "name": "infoProventos",
+              "value": "={{ $json.body.body.calculo_info_proventos }}",
+              "type": "string"
+            },
+            {
+              "id": "93f716ed-d9ef-4359-a2e2-73ab7fcea367",
+              "name": "naoCalcularDescontos",
+              "value": "={{ $json.body.body.calculo_n_calcular_descontos }}",
+              "type": "string"
+            },
+            {
+              "id": "a2fa4bb4-5216-47cc-87c5-cd828a12bd47",
+              "name": "calcularSomneteDescontoInss",
+              "value": "={{ $json.body.body.calculo_somente_inss }}",
+              "type": "string"
+            },
+            {
+              "id": "46715133-1e3b-40a3-9a52-f590c6b8ad72",
+              "name": "mediaDescontos",
+              "value": "={{ $json.body.body.calculo_media_descontos }}",
+              "type": "string"
+            },
+            {
+              "id": "1c559447-31ff-470a-9d2b-51cbded73107",
+              "name": "infoBasica",
+              "value": "={{ $json.body.body.calculo_info_basico }}",
+              "type": "string"
+            },
+            {
+              "id": "da5a8428-4cdf-4b2a-ac69-b159276ac308",
+              "name": "ignorarPisoSindicato",
+              "value": "={{ $json.body.body.calculo_ignorar_salario_sindicato }}",
+              "type": "string"
+            },
+            {
+              "id": "0dbb6697-a1f4-465c-984b-9d6f14bbb1e7",
+              "name": "naoCalcularDiferencaSalario",
+              "value": "={{ $json.body.body.calculo_n_dif_salario }}",
+              "type": "string"
+            },
+            {
+              "id": "3ef149c8-360d-45fc-ac73-17c1f8778202",
+              "name": "historia",
+              "value": "={{ $json.body.body.calculo_historia }}",
+              "type": "string"
+            },
+            {
+              "id": "af44a5bd-a1a8-4991-b7de-796af01d2293",
+              "name": "dissidioInicio",
+              "value": "={{ $json.body.body.sindicato_data_inicial }}",
+              "type": "string"
+            },
+            {
+              "id": "617567aa-2222-454c-a1bc-d9aa89e2b813",
+              "name": "dissdioFim",
+              "value": "={{ $json.body.body.sindicato_data_final }}",
+              "type": "string"
+            },
+            {
+              "id": "05204ac1-a94b-4774-b997-8c65cfa883a0",
+              "name": "dataBase",
+              "value": "={{ $json.body.body.sindicato_mes_convencao }}",
+              "type": "string"
+            },
+            {
+              "id": "5c91026e-eade-4f1b-ba64-6066fc960c1c",
+              "name": "resumoDissidio",
+              "value": "={{ $json.body.body.sindicato_resumo_dissidio }}",
+              "type": "string"
+            },
+            {
+              "id": "b582b39d-7813-434e-ab0e-b088ff06ae2a",
+              "name": "tipoModelo",
+              "value": "={{ $json.body.body.ai_template_title }}",
+              "type": "string"
+            },
+            {
+              "id": "8325e3fd-5737-41e4-91a8-fc2cafcd40be",
+              "name": "indentificacao",
+              "value": "={{ $json.body.body.ai_template_identificacao }}",
+              "type": "string"
+            },
+            {
+              "id": "9ef9055d-26df-4528-94d4-a5b642684684",
+              "name": "comportamento",
+              "value": "={{ $json.body.body.ai_template_comportamento }}",
+              "type": "string"
+            },
+            {
+              "id": "cc0ad183-cf59-49a4-abaf-77d2d79b6a02",
+              "name": "restricoes",
+              "value": "={{ $json.body.body.ai_template_restricoes }}",
+              "type": "string"
+            },
+            {
+              "id": "e80cc9ae-3f0e-4e85-b35a-447f056e90cd",
+              "name": "atribuicao",
+              "value": "={{ $json.body.body.ai_template_atribuicoes }}",
+              "type": "string"
+            },
+            {
+              "id": "e75132ac-dca6-4c7c-bb4f-0790bd78610c",
+              "name": "leis",
+              "value": "={{ $json.body.body.ai_template_leis }}",
+              "type": "string"
+            },
+            {
+              "id": "a2711bc3-22b7-48e5-ad0d-f178642dab68",
+              "name": "baseLegal",
+              "value": "={{ $json.body.body.ai_template_observacoes_base_legal }}",
+              "type": "string"
+            },
+            {
+              "id": "641feb6f-34b6-4776-88c0-8b9879b51ea9",
+              "name": "struturaJSON",
+              "value": "={{ $json.body.body.ai_template_estrutura_json_modelo_saida }}",
+              "type": "string"
+            },
+            {
+              "id": "03abd8df-6b3d-406a-b673-2723728d4709",
+              "name": "instrucoes ",
+              "value": "={{ $json.body.body.ai_template_instrucoes_entrada_dados_rescisao }}",
+              "type": "string"
+            },
+            {
+              "id": "a73b4fa6-4a1d-4056-93f6-6a40aec8f02d",
+              "name": "detalhaFerias",
+              "value": "={{ $json.body.body.calculo_info_ferias }}",
+              "type": "string"
+            },
+            {
+              "id": "6024baec-4843-4da2-8088-239a8444a566",
+              "name": "detalheDesconto",
+              "value": "={{ $json.body.body.calculo_info_descontos }}",
+              "type": "string"
+            },
+            {
+              "id": "340a904c-840b-4b24-b5cb-b8d472d0b290",
+              "name": "idCalculo",
+              "value": "={{ $json.body.body.calculo_id }}",
+              "type": "string"
+            },
+            {
+              "id": "612c9e4a-18d5-4bc4-91a7-4336f4810eb3",
+              "name": "recebevaleTransporte",
+              "value": "={{ $json.body.body.calculo_vale_transporte }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -320,
+        -96
+      ],
+      "id": "609ec50a-3bf8-43fe-aaaf-584ce307e19f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nó: Code in JavaScript (Ex: n8n)\n\n// 1. Obter os dados de entrada\nconst idCalculo = $json.IdCalculo;\n// O valor de 'aiResponseString' contém a saída completa da IA, incluindo os delimitadores (ex: ```json\\n{...}```).\nconst aiResponseString = $('AI Agent').item.json.output;\n\nlet parsedJson;\n\ntry {\n    // --- ETAPA 1: EXTRAÇÃO DO BLOCO JSON ---\n    // Isola a string que contém o objeto JSON, encontrando as chaves '{' e '}'.\n    const firstBracket = aiResponseString.indexOf('{');\n    const lastBracket = aiResponseString.lastIndexOf('}');\n\n    if (firstBracket === -1 || lastBracket === -1 || lastBracket < firstBracket) {\n        throw new Error(\"Não foi possível encontrar um objeto JSON válido (chaves '{' e '}') na resposta da IA.\");\n    }\n\n    let jsonString = aiResponseString.substring(firstBracket, lastBracket + 1);\n\n    // --- ETAPA 2: ACHATAMENTO PARA GARANTIR VALIDADE E PARSE ---\n    // Remove todas as quebras de linha e retornos de carro da string para evitar\n    // erros de \"bad control character\" durante o parse.\n    jsonString = jsonString.replace(/(\\r\\n|\\n|\\r)/gm, \"\");\n\n    // Faz o parse do JSON limpo e em linha única.\n    parsedJson = JSON.parse(jsonString);\n\n} catch (e) {\n    // Se qualquer etapa falhar, gera um objeto de erro para ser rastreado.\n    console.error(\"Falha ao extrair ou fazer o parse do JSON. Erro:\", e.message);\n    parsedJson = {\n        error: \"JSON_EXTRACTION_OR_PARSE_FAILED\",\n        details: e.message,\n        original_string_snippet: aiResponseString.substring(0, 300) + '...'\n    };\n}\n\n// Verifica se o parse foi bem-sucedido e se a estrutura básica existe antes de prosseguir\nif (parsedJson && parsedJson.Verbas_Rescisorias) {\n\n    // --- ETAPA 3: CORREÇÃO DE CHAVE: RENOMEAR 'PROVENTOS' PARA 'REMUNERACAO' ---\n    // A IA gera 'Proventos', mas o sistema final espera 'Remuneracao'.\n    if (parsedJson.Verbas_Rescisorias.Proventos) {\n        // Renomeia 'Proventos' para 'Remuneracao'\n        parsedJson.Verbas_Rescisorias.Remuneracao = parsedJson.Verbas_Rescisorias.Proventos;\n        // Remove a chave antiga 'Proventos'\n        delete parsedJson.Verbas_Rescisorias.Proventos;\n    }\n\n    // --- ETAPA 4: FILTRAGEM DOS VALORES (APENAS VERBAS COM VALOR > 0) ---\n\n    // Filtra a nova chave 'Remuneracao'\n    if (Array.isArray(parsedJson.Verbas_Rescisorias.Remuneracao)) {\n        parsedJson.Verbas_Rescisorias.Remuneracao = parsedJson.Verbas_Rescisorias.Remuneracao.filter(item =>\n            // Garante que o objeto Cálculos e o Valor existem e que o valor é maior que 0\n            item.Cálculo && typeof item.Cálculo.Valor === 'number' && item.Cálculo.Valor > 0\n        );\n    }\n    // Filtra a chave 'Descontos'\n    if (Array.isArray(parsedJson.Verbas_Rescisorias.Descontos)) {\n        parsedJson.Verbas_Rescisorias.Descontos = parsedJson.Verbas_Rescisorias.Descontos.filter(item =>\n            // Garante que o objeto Cálculos e o Valor existem e que o valor é maior que 0\n            item.Cálculo && typeof item.Cálculo.Valor === 'number' && item.Cálculo.Valor > 0\n        );\n    }\n}\n\n// --- ETAPA 5: CONSTRUÇÃO DO PAYLOAD FINAL ---\nconst finalPayload = {\n    calculationId: idCalculo,\n    aiResponse: parsedJson // Objeto JSON limpo, corrigido e filtrado\n};\n\n// Retorna o payload final no formato que o nó de código espera (array de objetos).\nreturn [{ json: finalPayload }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -96
+      ],
+      "id": "67982a01-bdf4-4786-b7b4-19592820ce89",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7a58a7f5-d74a-46c9-b2cf-93b92aa22777",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "798aeff1915f045ba9e0dd8d8fe3ecd53ff2dc02669c1f1c295f61e0943a66db"
+  },
+  "id": "HzxXQ1jAShKx50N8",
+  "tags": []
+}

@@ -1,0 +1,70 @@
+{
+  "identificacao": {
+    "nomeFuncionario": "{{ $json.NomeFuncionario }}",
+    "cpfFuncionario": "{{ $json.cpfFuncionario }}",
+    "empregador": "{{ $json.Empregador }}",
+    "funcao": "{{ $json.funcao }}"
+  },
+  "contrato": {
+    "dataInicioContrato": "{{ $json.iniciaocontrato }}",
+    "dataFimContrato": "{{ $json.fimContrato }}",
+    "dataInicioIrregular": "{{ $json.inicioContratoirregular }}",
+    "dataFimIrregular": "{{ $json.iniciaocontrato }}",
+    "jornadaTrabalho": "{{ $json.jornadaTrabalho }}"
+  },
+  "rescisao": {
+    "tipoRescisao": "{{ $json.tipoRescisao }}",
+    "dataInicioAviso": "{{ $json.inicioAviso }}",
+    "tipoAviso": "{{ $json.tipoAviso }}",
+    "faltouTodoAviso": "{{ $json.faltouAvisoTodo }}"
+  },
+  "verbas": {
+    "ultimoSalario": "{{ $json.ultimoSalario }}",
+    "valorRecebidoFerias": "{{ $json.ValorJaRecebidoFerias }}",
+    "infoFerias": "{{ $('Webhook').item.json.body.body.calculo_info_ferias }}",
+    "valorRecebido13": "{{ $json.valorRecebido13 }}",
+    "info13Salario": "{{ $('Webhook').item.json.body.body.calculo_info_13_salario }}",
+    "mediaDescontos": "{{ $json.mediaDescontos }}",
+    "detalheDescontos": "{{ $json.detalheDesconto }}",
+    "mediaProventos": "{{ $json.mediasProventos }}",
+    "infoProventos": "{{ $json.infoProventos }}"
+  },
+  "eventos": {
+    "quantidadeFaltas": "{{ $json.quantFaltas }}",
+    "infoFaltas": "{{ $json.infoFaltas }}",
+    "quantidadeFolgasTrabalhadas": "{{ $json.quantFolgasTrabalhadas }}",
+    "infoFolgas": "{{ $json.infoFolgas }}",
+    "quantidadeFeriadosTrabalhados": "{{ $json.quantFeriadosTrabalhados }}",
+    "infoFeriados": "{{ $json.infoFeriados }}",
+    "infoHoraExtra": "{{ $json.infHoraExtra }}"
+  },
+  "sindicato": {
+    "pisoSindicatoOpcional": "{{ $json.PisoSindicato_opcional }}",
+    "obsSindicato": "{{ $json['obsSindicato '] }}"},
+  "flagsCalculo": {
+    "calcularFeriasRetroativas": "{{ $json.PagarFeriasRetroativa }}",
+    "recebiaFeriasSemUmTerco": "{{ $json.RecebiaFeriasSem1_3 }}",
+    "calcularSomenteFeriasProporcional": "{{ $json.CalcularSomenteFeriasProporcional }}",
+    "calcular13Retroativo": "{{ $json.pagar13Retroativo }}",
+    "servicoInsalubre": "{{ $json.servicoInsalubre }}",
+    "servicoPerigoso": "{{ $json.servicoPerigoso }}",
+    "calcularInsalubridadeRetroativa": "{{ $json.InsalubridadeRetroativa }}",
+    "funcaoDeCaixa": "{{ $json.temAFuncaodeCaixa }}",
+    "calcularQuebraCaixaRetroativo": "{{ $json.calclularQuebracaixaRetroativo }}",
+    "calcularHoraExtraRetroativa": "{{ $json.calcularHoraextraretroativa }}",
+    "naoCalcularHoraExtra": "{{ $json.naocalcularhoraExtra }}",
+    "calcularSomenteHoraExtraDoMes": "{{ $json.calcularSomenteHoraExtraDomes }}",
+    "naoCalcularFaltas": "{{ $json.naoCalcularFaltas }}",
+    "naoCalcularFolgas": "{{ $json.nalCalcularFolgas }}",
+    "naoCalcularFeriados": "{{ $json.naocalcularFeriado }}",
+    "naoCalcularProventos": "{{ $json.naoCalcularProventos }}",
+    "naoCalcularDescontos": "{{ $json.naoCalcularDescontos }}",
+    "calcularSomenteDescontoINSS": "{{ $json.calcularSomneteDescontoInss }}",
+    "calcularInfoBasica": "{{ $json.infoBasica }}",
+    "ignorarPisoSindicato": "{{ $json.ignorarPisoSindicato }}",
+    "naoCalcularDiferencaSalario": "{{ $json.naoCalcularDiferencaSalario }}"
+  },
+  "resumo": {
+    "historia": "{{ $json.historia }}"
+  }
+}

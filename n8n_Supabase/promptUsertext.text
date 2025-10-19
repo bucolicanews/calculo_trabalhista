@@ -1,0 +1,81 @@
+Prompt para a IA: Análise e Cálculo de Verbas Rescisórias
+Objetivo: Atuar como um especialista em direito trabalhista brasileiro e realizar o cálculo completo e detalhado das verbas rescisórias para o caso a seguir, considerando todas as nuances e instruções específicas fornecidas.
+Histórico do Funcionário:
+Estamos analisando o caso de {{ $json.NomeFuncionario }}, portador(a) do CPF {{ $json.cpfFuncionario }}, que trabalhou para a empresa {{ $json.Empregador }} exercendo a função de {{ $json.funcao }}.
+A relação de trabalho possui algumas particularidades importantes. Embora o contrato de trabalho tenha sido oficialmente registrado no período de {{ $json.iniciaocontrato }} a {{ $json.fimContrato }}, o(a) "funcionário(a) alega que, na verdade, começou a trabalhar em uma situação irregular (sem registro) desde {{ $json.inicioContratoirregular }}"considerar caso o valor se diferente de null", Portanto", para todos os cálculos de verbas retroativas, por favor, considere o vínculo empregatício total, incluindo este período não registrado caso o valor se diferente de null.
+A jornada exercida pelo trabalhador era de {{ $json.jornadaTrabalho }}.
+O contrato foi encerrado por meio de {{ $json.tipoRescisao }}. O aviso prévio foi do tipo {{ $json.tipoAviso }}, com data de início do aviso {{ $json.inicioAviso }}. Um detalhe crucial é que o(a) funcionário(a) não veio trabalhar o aviso todo valor = {{ $json.faltouAvisoTodo }} se for true calcular a falta tota do aviso, se form null não calcular falta so se for explicita a quantidade.
+Informações Financeiras e Eventos do Contrato:
+o funcionario recebeu o Último Salário Base no valor de: R$ {{ $json.ultimoSalario }}. Este deve ser o valor base para compor a base de calculo para a os cálculos rescisórios, isso se o valor do sindicato informado pelo usuario {{ $json.PisoSindicato_opcional }}for menor, se o piso do sindicato informado pelo usuario for maior, usar esse para para compor a base de cálculo, mas se o piso do sindicato informado pelo no resumo do sindidicato passado no prompt do sistema for maior usar esse, ou seja usar o que for maior, porém caso  {{ $json.ignorarPisoSindicato }} "valor igual==true" use apenas o salrio base informado para compor a base de calculo para verbas rescisórias.
+Valores Já Pagos: Durante o contrato, o(a) funcionário(a) já recebeu R$ {{ $json.ValorJaRecebidoFerias }} a título de férias e R$ {{ $json.valorRecebido13 }} referente ao 13º salário. Considere abater esses valores dos totais devidos.
+Detalhes adicionais sobre Férias: o funciono {{ $('Webhook').item.json.body.body.calculo_info_ferias }}
+Detalhes adicionais sobre 13º Salário: {{ $('Webhook').item.json.body.body.calculo_info_13_salario }}
+Proventos e Descontos: Havia uma média de R$ {{ $json.mediasProventos }} em proventos variáveis (horas extras, adicionais, etc.) e uma média de R$ {{ $json.mediaDescontos }} em descontos mensais.
+Informações sobre Proventos: {{ $json.infoProventos }}
+Detalhes dos Descontos: {{ $json.detalheDesconto }}
+Ocorrências Durante o Contrato:
+Faltas: Houve um total de {{ $json.quantFaltas }} faltas. Detalhes: {{ $json.infoFaltas }}.
+Folgas Trabalhadas: Ocorreram {{ $json.quantFolgasTrabalhadas }} folgas trabalhadas. Detalhes: {{ $json.infoFolgas }}.
+Feriados Trabalhados: Foram {{ $json.quantFeriadosTrabalhados }} feriados trabalhados. Detalhes: {{ $json.infoFeriados }}.
+Horas Extras: Informações sobre horas extras: {{ $json.infHoraExtra }}.
+Instruções Específicas para o Cálculo (Flags):
+Por favor, siga rigorosamente as seguintes diretrizes ao processar os cálculos:
+Férias:
+{{ $json.PagarFeriasRetroativa }}: Calcule as férias de forma retroativa, incluindo o período sem registro.
+{{ $json.RecebiaFeriasSem1_3 }}: O(a) funcionário(a) alega que recebia o valor das férias sem o adicional de 1/3. Calcule essa diferença devida.
+{{ $json.CalcularSomenteFeriasProporcional }}: O cálculo deve se restringir apenas às férias proporcionais.
+13º Salário:
+{{ $json.pagar13Retroativo }}: Calcule o 13º salário retroativo, considerando o período sem registro.
+Adicionais:
+{{ $json.servicoInsalubre }}: O serviço era insalubre. Aplique o adicional correspondente.
+{{ $json.InsalubridadeRetroativa }}: Calcule o adicional de insalubridade de forma retroativa.
+{{ $json.servicoPerigoso }}: O serviço era perigoso. Aplique o adicional correspondente.
+{{ $json.temAFuncaodeCaixa }}: O(a) funcionário(a) exercia a função de caixa.
+{{ $json.calclularQuebracaixaRetroativo }}: Calcule o adicional de quebra de caixa retroativamente.
+Regras de Cálculo Gerais:
+Horas Extras: if ({{ $json.naocalcularhoraExtra }}=='sim'){
+NÃO calcule horas extras
+} if else({{ $json.calcularSomenteHoraExtraDomes }} == 'sim'){
+Calcule apenas as horas extras do mês da rescisão
+}if else( {{ $json.calcularHoraextraretroativa }}== 'sim'){
+Calcule as horas extras retroativamente
+}else{
+Calcular horas extras normalmente
+}.
+Eventos: if ({{ $json.naoCalcularFaltas }} == 'sim'){
+NÃO calcule Faltas
+} if else( {{ $json.nalCalcularFolgas }}== 'sim'){
+NÃO calcule Folgas Trabalhadas
+} if else({{ $json.naocalcularFeriado }} == 'sim'){
+NÃO calcule Feriados Trabalhados
+}else{
+Calcule todos os Eventos (Faltas, Folgas e Feriados Trabalhados)
+}.
+Proventos: if ({{ $json.naoCalcularProventos }} == 'sim'){
+NÃO considere proventos variáveis
+}else{
+Calcule proventos variáveis normalmente
+}.
+
+Descontos: if ({{ $json.naoCalcularDescontos }} == 'sim'){
+NÃO considere outros descontos
+} if else({{ $json.calcularSomneteDescontoInss }} == 'sim'){
+Calcule APENAS o desconto do INSS
+}else{
+Calcule outros descontos normalmente
+}.
+Salário e Sindicato:
+O piso salarial opcional do sindicato é de R$ {{ $json.PisoSindicato_opcional }}.
+
+if ({{ $json.ignorarPisoSindicato }} == 'sim'){
+IGNORE o piso do sindicato para os cálculos
+} if else ({{ $json.naoCalcularDiferencaSalario }} == 'sim'){
+Considere o piso do sindicato, mas NÃO calcule diferenças salariais com base nele
+}else{
+Considere o piso do sindicato e calcule as diferenças salariais
+}.
+Observações sobre o sindicato: {{ $json['obsSindicato '] }}
+Resumo da Situação (Narrativa do Usuário):
+Para fornecer um contexto mais humano e direto, aqui está o resumo da história contado pelo próprio cliente: "{{ $json.historia }}"
+Resultado Esperado:
+Com base em todas essas informações, gere um relatório completo e detalhado, discriminando cada verba devida (saldo de salário, aviso prévio, férias vencidas e proporcionais + 1/3, 13º salário, adicionais, etc.), todos os descontos aplicáveis (INSS, IRRF, faltas, etc.) e o valor líquido final a ser recebido pelo(a) funcionário(a). Por favor, justifique os principais pontos do cálculo com base na legislação trabalhista brasileira.
