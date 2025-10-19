@@ -117,7 +117,11 @@ interface UseCalculationDetailsResult {
  * aninhado JSON do N8N (Ex: { Provento: '...', Cálculo: { Valor: 100 } }).
  */
 const mapSupabaseVerbasToDisplayFormat = (proventos: Provento[] | null, descontos: Desconto[] | null) => {
-    const displayProventos: ProventoDisplay[] = (proventos || []).map(p => ({
+    // Garante que proventos e descontos são arrays antes de mapear
+    const safeProventos = proventos || [];
+    const safeDescontos = descontos || [];
+
+    const displayProventos: ProventoDisplay[] = safeProventos.map(p => ({
         Provento: p.nome_provento,
         Natureza_da_Verba: p.natureza_da_verba,
         Legislação: p.legislacao,
@@ -130,7 +134,7 @@ const mapSupabaseVerbasToDisplayFormat = (proventos: Provento[] | null, desconto
         }
     }));
 
-    const displayDescontos: DescontoDisplay[] = (descontos || []).map(d => ({
+    const displayDescontos: DescontoDisplay[] = safeDescontos.map(d => ({
         Desconto: d.nome_desconto,
         Natureza_da_Verba: d.natureza_da_verba,
         Legislação: d.legislacao,
