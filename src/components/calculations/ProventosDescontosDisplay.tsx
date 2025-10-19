@@ -122,7 +122,7 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
         </div>
     );
 
-    const TableItem = ({ item, index }: { item: VerbaItem, index: number }) => {
+    const TableItem = ({ item }: { item: VerbaItem }) => {
         const isP = isProvento(item);
         const name = getVerbaName(item);
         const value = item.Cálculo?.Valor || 0;
@@ -130,9 +130,6 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
         // Remove o prefixo de agrupamento
         const displayName = name.replace(/^\d+\.\s*/, ''); 
         
-        // Chave de renderização (usa nome + index para garantir unicidade)
-        // const uniqueKey = `${name}-${index}`; // REMOVIDO
-
         return (
             <Collapsible asChild>
                 <React.Fragment>
@@ -201,7 +198,6 @@ const ProventosDescontosDisplay: React.FC<ProventosDescontosDisplayProps> = ({ p
                                         <TableItem 
                                             key={`${getVerbaName(item)}-${index}`} 
                                             item={item} 
-                                            index={index}
                                         />
                                     ))}
                                 </React.Fragment>

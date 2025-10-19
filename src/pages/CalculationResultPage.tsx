@@ -13,77 +13,49 @@ import NoResultCard from '@/components/calculations/NoResultCard';
 import FullRescissionView from '@/components/calculations/FullRescissionView';
 import ClearEntriesButton from '@/components/calculations/ClearEntriesButton';
 import DownloadPdfButton from '@/components/calculations/DownloadPdfButton';
-import { Provento, Desconto } from '@/hooks/useCalculationDetails';
+import { Provento, Desconto, useCalculationDetails, CalculationDetails } from '@/hooks/useCalculationDetails';
 
 // TIPAGEM (sem alterações)
-interface CalculationDetails {
-  id: string;
-  nome_funcionario: string;
-  inicio_contrato: string;
-  fim_contrato: string;
-  tipo_aviso: string;
-  salario_trabalhador: number;
-  ctps_assinada: boolean;
-  resposta_ai: any | null;
-  cpf_funcionario: string | null;
-  funcao_funcionario: string | null;
-  salario_sindicato: number;
-  media_descontos: number;
-  media_remuneracoes: number;
-  carga_horaria: string | null;
-  obs_sindicato: string | null;
-  historia: string | null;
-  tbl_clientes: { nome: string } | null;
-  tbl_sindicatos: { nome: string } | null;
-  tbl_ai_prompt_templates: {
-    title: string;
-    estrutura_json_modelo_saida: string | null;
-    instrucoes_entrada_dados_rescisao: string | null;
-  } | null;
-  tbl_resposta_calculo: {
-    url_documento_calculo: string | null;
-    texto_extraido: string | null;
-    data_hora: string;
-  } | null;
-  tbl_proventos: Provento[] | null;
-  tbl_descontos: Desconto[] | null;
-}
+// A interface CalculationDetails é importada do hook useCalculationDetails
 
 const CalculationResultPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // Usamos o hook para buscar e mapear os dados
+  const { 
+    calculation, 
+    displayProventos, 
+    displayDescontos, 
+    loading, 
+    hasAnyResult 
+  } = useCalculationDetails(id);
+
   const [isReprocessing, setIsReprocessing] = useState(false);
 
-  useEffect(() => {
-    if (user && id) {
-      fetchCalculationResult();
-    }
-  }, [user, id]);
-
+  // A função fetchCalculationResult agora é apenas um wrapper para o hook, 
+  // mas precisamos de uma forma de re-executar o fetch após o reprocessamento.
+  // Como o hook useCalculationDetails não expõe o fetcher, vamos manter a lógica 
+  // de re-fetch manual aqui, mas simplificando a busca.
   const fetchCalculationResult = async () => {
-    setLoading(true);
+    if (!user || !id) return;
+    
+    // Re-fetch simplificado para atualizar o estado do hook
     const { data, error } = await supabase
       .from('tbl_calculos')
-      .select(`
-        *, resposta_ai, tbl_clientes(nome), tbl_sindicatos(nome),
-        tbl_ai_prompt_templates(*),
-        tbl_resposta_calculo(url_documento_calculo, texto_extraido, data_hora),
-        tbl_proventos(*), tbl_descontos(*)
-      `)
+      .select(`id`)
       .eq('id', id)
       .single();
 
     if (error) {
-      showError('Erro ao carregar resultado do cálculo: ' + error.message);
-    } else if (data) {
-      setCalculation(data as unknown as CalculationDetails);
-    } else {
-      setCalculation(null);
+      showError('Erro ao recarregar cálculo: ' + error.message);
     }
-    setLoading(false);
+    // O hook useCalculationDetails será re-executado se o ID mudar, 
+    // mas como o ID não muda, precisamos forçar a atualização do estado.
+    // A maneira mais simples é recarregar a página ou forçar uma mudança de estado, 
+    // mas vamos confiar que o hook será re-executado se o componente for re-renderizado.
+    // Para garantir, vamos usar um estado dummy ou simplesmente confiar no reload.
   };
 
   const handleReprocess = async () => {
@@ -102,7 +74,8 @@ const CalculationResultPage: React.FC = () => {
       if (data && data.error) throw new Error(data.details || data.error);
 
       showSuccess('Processamento concluído! Atualizando a página...');
-      setTimeout(() => fetchCalculationResult(), 2500);
+      // Força a atualização do componente pai para re-executar o hook
+      setTimeout(() => window.location.reload(), 2500); 
 
     } catch (e: any) {
       showError('Falha no processamento: ' + e.message);
@@ -119,9 +92,9 @@ const CalculationResultPage: React.FC = () => {
     return <MainLayout><div className="py-8 text-center text-gray-400">Cálculo não encontrado.</div></MainLayout>;
   }
 
-  // ================== INÍCIO DA LÓGICA CORRIGIDA ==================
+  // ================== LÓGICA DE EXIBIÇÃO ==================
   const hasAiResponse = !!calculation.resposta_ai;
-  const hasProcessedEntries = (calculation.tbl_proventos?.length || 0) > 0;
+  const hasProcessedEntries = displayProventos.length > 0 || displayDescontos.length > 0;
 
   // Condição para Reprocessar: tem resposta da IA, MAS AINDA não tem verbas processadas.
   const needsProcessing = hasAiResponse && !hasProcessedEntries;
@@ -131,7 +104,7 @@ const CalculationResultPage: React.FC = () => {
 
   // Condição para Download: tem verbas processadas para gerar o PDF.
   const canDownloadPdf = hasProcessedEntries;
-  // =================== FIM DA LÓGICA CORRIGIDA ====================
+  // ========================================================
 
   const otherResultDetails = calculation.tbl_resposta_calculo;
 
@@ -162,7 +135,7 @@ const CalculationResultPage: React.FC = () => {
 
               {/* ALTERADO: Botão LIMPAR VERBAS só aparece se já houver verbas */}
               {canClearEntries && (
-                <ClearEntriesButton calculationId={id!} onSuccess={fetchCalculationResult} />
+                <ClearEntriesButton calculationId={id!} onSuccess={() => window.location.reload()} />
               )}
 
               {/* ALTERADO: Botão DOWNLOAD só aparece se houver verbas para exibir */}
@@ -175,9 +148,9 @@ const CalculationResultPage: React.FC = () => {
 
         <div className="report-content">
           <FullRescissionView
-            calculationDetails={calculation as any} // Passando o objeto completo
-            proventos={calculation.tbl_proventos || []}
-            descontos={calculation.tbl_descontos || []}
+            calculationDetails={calculation as any} // Mantido 'as any' para detalhes, pois a interface é complexa
+            proventos={displayProventos} // CORRIGIDO: Usando dados mapeados
+            descontos={displayDescontos} // CORRIGIDO: Usando dados mapeados
           />
           {hasAiResponse ? (
             <AiResponseDisplay
