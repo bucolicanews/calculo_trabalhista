@@ -45,11 +45,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         setLoading(false);
         
-        // REMOVIDO: Não desativamos isAuthFlow aqui, exceto se for SIGNED_OUT.
-        // Deixamos o PublicRoute e a lógica de Initial Session gerenciarem a desativação.
-        if (event === 'SIGNED_OUT') {
+        // 🚨 CORREÇÃO CRÍTICA: Se for PASSWORD_RECOVERY, forçamos isAuthFlow para TRUE.
+        // Isso garante que o PublicRoute não redirecione, mesmo que o usuário esteja 'logado' temporariamente.
+        if (event === 'PASSWORD_RECOVERY') {
+            setIsAuthFlow(true);
+            console.log(`[AuthContext Event] PASSWORD_RECOVERY detected. Forcing isAuthFlow = TRUE.`);
+        } else if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+            // Se for um login/logout normal, o fluxo termina.
             setIsAuthFlow(false);
-            console.log(`[AuthContext Event] SIGNED_OUT. Setting isAuthFlow = FALSE.`);
+            console.log(`[AuthContext Event] Auth flow finished. Setting isAuthFlow = FALSE.`);
         }
         
         console.log(`[AuthContext State] User is now: ${session?.user ? 'LOGGED IN' : 'NULL'}, Loading: FALSE, isAuthFlow: ${isAuthFlow}`);
