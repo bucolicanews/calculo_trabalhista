@@ -11,12 +11,17 @@ const AuthPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) {
+    const hash = window.location.hash;
+    // Verifica se estamos processando um evento de autenticação (ex: #type=recovery)
+    const isProcessingAuthEvent = hash.includes('type='); 
+
+    if (!loading && user && !isProcessingAuthEvent) {
+      // Se o usuário estiver logado E não estivermos processando um evento, redireciona para o dashboard
       navigate('/dashboard');
     }
   }, [user, loading, navigate]);
 
-  if (loading || user) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
         <p className="text-orange-500">Carregando...</p>

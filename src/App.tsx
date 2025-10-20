@@ -21,7 +21,6 @@ import SindicatoListPage from './pages/SindicatoListPage';
 import SindicatoFormPage from './pages/SindicatoFormPage';
 import WebhookConfigPage from './pages/WebhookConfigPage';
 import Info from './pages/Info';
-import path from 'path/win32';
 
 const App: React.FC = () => {
   useEffect(() => {
