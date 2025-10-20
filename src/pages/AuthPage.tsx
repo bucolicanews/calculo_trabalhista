@@ -15,10 +15,8 @@ const AuthPage = () => {
     );
   }
 
-  // Define a URL de redirecionamento para a raiz da aplicação.
-  // O Supabase adicionará automaticamente o token de sessão e o tipo de evento (ex: #type=recovery)
-  // que o React Router e o componente Auth podem processar.
-  const redirectToUrl = window.location.origin + '/login';
+  // Define a URL de redirecionamento para a rota neutra.
+  const redirectToUrl = window.location.origin + '/auth-callback';
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
@@ -27,7 +25,7 @@ const AuthPage = () => {
         <Auth
           supabaseClient={supabase}
           providers={[]}
-          redirectTo={redirectToUrl} // Adicionado o redirectTo
+          redirectTo={redirectToUrl} // Redireciona para a rota neutra
           appearance={{
             theme: ThemeSupa,
             variables: {
