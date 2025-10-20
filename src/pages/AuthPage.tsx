@@ -3,25 +3,9 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 
 const AuthPage = () => {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const hash = window.location.hash;
-    // Verifica se estamos processando um evento de autenticação (ex: #type=recovery)
-    const isProcessingAuthEvent = hash.includes('type='); 
-
-    if (!loading) {
-      if (user && !isProcessingAuthEvent) {
-        // Se o usuário estiver logado E não estivermos processando um evento, redireciona para o dashboard
-        navigate('/dashboard');
-      }
-    }
-  }, [user, loading, navigate]);
+  const { loading } = useAuth();
 
   if (loading) {
     return (
