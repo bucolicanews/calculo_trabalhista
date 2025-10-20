@@ -3,9 +3,43 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext';
+import { useState, useEffect } from 'react';
+
+// Define os tipos de view que o componente Auth pode ter
+type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password' | 'magic_link' | 'verify_otp';
 
 const AuthPage = () => {
   const { loading } = useAuth();
+  const [initialView, setInitialView] = useState<AuthView>('sign_in');
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    
+    // 1. Se houver um hash, tentamos determinar a view correta
+    if (hash) {
+      const params = new URLSearchParams(hash.substring(1));
+      const type = params.get('type');
+      
+      if (type === 'recovery') {
+        // Se for recuperação de senha, forçamos a view de atualização de senha
+        setInitialView('update_password');
+      } else if (type === 'signup') {
+        // Se for confirmação de cadastro, forçamos a view de verificação de OTP
+        setInitialView('verify_otp');
+      } else {
+        // Se for qualquer outro hash (ex: magiclink), deixamos o componente Auth lidar com ele,
+        // mas garantimos que a view inicial não seja 'sign_in' para evitar o redirecionamento.
+        // No entanto, para simplificar, vamos manter a view padrão se não for recovery/signup.
+        setInitialView('sign_in');
+      }
+    }
+    
+    // 2. Limpar o hash após a leitura para evitar que o Supabase Auth o limpe e cause um loop de redirecionamento.
+    // O componente Auth do Supabase deve ser capaz de ler o hash antes que ele seja limpo.
+    // Se o hash for limpo aqui, o componente Auth não o verá.
+    // Vamos confiar que o componente Auth o lerá na montagem.
+    
+  }, []);
 
   if (loading) {
     return (
@@ -16,7 +50,6 @@ const AuthPage = () => {
   }
 
   // Define a URL de redirecionamento de volta para a rota de login.
-  // O PublicRoute deve permitir a permanência se houver um hash de autenticação.
   const redirectToUrl = window.location.origin + '/login';
 
   return (
@@ -27,6 +60,7 @@ const AuthPage = () => {
           supabaseClient={supabase}
           providers={[]}
           redirectTo={redirectToUrl} 
+          view={initialView} // Força a view inicial baseada no hash
           appearance={{
             theme: ThemeSupa,
             variables: {
