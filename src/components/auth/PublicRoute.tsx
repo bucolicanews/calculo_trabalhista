@@ -7,24 +7,19 @@ interface PublicRouteProps {
 }
 
 const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthFlow } = useAuth();
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-900 text-orange-500">Carregando autenticação...</div>;
   }
 
-  // CRITICAL CHECK: Se houver um token de acesso no hash, estamos no meio de um fluxo de autenticação
-  // (recuperação de senha, magic link, etc.). Devemos permitir que o componente AuthPage seja renderizado
-  // para que o componente Supabase Auth UI possa processar o token e mostrar a view correta (ex: update_password).
-  const hash = window.location.hash;
-  const isAuthFlowInProgress = hash.includes('access_token=');
-
-  // Se o usuário estiver logado E NÃO houver um fluxo de autenticação pendente, redireciona.
-  if (user && !isAuthFlowInProgress) {
+  // Se o usuário estiver logado E NÃO estiver em um fluxo de autenticação (isAuthFlow), redireciona.
+  // O isAuthFlow é true quando há um token de acesso na URL (recuperação de senha).
+  if (user && !isAuthFlow) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Se o usuário não estiver logado, ou se houver um fluxo de autenticação pendente,
+  // Se estiver em um fluxo de autenticação (isAuthFlow é true) ou se não estiver logado,
   // renderize o componente filho (AuthPage).
   return <>{children}</>;
 };

@@ -6,9 +6,10 @@ import { showError } from '@/utils/toast';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAuthFlow: boolean; // NOVO: Indica se estamos em um fluxo de autenticação (ex: recovery)
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>; // Adicionado
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,8 +17,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthFlow, setIsAuthFlow] = useState(false); // Inicializa como falso
 
   useEffect(() => {
+    // Verifica se há um token de acesso na URL (indicando um fluxo de autenticação)
+    const hash = window.location.hash;
+    const isAuthEventPending = hash.includes('access_token=') || hash.includes('type=recovery');
+    
+    if (isAuthEventPending) {
+        console.log("[AuthContext] Auth flow detected in URL hash.");
+        setIsAuthFlow(true);
+    }
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         // Adicionado para depuração
@@ -32,6 +43,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         setLoading(false);
+        
+        // Se o evento for SIGNED_IN ou SIGNED_OUT, o fluxo de autenticação terminou.
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+            setIsAuthFlow(false);
+        }
       }
     );
 
@@ -39,10 +55,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
       setLoading(false);
+      
+      // Se a sessão inicial for carregada e não houver hash, o fluxo não está ativo.
+      if (!isAuthEventPending) {
+          setIsAuthFlow(false);
+      }
+      
     }).catch(() => {
-      // Em caso de erro ao buscar a sessão inicial, garante que o usuário seja nulo.
       setUser(null);
       setLoading(false);
+      setIsAuthFlow(false);
     });
 
     return () => {
@@ -75,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, loading, isAuthFlow, signInWithEmail, signUpWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );
