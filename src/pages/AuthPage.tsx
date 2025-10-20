@@ -15,8 +15,9 @@ const AuthPage = () => {
     );
   }
 
-  // Define a URL de redirecionamento para a rota neutra.
-  const redirectToUrl = window.location.origin + '/auth-callback';
+  // Define a URL de redirecionamento de volta para a rota de login.
+  // O PublicRoute deve permitir a permanência se houver um hash de autenticação.
+  const redirectToUrl = window.location.origin + '/login';
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
@@ -25,7 +26,7 @@ const AuthPage = () => {
         <Auth
           supabaseClient={supabase}
           providers={[]}
-          redirectTo={redirectToUrl} // Redireciona para a rota neutra
+          redirectTo={redirectToUrl} 
           appearance={{
             theme: ThemeSupa,
             variables: {

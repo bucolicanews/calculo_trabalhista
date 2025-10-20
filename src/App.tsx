@@ -32,9 +32,7 @@ const App: React.FC = () => {
       <AuthProvider>
         <Routes>
           {/* Public Routes */}
-          {/* Rota neutra para processar o hash de recuperação/confirmação sem redirecionamento */}
-          <Route path="/auth-callback" element={<AuthPage />} /> 
-          
+          {/* Rota de login/cadastro/recuperação */}
           <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><AuthPage /></PublicRoute>} />
           <Route path="/" element={<PublicRoute><AuthPage /></PublicRoute>} /> {/* Default public route */}
