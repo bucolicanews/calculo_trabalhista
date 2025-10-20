@@ -15,9 +15,11 @@ const AuthPage = () => {
     // Verifica se estamos processando um evento de autenticação (ex: #type=recovery)
     const isProcessingAuthEvent = hash.includes('type='); 
 
-    if (!loading && user && !isProcessingAuthEvent) {
-      // Se o usuário estiver logado E não estivermos processando um evento, redireciona para o dashboard
-      navigate('/dashboard');
+    if (!loading) {
+      if (user && !isProcessingAuthEvent) {
+        // Se o usuário estiver logado E não estivermos processando um evento, redireciona para o dashboard
+        navigate('/dashboard');
+      }
     }
   }, [user, loading, navigate]);
 

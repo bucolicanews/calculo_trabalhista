@@ -8,10 +8,14 @@ const Index = () => {
 
   useEffect(() => {
     if (!loading) {
-      if (user) {
+      const hash = window.location.hash;
+      const isProcessingAuthEvent = hash.includes('type='); 
+
+      if (user && !isProcessingAuthEvent) {
         navigate('/dashboard');
       } else {
-        navigate('/auth');
+        // Redireciona para /login para que o componente Auth possa processar o hash (se houver)
+        navigate('/login');
       }
     }
   }, [user, loading, navigate]);
