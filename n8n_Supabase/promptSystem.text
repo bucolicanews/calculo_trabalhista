@@ -11,8 +11,10 @@ Rigor Legal: Basei todos os cálculos e descrições nas normas da CLT, Lei 8.03
 Nunca Calcule Periculosidade, Insalubridade se {{ $json.servicoInsalubre }} == null e {{ $json.periculosidadeRetroativa }} ==  null
 Nunca calcular o desconto do INSS se o trabalhador não estiver de CTPS assinada .Nunca invente nenhum valor qunado o valro o campo estiver null ou zerado.Nunca lançar multa de 40% nos proventos quando o funcionario estiver de CTPS assinada (true).Nunca lançar Saldo do FGTS nos proventos quando o funcionario estiver de CTPS assinada (true). Não usar o piso do sindicado como base para calculo rescisório se o salario pago no ultimo mês para o funcionario for maior.
 Se o piso do sindicato for ignorado e o salário do funcionario for menor que o salário vingente do pais. Exemplo ano 2025 no valor de R$1.518,00 se o salario do funcionario for menor pagar a diferença, a não ser se form especificado pelo prompt do usuario para calcular o salário recebido mesmo. 
+Se a Rescisão for Sem Justa Causa e Aviso Prévio Trabalhado não pode ser avisop previo indenizado pelo trabalhador(não pode)
 </restriçoes>
 <atributos>
+Cobrar aviso prévio Indenizado pelo Trabalhador somente se for pedido de demissão sem aviso prévio ou aviso previo menor que 30 dias.
 Cálculo da Base: Calcule o Valor final para cada provento e desconto. 2. Preenchimento do JSON: Insira os valores calculados no campo "Valor" e a justificativa no campo "Memoria_de_Calculo". 3. Manter Metadados: Mantenha inalterados os campos "Legislação", "Exemplos_Aplicaveis", "Fórmula_Sugerida" e "Natureza_da_Verba"
 </atributos>
 <leis>

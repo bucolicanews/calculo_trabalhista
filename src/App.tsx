@@ -21,6 +21,7 @@ import SindicatoListPage from './pages/SindicatoListPage';
 import SindicatoFormPage from './pages/SindicatoFormPage';
 import WebhookConfigPage from './pages/WebhookConfigPage';
 import Info from './pages/Info';
+import path from 'path/win32';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -31,8 +32,8 @@ const App: React.FC = () => {
     <Router>
       <AuthProvider>
         <Routes>
-
-          {/* Public Routes */}
+    {/* Public Routes */ }
+          <Route path="/authContext" element={<AuthProvider><AuthPage /></AuthProvider>} />
           <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><AuthPage /></PublicRoute>} />
           <Route path="/" element={<PublicRoute><AuthPage /></PublicRoute>} /> {/* Default public route */}
