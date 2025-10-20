@@ -29,15 +29,9 @@ const AuthPage = () => {
       } else {
         // Se for qualquer outro hash (ex: magiclink), deixamos o componente Auth lidar com ele,
         // mas garantimos que a view inicial não seja 'sign_in' para evitar o redirecionamento.
-        // No entanto, para simplificar, vamos manter a view padrão se não for recovery/signup.
         setInitialView('sign_in');
       }
     }
-    
-    // 2. Limpar o hash após a leitura para evitar que o Supabase Auth o limpe e cause um loop de redirecionamento.
-    // O componente Auth do Supabase deve ser capaz de ler o hash antes que ele seja limpo.
-    // Se o hash for limpo aqui, o componente Auth não o verá.
-    // Vamos confiar que o componente Auth o lerá na montagem.
     
   }, []);
 
