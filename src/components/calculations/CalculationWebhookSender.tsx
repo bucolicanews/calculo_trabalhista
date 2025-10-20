@@ -24,8 +24,8 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
     onSend,
     isSending,
 }) => {
-    // Mantemos 'user' aqui se for necessário para permissões de envio (onSend)
-    const { user } = useAuth(); 
+    // Removendo a declaração de 'user' não utilizada.
+    useAuth(); 
     const [availableWebhooks, setAvailableWebhooks] = useState<WebhookConfig[]>([]);
     const [selectedWebhookIds, setSelectedWebhookIds] = useState<Set<string>>(new Set());
     const [loadingWebhooks, setLoadingWebhooks] = useState(true);
