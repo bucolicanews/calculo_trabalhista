@@ -21,6 +21,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const hash = window.location.hash;
+    // Verifica se há um token de acesso ou tipo de recuperação no hash
     const isAuthEventPending = hash.includes('access_token=') || hash.includes('type=recovery');
     
     console.log(`[AuthContext Init] Hash: ${hash}`);
@@ -44,10 +45,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         setLoading(false);
         
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        // REMOVIDO: Não desativamos isAuthFlow aqui, exceto se for SIGNED_OUT.
+        // Deixamos o PublicRoute e a lógica de Initial Session gerenciarem a desativação.
+        if (event === 'SIGNED_OUT') {
             setIsAuthFlow(false);
-            console.log(`[AuthContext Event] Auth flow finished. Setting isAuthFlow = FALSE.`);
+            console.log(`[AuthContext Event] SIGNED_OUT. Setting isAuthFlow = FALSE.`);
         }
+        
         console.log(`[AuthContext State] User is now: ${session?.user ? 'LOGGED IN' : 'NULL'}, Loading: FALSE, isAuthFlow: ${isAuthFlow}`);
       }
     );
@@ -57,6 +61,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(session?.user || null);
       setLoading(false);
       
+      // Se a sessão inicial for carregada E não houver hash, o fluxo não está ativo.
       if (!isAuthEventPending) {
           setIsAuthFlow(false);
       }
