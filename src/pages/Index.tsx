@@ -9,6 +9,7 @@ const Index = () => {
   useEffect(() => {
     if (!loading) {
       const hash = window.location.hash;
+      // Verifica se estamos processando qualquer evento de autenticação (recovery, signup, etc.)
       const isProcessingAuthEvent = hash.includes('type='); 
 
       if (user && !isProcessingAuthEvent) {

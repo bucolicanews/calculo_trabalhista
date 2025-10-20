@@ -13,14 +13,15 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
     return <div className="flex items-center justify-center min-h-screen bg-gray-900 text-orange-500">Carregando autenticação...</div>;
   }
 
-  // Verifica se há um hash de recuperação de senha na URL
+  // Verifica se há um hash de evento de autenticação na URL.
+  // Isso inclui 'recovery', 'signup' (confirmação) e 'magiclink'.
   const hash = window.location.hash;
-  const isRecoveryEvent = hash.includes('type=recovery') || hash.includes('type=signup');
+  const isAuthEventPending = hash.includes('type=');
 
-  // Se o usuário estiver logado, mas for um evento de recuperação/confirmação,
+  // Se o usuário estiver logado, mas houver um evento de autenticação pendente,
   // permitimos que ele prossiga para o componente filho (AuthPage) para que o
   // componente Auth do Supabase possa processar o hash e mostrar o formulário.
-  if (user && !isRecoveryEvent) {
+  if (user && !isAuthEventPending) {
     return <Navigate to="/dashboard" replace />;
   }
 
