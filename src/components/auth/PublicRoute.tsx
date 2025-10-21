@@ -17,8 +17,8 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
 
   const userIsLoggedIn = !!user;
   
-  // VERIFICAÇÃO ADICIONAL: Se houver um hash de autenticação na URL, 
-  // devemos sempre permitir a renderização do conteúdo público (AuthPage) para que o Supabase Auth UI possa processá-lo.
+  // 🚨 CORREÇÃO CRÍTICA: Verifica se há um token de acesso ou tipo de recuperação no hash da URL.
+  // Isso é necessário porque o estado assíncrono do AuthContext pode atrasar.
   const hasAuthHash = location.hash.includes('access_token=') || location.hash.includes('type=recovery');
 
   console.log(`[PublicRoute Check] User Logged In: ${userIsLoggedIn}, Is Auth Flow: ${isAuthFlow}, Has Auth Hash: ${hasAuthHash}`);
@@ -30,8 +30,9 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Caso contrário (não logado, ou logado mas em fluxo de autenticação/com hash), renderiza o conteúdo público.
-  console.log("[PublicRoute Decision] Rendering AuthPage (Public Content).");
+  // Se estiver em um fluxo de autenticação (isAuthFlow ou hasAuthHash) ou se não estiver logado,
+  // renderiza o componente filho (AuthPage ou UpdatePasswordPage).
+  console.log("[PublicRoute Decision] Rendering Public Content.");
   return <>{children}</>;
 };
 
