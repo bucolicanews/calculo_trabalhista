@@ -11,7 +11,7 @@ type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password'
 
 const AuthPage = () => {
   const navigate = useNavigate();
-  const [initialView] = useState<AuthView>('sign_in'); // Corrigido: setInitialView removido
+  const [initialView] = useState<AuthView>('sign_in'); // setInitialView removido
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

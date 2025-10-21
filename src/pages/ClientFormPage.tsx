@@ -3,31 +3,36 @@ import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showError, showSuccess } from '@/utils/toast';
+import { Input } from '@/components/ui/input';
+import { Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
-const employerTypes = ['Empresa', 'Empregador Doméstico', 'Pessoa Física', 'Produtor Rural', 'Outros'];
+// Initial State
+const initialClientState = {
+  nome: '',
+  cnpj: '',
+  endereco: '',
+  telefone: '',
+  email: '',
+};
 
-const ClientFormPage = () => {
+type Client = typeof initialClientState;
+
+const ClientFormPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [client, setClient] = useState({
-    nome: '',
-    cpf: '',
-    cnpj: '',
-    tipo_empregador: '',
-    responsavel: '',
-    cpf_responsavel: '',
-  });
-  const [loading, setLoading] = useState(false);
   const isEditing = !!id;
 
+  const [client, setClient] = useState<Client>(initialClientState);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    if (isEditing) {
+    if (isEditing && id) {
       fetchClient();
+    } else {
+      setLoading(false);
     }
   }, [id, isEditing]);
 
@@ -44,159 +49,109 @@ const ClientFormPage = () => {
       .from('tbl_clientes')
       .select('*')
       .eq('id', id)
-      .eq('user_id', user.id)
+      .eq('user_id', user.id) // Filtro de segurança
       .single();
 
     if (error) {
-      showError('Erro ao carregar cliente: ' + error.message);
+      showError('Erro ao carregar empregador: ' + error.message);
       console.error('Error fetching client:', error);
-      navigate('/dashboard');
-    } else if (data) {
-      setClient(data);
+      navigate('/clients');
+    } else {
+      setClient({
+        ...initialClientState,
+        ...data,
+        // Ensure string fields are not null
+        cnpj: data.cnpj || '',
+        endereco: data.endereco || '',
+        telefone: data.telefone || '',
+        email: data.email || '',
+      });
     }
     setLoading(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setClient((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setClient((prev) => ({ ...prev, [name]: value }));
+    setClient(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      showError('Usuário não autenticado.');
-      return;
+    if (!user) return showError('Usuário não autenticado.');
+
+    if (!client.nome) {
+      return showError('O nome do empregador é obrigatório.');
     }
+
     setLoading(true);
 
     const clientData = {
       ...client,
       user_id: user.id,
+      // Convert empty strings to null for optional DB fields
+      cnpj: client.cnpj || null,
+      endereco: client.endereco || null,
+      telefone: client.telefone || null,
+      email: client.email || null,
     };
 
     let response;
     if (isEditing) {
-      response = await supabase
-        .from('tbl_clientes')
-        .update(clientData)
-        .eq('id', id)
-        .eq('user_id', user.id);
+      response = await supabase.from('tbl_clientes').update(clientData).eq('id', id).select();
     } else {
-      response = await supabase
-        .from('tbl_clientes')
-        .insert(clientData);
+      response = await supabase.from('tbl_clientes').insert(clientData).select();
     }
 
     if (response.error) {
-      showError('Erro ao salvar cliente: ' + response.error.message);
+      showError('Erro ao salvar empregador: ' + response.error.message);
       console.error('Error saving client:', response.error);
     } else {
-      showSuccess(`Cliente ${isEditing ? 'atualizado' : 'criado'} com sucesso!`);
-      navigate('/dashboard');
+      showSuccess(`Empregador ${isEditing ? 'atualizado' : 'criado'} com sucesso!`);
+      navigate('/clients');
     }
     setLoading(false);
   };
 
-  if (loading && isEditing) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto py-8 text-center text-gray-400">Carregando cliente...</div>
-      </MainLayout>
-    );
+  if (loading) {
+    return <MainLayout><div className="container text-center py-8 text-gray-400"><Loader2 className="h-8 w-8 animate-spin mx-auto text-orange-500" /> Carregando...</div></MainLayout>;
   }
 
   return (
     <MainLayout>
-      <div className="container mx-auto py-8">
+      <div className="container w-full py-8">
         <h1 className="text-4xl font-bold text-orange-500 mb-8 text-center">
-          {isEditing ? 'Editar Cliente' : 'Novo Cliente'}
+          {isEditing ? 'Editar Empregador' : 'Novo Empregador'}
         </h1>
         <Card className="max-w-2xl mx-auto bg-gray-900 border-orange-500 text-white">
           <CardHeader>
-            <CardTitle className="2xl text-orange-500">Dados do Cliente</CardTitle>
+            <CardTitle className="text-2xl text-orange-500">Dados do Empregador</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="nome" className="text-gray-300">Nome/Razão Social</Label>
-                <Input
-                  id="nome"
-                  name="nome"
-                  value={client.nome}
-                  onChange={handleChange}
-                  required
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
+                <Input id="nome" name="nome" value={client.nome} onChange={handleChange} required className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
               </div>
-              <div>
-                <Label htmlFor="tipo_empregador" className="text-gray-300">Tipo de Empregador</Label>
-                <Select
-                  name="tipo_empregador"
-                  value={client.tipo_empregador}
-                  onValueChange={(value) => handleSelectChange('tipo_empregador', value)}
-                  required
-                >
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white focus:ring-orange-500">
-                    <SelectValue placeholder="Selecione o tipo de empregador" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                    {employerTypes.map((type) => (
-                      <SelectItem key={type} value={type} className="hover:bg-gray-700 focus:bg-gray-700">
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                <Label htmlFor="cnpj" className="text-gray-300">CNPJ/CPF</Label>
+                <Input id="cnpj" name="cnpj" value={client.cnpj} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
               </div>
-              <div>
-                <Label htmlFor="cpf" className="text-gray-300">CPF (se Pessoa Física)</Label>
-                <Input
-                  id="cpf"
-                  name="cpf"
-                  value={client.cpf}
-                  onChange={handleChange}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-gray-300">Email</Label>
+                <Input id="email" name="email" type="email" value={client.email} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
               </div>
-              <div>
-                <Label htmlFor="cnpj" className="text-gray-300">CNPJ (se Empresa)</Label>
-                <Input
-                  id="cnpj"
-                  name="cnpj"
-                  value={client.cnpj}
-                  onChange={handleChange}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="telefone" className="text-gray-300">Telefone</Label>
+                <Input id="telefone" name="telefone" value={client.telefone} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
               </div>
-              <div>
-                <Label htmlFor="responsavel" className="text-gray-300">Nome do Responsável</Label>
-                <Input
-                  id="responsavel"
-                  name="responsavel"
-                  value={client.responsavel}
-                  onChange={handleChange}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="endereco" className="text-gray-300">Endereço</Label>
+                <Input id="endereco" name="endereco" value={client.endereco} onChange={handleChange} className="bg-gray-800 border-gray-700 text-white focus:border-orange-500" />
               </div>
-              <div>
-                <Label htmlFor="cpf_responsavel" className="text-gray-300">CPF do Responsável</Label>
-                <Input
-                  id="cpf_responsavel"
-                  name="cpf_responsavel"
-                  value={client.cpf_responsavel}
-                  onChange={handleChange}
-                  className="bg-gray-800 border-gray-700 text-white focus:border-orange-500"
-                />
-              </div>
-              <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                {loading ? 'Salvando...' : (isEditing ? 'Atualizar Cliente' : 'Criar Cliente')}
+              <Button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3">
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditing ? 'Atualizar Empregador' : 'Criar Empregador')}
               </Button>
             </form>
           </CardContent>
