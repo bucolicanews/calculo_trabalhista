@@ -26,7 +26,7 @@ Este projeto é uma aplicação de cálculo trabalhista projetada para auxiliar 
 
 ---
 
-## 1. Apresentação Profissional
+## 1. Apresentação Profissional Padrão
 
 Apresentamos a "Calculadora Trabalhista Jota Empresas", uma solução robusta e intuitiva desenvolvida para otimizar e automatizar os complexos processos de cálculo de rescisões contratuais. Criada com foco na precisão e conformidade legal, esta aplicação é uma ferramenta indispensável para profissionais de contabilidade, departamentos de RH e escritórios jurídicos que buscam eficiência e segurança nas operações trabalhistas.
 
