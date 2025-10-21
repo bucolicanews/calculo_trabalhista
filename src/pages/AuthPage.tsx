@@ -95,8 +95,7 @@ const AuthPage = () => {
                 button_label: 'Entrar',
                 loading_button_label: 'Entrando...',
                 social_provider_text: 'Entrar com {{provider}}',
-                link_text: 'Já tem uma conta? Faça login',
-                no_account_text: 'Não tem uma conta? Cadastre-se',
+                link_text: '', 
               },
               sign_up: {
                 email_label: 'Seu e-mail',
@@ -106,14 +105,14 @@ const AuthPage = () => {
                 button_label: 'Cadastrar',
                 loading_button_label: 'Cadastrando...',
                 social_provider_text: 'Cadastrar com {{provider}}',
-                link_text: 'Já tem uma conta? Faça login',
+                link_text: '', 
               },
               forgotten_password: {
                 email_label: 'Seu e-mail',
                 email_input_placeholder: 'Digite seu e-mail para recuperação',
                 button_label: 'Enviar instruções de redefinição',
                 loading_button_label: 'Enviando...',
-                link_text: 'Esqueceu sua senha?',
+                link_text: '', 
               },
               update_password: {
                 password_label: 'Nova senha',
@@ -127,7 +126,6 @@ const AuthPage = () => {
                 button_label: 'Enviar Link Mágico',
                 loading_button_label: 'Enviando Link...',
                 link_text: 'Entrar com Link Mágico',
-                no_account_text: 'Não tem uma conta? Cadastre-se',
               },
               verify_otp: {
                 email_input_label: 'Seu e-mail',
