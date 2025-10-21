@@ -21,15 +21,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const hash = window.location.hash;
-    // Verifica se há um token de acesso ou tipo de recuperação no hash
     const isAuthEventPending = hash.includes('access_token=') || hash.includes('type=recovery');
     
     console.log(`[AuthContext Init] Hash: ${hash}`);
     console.log(`[AuthContext Init] isAuthEventPending: ${isAuthEventPending}`);
 
-    // Define o estado inicial de isAuthFlow com base no hash
-    setIsAuthFlow(isAuthEventPending);
-    
+    // 🚨 CORREÇÃO AGRESSIVA: Se houver um hash de recuperação, forçamos o estado de fluxo de autenticação
+    // e pulamos a busca inicial de sessão para evitar que o usuário seja considerado logado imediatamente.
+    if (isAuthEventPending) {
+        setIsAuthFlow(true);
+        setLoading(true); // Mantém o loading ativo
+        setUser(null); // Força o usuário a ser NULL para evitar redirecionamento do PublicRoute
+        console.log("[AuthContext Init] Recovery hash detected. Forcing isAuthFlow=TRUE and user=NULL.");
+    } else {
+        setIsAuthFlow(false);
+    }
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`[AuthContext Event] Event: ${event}, Session exists: ${!!session}`);
@@ -41,40 +48,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(session?.user ?? null);
         }
         
-        // AQUI ESTÁ O AJUSTE CRÍTICO:
-        // Se o evento for SIGNED_IN, SIGNED_OUT ou INITIAL_SESSION, o fluxo de autenticação terminou.
-        // No entanto, se houver um hash na URL, o fluxo AINDA NÃO TERMINOU, pois o componente Auth UI precisa processá-lo.
-        // Portanto, só definimos isAuthFlow como false se o hash estiver vazio.
-        if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            if (window.location.hash === '') {
-                setIsAuthFlow(false);
-            }
-        }
-        
         setLoading(false);
+        
+        // Se for PASSWORD_RECOVERY, garantimos que o fluxo está ativo.
+        if (event === 'PASSWORD_RECOVERY') {
+            setIsAuthFlow(true);
+            console.log(`[AuthContext Event] PASSWORD_RECOVERY detected. Forcing isAuthFlow = TRUE.`);
+        } else if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+            // Se for um login/logout normal, o fluxo termina.
+            setIsAuthFlow(false);
+            console.log(`[AuthContext Event] Auth flow finished. Setting isAuthFlow = FALSE.`);
+        }
         
         console.log(`[AuthContext State] User is now: ${session?.user ? 'LOGGED IN' : 'NULL'}, Loading: FALSE, isAuthFlow: ${isAuthFlow}`);
       }
     );
 
-    // Fetch initial user session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      
-      setUser(session?.user || null);
-      setLoading(false);
-      
-      // Garante que isAuthFlow é false após a carga inicial, a menos que haja um hash de recuperação.
-      if (!isAuthEventPending) {
-          setIsAuthFlow(false);
-      }
-      console.log(`[AuthContext Initial Session] User is: ${session?.user ? 'LOGGED IN' : 'NULL'}, isAuthFlow: ${isAuthFlow}`);
-      
-    }).catch((e) => {
-      console.error("[AuthContext Initial Session] Error fetching session:", e);
-      setUser(null);
-      setLoading(false);
-      setIsAuthFlow(false);
-    });
+    // Fetch initial user session SOMENTE se não houver um hash de recuperação pendente
+    if (!isAuthEventPending) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user || null);
+            setLoading(false);
+            setIsAuthFlow(false);
+            console.log(`[AuthContext Initial Session] User is: ${session?.user ? 'LOGGED IN' : 'NULL'}, isAuthFlow: ${isAuthFlow}`);
+        }).catch((e) => {
+            console.error("[AuthContext Initial Session] Error fetching session:", e);
+            setUser(null);
+            setLoading(false);
+            setIsAuthFlow(false);
+        });
+    }
+
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -103,9 +107,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       showError('Erro ao fazer logout: ' + error.message);
       throw error;
     }
-    // Após o logout, o onAuthStateChange deve ser acionado, mas garantimos que o estado local é limpo.
-    setUser(null);
-    // Redirecionamento deve ser tratado pelo PublicRoute/PrivateRoute
   };
 
   return (
