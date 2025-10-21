@@ -2,22 +2,40 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
-import { showError, showSuccess } from '@/utils/toast'; // Importando showSuccess/showError
+import { showError, showSuccess } from '@/utils/toast';
+import { useNavigate } from 'react-router-dom';
 
 // Define os tipos de view que o componente Auth pode ter
 type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password' | 'magic_link' | 'verify_otp';
 
 const AuthPage = () => {
-  const { loading } = useAuth();
-  const [initialView, setInitialView] = useState<AuthView>('sign_in');
+  const navigate = useNavigate();
+  const [initialView] = useState<AuthView>('sign_in');
+  const [loading, setLoading] = useState(true);
 
-  // Removemos toda a lógica de detecção de hash, pois o UpdatePasswordPage fará isso.
   useEffect(() => {
-    // Se houver um hash, garantimos que a view padrão é 'sign_in'
-    setInitialView('sign_in');
-  }, []);
+    // Verifica se o usuário já está logado e redireciona
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/dashboard', { replace: true });
+      }
+      setLoading(false);
+    });
+    
+    // Configura o listener para redirecionar após login/logout
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            navigate('/dashboard', { replace: true });
+        }
+        // Se for um evento de recuperação, o UpdatePasswordPage lida com isso.
+    });
+
+    return () => {
+        authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
 
   if (loading) {
     return (
@@ -37,7 +55,6 @@ const AuthPage = () => {
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
         console.error("Erro ao tentar deslogar antes do reset:", signOutError);
-        // Não é um erro fatal, apenas logamos e continuamos
     }
 
     // 2. Envia o e-mail de recuperação
@@ -60,16 +77,67 @@ const AuthPage = () => {
         <h2 className="text-3xl font-bold text-center text-orange-500">Bem-vindo!</h2>
         <Auth
           supabaseClient={supabase}
+          // 1. Deixar somente Magic Link
           providers={[]}
+          onlyThirdPartyProviders={false}
           redirectTo={redirectToUrl} 
           view={initialView}
-          // 🚨 CRÍTICO: Passamos a URL de recuperação para o Auth UI
           magicLink={true}
           socialLayout="horizontal"
+          // 2. Tradução completa para PT-BR
           localization={{
             variables: {
+              sign_in: {
+                email_label: 'Seu e-mail',
+                password_label: 'Sua senha',
+                email_input_placeholder: 'Digite seu e-mail',
+                password_input_placeholder: 'Digite sua senha',
+                button_label: 'Entrar',
+                loading_button_label: 'Entrando...',
+                social_provider_text: 'Entrar com {{provider}}',
+                link_text: 'Já tem uma conta? Faça login',
+                no_account_text: 'Não tem uma conta? Cadastre-se',
+              },
+              sign_up: {
+                email_label: 'Seu e-mail',
+                password_label: 'Crie uma senha',
+                email_input_placeholder: 'Digite seu e-mail',
+                password_input_placeholder: 'Crie uma senha forte',
+                button_label: 'Cadastrar',
+                loading_button_label: 'Cadastrando...',
+                social_provider_text: 'Cadastrar com {{provider}}',
+                link_text: 'Já tem uma conta? Faça login',
+              },
               forgotten_password: {
+                email_label: 'Seu e-mail',
+                email_input_placeholder: 'Digite seu e-mail para recuperação',
+                button_label: 'Enviar instruções de redefinição',
+                loading_button_label: 'Enviando...',
                 link_text: 'Esqueceu sua senha?',
+              },
+              update_password: {
+                password_label: 'Nova senha',
+                password_input_placeholder: 'Digite sua nova senha',
+                button_label: 'Atualizar senha',
+                loading_button_label: 'Atualizando...',
+              },
+              magic_link: {
+                email_input_label: 'Seu e-mail',
+                email_input_placeholder: 'Digite seu e-mail para o link mágico',
+                button_label: 'Enviar Link Mágico',
+                loading_button_label: 'Enviando Link...',
+                link_text: 'Entrar com Link Mágico',
+                no_account_text: 'Não tem uma conta? Cadastre-se',
+              },
+              verify_otp: {
+                email_input_label: 'Seu e-mail',
+                email_input_placeholder: 'Digite seu e-mail',
+                phone_input_label: 'Seu telefone',
+                phone_input_placeholder: 'Digite seu telefone',
+                token_input_label: 'Token',
+                token_input_placeholder: 'Digite o token de 6 dígitos',
+                button_label: 'Verificar Token',
+                loading_button_label: 'Verificando...',
               },
             },
           }}
