@@ -2,22 +2,40 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
-import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
-import { showError, showSuccess } from '@/utils/toast'; // Importando showSuccess/showError
+import { showError, showSuccess } from '@/utils/toast';
+import { useNavigate } from 'react-router-dom';
 
 // Define os tipos de view que o componente Auth pode ter
 type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password' | 'magic_link' | 'verify_otp';
 
 const AuthPage = () => {
-  const { loading } = useAuth();
+  const navigate = useNavigate();
   const [initialView, setInitialView] = useState<AuthView>('sign_in');
+  const [loading, setLoading] = useState(true);
 
-  // Removemos toda a lógica de detecção de hash, pois o UpdatePasswordPage fará isso.
   useEffect(() => {
-    // Se houver um hash, garantimos que a view padrão é 'sign_in'
-    setInitialView('sign_in');
-  }, []);
+    // Verifica se o usuário já está logado (sem usar o AuthContext complexo)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/dashboard', { replace: true });
+      }
+      setLoading(false);
+    });
+    
+    // Configura o listener para redirecionar após login/logout
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            navigate('/dashboard', { replace: true });
+        }
+        // Se for um evento de recuperação, o UpdatePasswordPage lida com isso.
+    });
+
+    return () => {
+        authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
 
   if (loading) {
     return (
@@ -37,7 +55,6 @@ const AuthPage = () => {
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
         console.error("Erro ao tentar deslogar antes do reset:", signOutError);
-        // Não é um erro fatal, apenas logamos e continuamos
     }
 
     // 2. Envia o e-mail de recuperação
@@ -63,7 +80,6 @@ const AuthPage = () => {
           providers={[]}
           redirectTo={redirectToUrl} 
           view={initialView}
-          // 🚨 CRÍTICO: Passamos a URL de recuperação para o Auth UI
           magicLink={true}
           socialLayout="horizontal"
           localization={{
