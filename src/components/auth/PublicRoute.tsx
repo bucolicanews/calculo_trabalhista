@@ -8,7 +8,7 @@ interface PublicRouteProps {
 
 const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
   const { user, loading, isAuthFlow } = useAuth();
-  const location = useLocation(); // Adicionado para verificar a rota atual
+  const location = useLocation(); 
 
   if (loading) {
     console.log("[PublicRoute Check] Loading: TRUE. Showing loading screen.");
@@ -17,20 +17,19 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
 
   const userIsLoggedIn = !!user;
   
-  // Verifica se a rota atual é a página de redefinição de senha
-  const isPasswordResetPage = location.pathname === '/reset-password';
+  // Removemos a verificação manual de isPasswordResetPage, confiando no isAuthFlow.
 
-  console.log(`[PublicRoute Check] User Logged In: ${userIsLoggedIn}, Is Auth Flow: ${isAuthFlow}, Is Reset Page: ${isPasswordResetPage}`);
+  console.log(`[PublicRoute Check] User Logged In: ${userIsLoggedIn}, Is Auth Flow: ${isAuthFlow}`);
 
-  // Se o usuário estiver logado E NÃO estiver em um fluxo de autenticação (isAuthFlow) 
-  // E NÃO estiver na página de reset de senha, redireciona para o dashboard.
-  if (userIsLoggedIn && !isAuthFlow && !isPasswordResetPage) {
+  // Se o usuário estiver logado E NÃO estiver em um fluxo de autenticação (isAuthFlow), redireciona para o dashboard.
+  // O isAuthFlow será TRUE se houver um hash de recuperação na URL.
+  if (userIsLoggedIn && !isAuthFlow) {
     console.log("[PublicRoute Decision] Redirecting to /dashboard.");
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Se estiver em um fluxo de autenticação (isAuthFlow é true), ou na página de reset, ou se não estiver logado,
-  // renderize o componente filho (AuthPage ou UpdatePasswordForm).
+  // Se estiver em um fluxo de autenticação (isAuthFlow é true), ou se não estiver logado,
+  // renderize o componente filho (AuthPage).
   console.log("[PublicRoute Decision] Rendering AuthPage (Public Content).");
   return <>{children}</>;
 };

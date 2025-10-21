@@ -11,11 +11,8 @@ type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password'
 
 const AuthPage = () => {
   const { loading } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [initialView, setInitialView] = useState<AuthView>('sign_in');
-  // NOVO ESTADO: Para rastrear se um redirecionamento de recuperação de senha está pendente
-  const [isRecoveryRedirecting, setIsRecoveryRedirecting] = useState(false); 
 
   useEffect(() => {
     const hash = location.hash;
@@ -28,11 +25,9 @@ const AuthPage = () => {
       console.log('AuthPage: Detected hash type:', type);
       
       if (type === 'recovery') {
-        // Se for recuperação de senha, definimos o estado de redirecionamento
-        setIsRecoveryRedirecting(true);
-        // Redirecionamos para a rota manual para usar o UpdatePasswordForm, preservando o hash.
-        navigate(`/reset-password${hash}`, { replace: true });
-        return;
+        // Se for recuperação de senha, forçamos a view de atualização de senha
+        // O componente Auth UI deve ser capaz de lidar com isso se o hash estiver presente.
+        setInitialView('update_password');
       } else if (type === 'signup') {
         // Se for confirmação de cadastro, forçamos a view de verificação de OTP
         setInitialView('verify_otp');
@@ -45,15 +40,10 @@ const AuthPage = () => {
         setInitialView('sign_in');
     }
     
-    // Resetamos o estado de redirecionamento se o hash mudar ou for limpo
-    if (isRecoveryRedirecting && !hash) {
-        setIsRecoveryRedirecting(false);
-    }
-    
-  }, [location.hash, navigate]);
+  }, [location.hash]); // Depende apenas do hash da localização
 
-  // Se estivermos prestes a redirecionar para a tela de troca de senha, mostramos um loader
-  if (loading || isRecoveryRedirecting) {
+  // Se estiver carregando, mostramos um loader
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
         <p className="text-orange-500">Carregando...</p>

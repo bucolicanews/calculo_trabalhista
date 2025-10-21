@@ -21,7 +21,6 @@ import SindicatoListPage from './pages/SindicatoListPage';
 import SindicatoFormPage from './pages/SindicatoFormPage';
 import WebhookConfigPage from './pages/WebhookConfigPage';
 import Info from './pages/Info';
-import UpdatePasswordForm from './components/auth/UpdatePasswordForm'; // NOVO IMPORT
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -38,9 +37,6 @@ const App: React.FC = () => {
           <Route path="/register" element={<PublicRoute><AuthPage /></PublicRoute>} />
           <Route path="/" element={<PublicRoute><AuthPage /></PublicRoute>} /> {/* Default public route */}
           
-          {/* ROTA DE ATUALIZAÇÃO DE SENHA MANUAL */}
-          <Route path="/reset-password" element={<PublicRoute><UpdatePasswordForm /></PublicRoute>} />
-
           {/* Private Routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/info" element={<PrivateRoute><Info /></PrivateRoute>} />
