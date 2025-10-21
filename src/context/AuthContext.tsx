@@ -41,15 +41,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(session?.user ?? null);
         }
         
-        // Se o evento for SIGNED_IN ou SIGNED_OUT, o fluxo de autenticação terminou.
-        // A única exceção é se for PASSWORD_RECOVERY, que deve ser tratado pelo AuthPage/UpdatePasswordForm.
+        // Se o evento for SIGNED_IN, SIGNED_OUT ou INITIAL_SESSION, o fluxo de autenticação terminou.
+        // Desativamos o isAuthFlow para permitir que o PublicRoute redirecione corretamente.
         if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            // Se não houver hash pendente, ou se o evento for um login/logout normal, desativa o isAuthFlow.
-            // Se houver um hash (como recovery), o AuthPage irá redirecionar para /reset-password,
-            // e o PublicRoute deve permitir a passagem (isAuthFlow=true).
-            if (!isAuthEventPending) {
-                setIsAuthFlow(false);
-            }
+            // Se o usuário estiver logado, o fluxo de autenticação terminou e ele deve ser redirecionado.
+            // Se o usuário estiver deslogado, o fluxo de autenticação terminou e ele pode ver a tela de login.
+            setIsAuthFlow(false);
         }
         
         setLoading(false);
@@ -63,7 +60,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(session?.user || null);
       setLoading(false);
       
-      // Garante que isAuthFlow é false se não houver hash pendente
+      // Garante que isAuthFlow é false após a carga inicial, a menos que haja um hash de recuperação.
       if (!isAuthEventPending) {
           setIsAuthFlow(false);
       }
@@ -103,6 +100,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       showError('Erro ao fazer logout: ' + error.message);
       throw error;
     }
+    // Após o logout, o onAuthStateChange deve ser acionado, mas garantimos que o estado local é limpo.
+    setUser(null);
+    // Redirecionamento deve ser tratado pelo PublicRoute/PrivateRoute
   };
 
   return (
