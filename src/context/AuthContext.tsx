@@ -41,9 +41,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(session?.user ?? null);
         }
         
+        // AQUI ESTÁ O AJUSTE CRÍTICO:
         // Se o evento for SIGNED_IN, SIGNED_OUT ou INITIAL_SESSION, o fluxo de autenticação terminou.
+        // No entanto, se houver um hash na URL, o fluxo AINDA NÃO TERMINOU, pois o componente Auth UI precisa processá-lo.
+        // Portanto, só definimos isAuthFlow como false se o hash estiver vazio.
         if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            setIsAuthFlow(false);
+            if (window.location.hash === '') {
+                setIsAuthFlow(false);
+            }
         }
         
         setLoading(false);
@@ -55,24 +60,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Fetch initial user session
     supabase.auth.getSession().then(({ data: { session } }) => {
       
-      // === LÓGICA DE FORÇAR LOGOUT PARA TESTES ===
-      if (session?.user && !isAuthEventPending) {
-          console.log("[AuthContext Initial Session] User found, forcing sign out for testing purposes.");
-          
-          // Tentamos o signOut para limpar o token do navegador
-          supabase.auth.signOut().catch(e => {
-              console.warn("Forced signOut failed (ignoring 403 for testing):", e);
-          });
-          
-          // Imediatamente limpamos o estado local e definimos loading como false
-          // Isso garante que o PublicRoute veja o usuário como deslogado e redirecione para /login.
-          setUser(null);
-          setLoading(false); 
-          setIsAuthFlow(false);
-          return;
-      }
-      // ===========================================
-
       setUser(session?.user || null);
       setLoading(false);
       
