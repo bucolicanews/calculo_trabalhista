@@ -42,10 +42,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         // Se o evento for SIGNED_IN, SIGNED_OUT ou INITIAL_SESSION, o fluxo de autenticação terminou.
-        // Desativamos o isAuthFlow para permitir que o PublicRoute redirecione corretamente.
+        // O evento PASSWORD_RECOVERY deve manter isAuthFlow como true para permitir o acesso à rota /reset-password.
         if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            // Se o usuário estiver logado, o fluxo de autenticação terminou e ele deve ser redirecionado.
-            // Se o usuário estiver deslogado, o fluxo de autenticação terminou e ele pode ver a tela de login.
             setIsAuthFlow(false);
         }
         
