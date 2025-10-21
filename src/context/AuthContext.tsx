@@ -6,7 +6,7 @@ import { showError } from '@/utils/toast';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isAuthFlow: boolean; // Adicionado para resolver o erro TS2339
+  isAuthFlow: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthFlow, setIsAuthFlow] = useState(false); // Inicializa como falso
+  const [isAuthFlow, setIsAuthFlow] = useState(false);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log(`[AuthContext Init] Hash: ${hash}`);
     console.log(`[AuthContext Init] isAuthEventPending: ${isAuthEventPending}`);
 
+    // Se houver um evento pendente no hash, definimos isAuthFlow como true
     if (isAuthEventPending) {
         setIsAuthFlow(true);
         console.log("[AuthContext Init] Setting isAuthFlow = TRUE due to hash.");
@@ -43,18 +44,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(session?.user ?? null);
         }
         
-        setLoading(false);
-        
-        // 🚨 CORREÇÃO CRÍTICA: Se for PASSWORD_RECOVERY, forçamos isAuthFlow para TRUE.
-        // Isso garante que o PublicRoute não redirecione, mesmo que o usuário esteja 'logado' temporariamente.
-        if (event === 'PASSWORD_RECOVERY') {
+        // 🚨 CORREÇÃO CRÍTICA: Manter isAuthFlow TRUE durante o fluxo de recuperação/confirmação
+        if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' && isAuthEventPending) {
             setIsAuthFlow(true);
-            console.log(`[AuthContext Event] PASSWORD_RECOVERY detected. Forcing isAuthFlow = TRUE.`);
+            console.log(`[AuthContext Event] Auth flow in progress. Keeping isAuthFlow = TRUE.`);
         } else if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
             // Se for um login/logout normal, o fluxo termina.
             setIsAuthFlow(false);
             console.log(`[AuthContext Event] Auth flow finished. Setting isAuthFlow = FALSE.`);
         }
+        
+        setLoading(false);
         
         console.log(`[AuthContext State] User is now: ${session?.user ? 'LOGGED IN' : 'NULL'}, Loading: FALSE, isAuthFlow: ${isAuthFlow}`);
       }

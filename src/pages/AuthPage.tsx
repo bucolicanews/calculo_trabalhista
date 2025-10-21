@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Importando useNavigate
+import { useNavigate, useLocation } from 'react-router-dom'; // Importando useLocation
 
 // Define os tipos de view que o componente Auth pode ter
 type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password' | 'magic_link' | 'verify_otp';
@@ -12,32 +12,40 @@ type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password'
 const AuthPage = () => {
   const { loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation(); // Usando useLocation para acessar o hash
   const [initialView, setInitialView] = useState<AuthView>('sign_in');
 
   useEffect(() => {
-    const hash = window.location.hash;
+    const hash = location.hash;
+    console.log('AuthPage: Current URL hash:', hash);
     
     // 1. Se houver um hash, tentamos determinar a view correta
     if (hash) {
       const params = new URLSearchParams(hash.substring(1));
       const type = params.get('type');
+      console.log('AuthPage: Detected hash type:', type);
       
       if (type === 'recovery') {
         // 🚨 CORREÇÃO: Se for recuperação de senha, redirecionamos para a rota manual
         // para usar o UpdatePasswordForm que criamos, preservando o hash.
+        // Usamos navigate com replace para evitar que o usuário volte para esta página com o hash.
         navigate(`/reset-password${hash}`, { replace: true });
         return;
       } else if (type === 'signup') {
         // Se for confirmação de cadastro, forçamos a view de verificação de OTP
         setInitialView('verify_otp');
       } else {
-        // Se for qualquer outro hash (ex: magiclink), deixamos o componente Auth lidar com ele,
-        // mas garantimos que a view inicial não seja 'sign_in' para evitar o redirecionamento.
+        // Se for qualquer outro hash (ex: magiclink), deixamos o componente Auth lidar com ele.
+        // Não precisamos forçar 'sign_in' aqui, pois o componente Auth lida com o hash.
+        // Apenas garantimos que a view inicial seja 'sign_in' se não houver um tipo específico.
         setInitialView('sign_in');
       }
+    } else {
+        // Se não houver hash, garante que a view padrão é 'sign_in'
+        setInitialView('sign_in');
     }
     
-  }, []);
+  }, [location.hash, navigate]); // Depende do hash da localização e do navigate
 
   if (loading) {
     return (
