@@ -39,7 +39,7 @@ const App: React.FC = () => {
           <Route path="/" element={<PublicRoute><AuthPage /></PublicRoute>} /> {/* Default public route */}
           
           {/* ROTA DE ATUALIZAÇÃO DE SENHA MANUAL */}
-          <Route path="/reset-password" element={<PublicRoute><UpdatePasswordPage /></PublicRoute>} />
+          <Route path="/update-password" element={<PublicRoute><UpdatePasswordPage /></PublicRoute>} />
 
           {/* Private Routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
