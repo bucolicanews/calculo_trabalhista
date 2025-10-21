@@ -27,12 +27,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log(`[AuthContext Init] Hash: ${hash}`);
     console.log(`[AuthContext Init] isAuthEventPending: ${isAuthEventPending}`);
 
-    // Se houver um evento pendente no hash, definimos isAuthFlow como true
-    if (isAuthEventPending) {
-        setIsAuthFlow(true);
-        console.log("[AuthContext Init] Setting isAuthFlow = TRUE due to hash.");
-    }
-
+    // Define o estado inicial de isAuthFlow com base no hash
+    setIsAuthFlow(isAuthEventPending);
+    
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`[AuthContext Event] Event: ${event}, Session exists: ${!!session}`);
@@ -44,14 +41,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(session?.user ?? null);
         }
         
-        // 🚨 CORREÇÃO CRÍTICA: Manter isAuthFlow TRUE durante o fluxo de recuperação/confirmação
-        if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' && isAuthEventPending) {
-            setIsAuthFlow(true);
-            console.log(`[AuthContext Event] Auth flow in progress. Keeping isAuthFlow = TRUE.`);
-        } else if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
-            // Se for um login/logout normal, o fluxo termina.
-            setIsAuthFlow(false);
-            console.log(`[AuthContext Event] Auth flow finished. Setting isAuthFlow = FALSE.`);
+        // Se o evento for SIGNED_IN ou SIGNED_OUT, o fluxo de autenticação terminou.
+        // A única exceção é se for PASSWORD_RECOVERY, que deve ser tratado pelo AuthPage/UpdatePasswordForm.
+        if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            // Se não houver hash pendente, ou se o evento for um login/logout normal, desativa o isAuthFlow.
+            // Se houver um hash (como recovery), o AuthPage irá redirecionar para /reset-password,
+            // e o PublicRoute deve permitir a passagem (isAuthFlow=true).
+            if (!isAuthEventPending) {
+                setIsAuthFlow(false);
+            }
         }
         
         setLoading(false);
@@ -65,7 +63,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(session?.user || null);
       setLoading(false);
       
-      // Se a sessão inicial for carregada E não houver hash, o fluxo não está ativo.
+      // Garante que isAuthFlow é false se não houver hash pendente
       if (!isAuthEventPending) {
           setIsAuthFlow(false);
       }
