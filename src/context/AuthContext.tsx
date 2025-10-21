@@ -42,7 +42,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         // Se o evento for SIGNED_IN, SIGNED_OUT ou INITIAL_SESSION, o fluxo de autenticação terminou.
-        // O evento PASSWORD_RECOVERY deve manter isAuthFlow como true para permitir o acesso à rota /reset-password.
         if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             setIsAuthFlow(false);
         }
@@ -55,6 +54,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Fetch initial user session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      
+      // === LÓGICA DE FORÇAR LOGOUT PARA TESTES ===
+      if (session?.user && !isAuthEventPending) {
+          console.log("[AuthContext Initial Session] User found, forcing sign out for testing purposes.");
+          // Força o logout, o que irá disparar o evento SIGNED_OUT e atualizar o estado.
+          supabase.auth.signOut();
+          // Mantemos o loading true até o evento SIGNED_OUT ser processado
+          setLoading(true); 
+          return;
+      }
+      // ===========================================
+
       setUser(session?.user || null);
       setLoading(false);
       
