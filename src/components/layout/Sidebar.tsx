@@ -2,8 +2,8 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Users, Calculator, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
+import { supabase } from '@/integrations/supabase/client'; // Importando supabase
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -11,12 +11,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isMobile, onLinkClick }) => {
-  const { signOut } = useAuth();
   const location = useLocation();
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
     } catch (error: any) {
       showError('Erro ao fazer logout: ' + error.message);
     }

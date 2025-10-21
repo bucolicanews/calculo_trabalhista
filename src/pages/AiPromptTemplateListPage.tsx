@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
@@ -17,22 +16,26 @@ interface AiPromptTemplate {
 }
 
 const AiPromptTemplateListPage: React.FC = () => {
-  const { user } = useAuth();
   const [templates, setTemplates] = useState<AiPromptTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchTemplates();
-    }
-  }, [user]);
+    fetchTemplates();
+  }, []);
 
   const fetchTemplates = async () => {
     setLoading(true);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        setLoading(false);
+        return;
+    }
+
     const { data, error } = await supabase
       .from('tbl_ai_prompt_templates')
       .select('id, title, created_at')
-      .eq('user_id', user?.id)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {

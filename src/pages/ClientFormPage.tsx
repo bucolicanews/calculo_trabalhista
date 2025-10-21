@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +12,6 @@ import { showError, showSuccess } from '@/utils/toast';
 const employerTypes = ['Empresa', 'Empregador Doméstico', 'Pessoa Física', 'Produtor Rural', 'Outros'];
 
 const ClientFormPage = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [client, setClient] = useState({
@@ -28,18 +26,25 @@ const ClientFormPage = () => {
   const isEditing = !!id;
 
   useEffect(() => {
-    if (isEditing && user) {
+    if (isEditing) {
       fetchClient();
     }
-  }, [id, isEditing, user]);
+  }, [id, isEditing]);
 
   const fetchClient = async () => {
     setLoading(true);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        setLoading(false);
+        return;
+    }
+
     const { data, error } = await supabase
       .from('tbl_clientes')
       .select('*')
       .eq('id', id)
-      .eq('user_id', user?.id)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -63,6 +68,8 @@ const ClientFormPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       showError('Usuário não autenticado.');
       return;

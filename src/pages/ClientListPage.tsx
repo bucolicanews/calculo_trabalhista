@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
@@ -17,22 +16,26 @@ interface Client {
 }
 
 const ClientListPage = () => {
-  const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchClients();
-    }
-  }, [user]);
+    fetchClients();
+  }, []);
 
   const fetchClients = async () => {
     setLoading(true);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        setLoading(false);
+        return;
+    }
+
     const { data, error } = await supabase
       .from('tbl_clientes')
       .select('id, nome, tipo_empregador, created_at')
-      .eq('user_id', user?.id)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {

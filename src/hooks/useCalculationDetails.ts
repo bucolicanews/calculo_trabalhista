@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
 
 // Reexporta as interfaces originais para uso fora do hook (caso o componente Display as use)
@@ -224,7 +223,6 @@ const organizeAndSortVerbas = (items: Array<ProventoDisplay | DescontoDisplay>, 
 // ================================================================
 
 export const useCalculationDetails = (calculationId: string | undefined): UseCalculationDetailsResult => {
-    const { user } = useAuth();
     const [calculation, setCalculation] = useState<CalculationDetails | null>(null);
     const [displayProventos, setDisplayProventos] = useState<ProventoDisplay[]>([]);
     const [displayDescontos, setDisplayDescontos] = useState<DescontoDisplay[]>([]);
@@ -232,13 +230,20 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
     const [hasAnyResult, setHasAnyResult] = useState(false);
 
     useEffect(() => {
-        if (!user || !calculationId) {
+        if (!calculationId) {
             setLoading(false);
             return;
         }
 
         const fetchCalculationResult = async () => {
             setLoading(true);
+            
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+
             const { data, error } = await supabase
                 .from('tbl_calculos')
                 .select(`
@@ -294,7 +299,7 @@ export const useCalculationDetails = (calculationId: string | undefined): UseCal
         };
 
         fetchCalculationResult();
-    }, [user, calculationId]);
+    }, [calculationId]);
 
     // Retorna os arrays mapeados para serem usados no componente de exibição
     return { calculation, displayProventos, displayDescontos, loading, hasAnyResult };

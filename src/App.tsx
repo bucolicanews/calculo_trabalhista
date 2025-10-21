@@ -16,7 +16,7 @@ import ClientFormPage from './pages/ClientFormPage';
 import SindicatoListPage from './pages/SindicatoListPage';
 import SindicatoFormPage from './pages/SindicatoFormPage';
 import WebhookConfigPage from './pages/WebhookConfigPage';
-import Info from './pages/Info';
+import ManualPromptPage from './pages/ManualPromptPage'; // NOVO IMPORT
 import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import AuthPage from './pages/AuthPage';
 import MainLayout from './components/layout/MainLayout';
@@ -73,9 +73,9 @@ const App: React.FC = () => {
           {/* ROTA DE ATUALIZAÇÃO DE SENHA MANUAL */}
           <Route path="/reset-password" element={<UpdatePasswordPage />} />
 
-          {/* Rotas Protegidas */}
+          {/* Rotas Protegidas (Todas usam MainLayout via ProtectedRoute) */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/info" element={<ProtectedRoute><Info /></ProtectedRoute>} />
+          <Route path="/info" element={<ProtectedRoute><ManualPromptPage /></ProtectedRoute>} />
           
           <Route path="/clients" element={<ProtectedRoute><ClientListPage /></ProtectedRoute>} />
           <Route path="/clients/new" element={<ProtectedRoute><ClientFormPage /></ProtectedRoute>} />

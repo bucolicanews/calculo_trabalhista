@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { showError, showSuccess } from '@/utils/toast';
@@ -16,7 +15,6 @@ import DownloadPdfButton from '@/components/calculations/DownloadPdfButton';
 import { useCalculationDetails } from '@/hooks/useCalculationDetails';
 
 const CalculationResultPage: React.FC = () => {
-  const { /* user */ } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   
@@ -26,12 +24,9 @@ const CalculationResultPage: React.FC = () => {
     displayProventos, 
     displayDescontos, 
     loading, 
-    // hasAnyResult // Removido, pois não é usado
   } = useCalculationDetails(id);
 
   const [isReprocessing, setIsReprocessing] = useState(false);
-
-  // A função fetchCalculationResult foi removida pois não é mais utilizada.
 
   const handleReprocess = async () => {
     if (!id || isReprocessing) return;

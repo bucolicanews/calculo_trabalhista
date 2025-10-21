@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { FieldDefinition, getDisplayFieldsForTable, allAvailableFieldsDefinition } from '@/utils/webhookFields';
 
@@ -23,7 +22,6 @@ export interface WebhookFormState {
 }
 
 export const useWebhookManagement = () => {
-    const { user } = useAuth();
     const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -127,6 +125,8 @@ export const useWebhookManagement = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        const { data: { user } } = await supabase.auth.getUser();
+
         if (!user) {
             showError('Usuário não autenticado. Faça login para criar ou editar webhooks.');
             return;
@@ -166,6 +166,8 @@ export const useWebhookManagement = () => {
     };
 
     const handleDeleteWebhook = async (id: string) => {
+        const { data: { user } } = await supabase.auth.getUser();
+
         if (!user) {
             showError('Usuário não autenticado.');
             return;
