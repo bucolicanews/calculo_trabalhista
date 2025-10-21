@@ -4,16 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Importando useNavigate
 
 // Define os tipos de view que o componente Auth pode ter
 type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password' | 'magic_link' | 'verify_otp';
 
 const AuthPage = () => {
   const { loading } = useAuth();
+  const navigate = useNavigate();
   const [initialView, setInitialView] = useState<AuthView>('sign_in');
-
-  // REMOVIDO: useEffect de redirecionamento, pois o PublicRoute já faz isso.
-  // Isso evita que o AuthPage tente redirecionar antes de processar o hash.
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -24,8 +23,10 @@ const AuthPage = () => {
       const type = params.get('type');
       
       if (type === 'recovery') {
-        // Se for recuperação de senha, forçamos a view de atualização de senha
-        setInitialView('update_password');
+        // 🚨 CORREÇÃO: Se for recuperação de senha, redirecionamos para a rota manual
+        // para usar o UpdatePasswordForm que criamos, preservando o hash.
+        navigate(`/reset-password${hash}`, { replace: true });
+        return;
       } else if (type === 'signup') {
         // Se for confirmação de cadastro, forçamos a view de verificação de OTP
         setInitialView('verify_otp');
