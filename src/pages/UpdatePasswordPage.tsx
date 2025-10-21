@@ -26,7 +26,7 @@ const UpdatePasswordPage: React.FC = () => {
       } else if (session) {
         // Se o usuário já estiver logado (e não for um evento de recuperação), redireciona
         // Isso pode acontecer se o usuário já atualizou a senha e o token ainda está na URL
-        navigate('/dashboard', { replace: true });
+        navigate('/update-password', { replace: true });
       } else {
         // Se não houver sessão e não for um evento de recuperação, a sessão é inválida
         setSessionValid(false);
