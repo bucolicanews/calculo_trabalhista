@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
+import { showError, showSuccess } from '@/utils/toast'; // Importando showSuccess/showError
 
 // Define os tipos de view que o componente Auth pode ter
 type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password' | 'magic_link' | 'verify_otp';
@@ -30,6 +31,27 @@ const AuthPage = () => {
   const redirectToUrl = window.location.origin + '/login';
   // Define a URL de redirecionamento para a recuperação de senha (nossa rota manual)
   const recoveryRedirectUrl = window.location.origin + '/reset-password';
+
+  const handleResetPassword = async (email: string) => {
+    // 1. Tenta deslogar o usuário atual (se houver) para evitar redirecionamento para o dashboard
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+        console.error("Erro ao tentar deslogar antes do reset:", signOutError);
+        // Não é um erro fatal, apenas logamos e continuamos
+    }
+
+    // 2. Envia o e-mail de recuperação
+    const { error } = await supabase.auth.resetPasswordForEmail(
+        email,
+        { redirectTo: recoveryRedirectUrl }
+    );
+
+    if (error) {
+        showError('Erro ao enviar link de recuperação: ' + error.message);
+    } else {
+        showSuccess('Link de redefinição de senha enviado! Verifique seu e-mail.');
+    }
+  };
 
 
   return (
@@ -80,16 +102,14 @@ const AuthPage = () => {
             },
           }}
           theme="dark"
-          // Adicionando a URL de redirecionamento para recuperação de senha
-          // Isso garante que o link gerado no e-mail aponte para a nossa rota manual.
           // @ts-ignore
           onResetPassword={() => {
-            // Esta função é chamada quando o usuário clica em 'Enviar instruções de recuperação'
-            // O Supabase envia o e-mail com o link apontando para recoveryRedirectUrl
-            supabase.auth.resetPasswordForEmail(
-              (document.getElementById('email') as HTMLInputElement)?.value,
-              { redirectTo: recoveryRedirectUrl }
-            );
+            const emailInput = document.getElementById('email') as HTMLInputElement;
+            if (emailInput && emailInput.value) {
+                handleResetPassword(emailInput.value);
+            } else {
+                showError("Por favor, insira um email válido.");
+            }
           }}
         />
       </div>
