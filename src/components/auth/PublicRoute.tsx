@@ -17,19 +17,20 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
 
   const userIsLoggedIn = !!user;
   
-  // Removemos a verificação manual de isPasswordResetPage, confiando no isAuthFlow.
+  // VERIFICAÇÃO ADICIONAL: Se houver um hash de autenticação na URL, 
+  // devemos sempre permitir a renderização do conteúdo público (AuthPage) para que o Supabase Auth UI possa processá-lo.
+  const hasAuthHash = location.hash.includes('access_token=') || location.hash.includes('type=recovery');
 
-  console.log(`[PublicRoute Check] User Logged In: ${userIsLoggedIn}, Is Auth Flow: ${isAuthFlow}`);
+  console.log(`[PublicRoute Check] User Logged In: ${userIsLoggedIn}, Is Auth Flow: ${isAuthFlow}, Has Auth Hash: ${hasAuthHash}`);
 
-  // Se o usuário estiver logado E NÃO estiver em um fluxo de autenticação (isAuthFlow), redireciona para o dashboard.
-  // O isAuthFlow será TRUE se houver um hash de recuperação na URL.
-  if (userIsLoggedIn && !isAuthFlow) {
+  // Se o usuário estiver logado E NÃO estiver em um fluxo de autenticação (isAuthFlow) 
+  // E NÃO houver um hash de autenticação na URL, redireciona para o dashboard.
+  if (userIsLoggedIn && !isAuthFlow && !hasAuthHash) {
     console.log("[PublicRoute Decision] Redirecting to /dashboard.");
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Se estiver em um fluxo de autenticação (isAuthFlow é true), ou se não estiver logado,
-  // renderize o componente filho (AuthPage).
+  // Caso contrário (não logado, ou logado mas em fluxo de autenticação/com hash), renderiza o conteúdo público.
   console.log("[PublicRoute Decision] Rendering AuthPage (Public Content).");
   return <>{children}</>;
 };
