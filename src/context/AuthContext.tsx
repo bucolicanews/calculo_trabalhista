@@ -58,10 +58,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // === LÓGICA DE FORÇAR LOGOUT PARA TESTES ===
       if (session?.user && !isAuthEventPending) {
           console.log("[AuthContext Initial Session] User found, forcing sign out for testing purposes.");
-          // Força o logout, o que irá disparar o evento SIGNED_OUT e atualizar o estado.
-          supabase.auth.signOut();
-          // Mantemos o loading true até o evento SIGNED_OUT ser processado
-          setLoading(true); 
+          
+          // Tentamos o signOut para limpar o token do navegador
+          supabase.auth.signOut().catch(e => {
+              console.warn("Forced signOut failed (ignoring 403 for testing):", e);
+          });
+          
+          // Imediatamente limpamos o estado local e definimos loading como false
+          // Isso garante que o PublicRoute veja o usuário como deslogado e redirecione para /login.
+          setUser(null);
+          setLoading(false); 
+          setIsAuthFlow(false);
           return;
       }
       // ===========================================
