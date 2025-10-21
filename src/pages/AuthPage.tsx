@@ -4,45 +4,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 
 // Define os tipos de view que o componente Auth pode ter
 type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password' | 'magic_link' | 'verify_otp';
 
 const AuthPage = () => {
   const { loading } = useAuth();
-  const location = useLocation();
   const [initialView, setInitialView] = useState<AuthView>('sign_in');
 
+  // Removemos toda a lógica de detecção de hash, pois o UpdatePasswordPage fará isso.
   useEffect(() => {
-    const hash = location.hash;
-    console.log('AuthPage: Current URL hash:', hash);
-    
-    // 1. Se houver um hash, tentamos determinar a view correta
-    if (hash) {
-      const params = new URLSearchParams(hash.substring(1));
-      const type = params.get('type');
-      console.log('AuthPage: Detected hash type:', type);
-      
-      if (type === 'recovery') {
-        // Se for recuperação de senha, forçamos a view de atualização de senha
-        // O componente Auth UI deve ser capaz de lidar com isso se o hash estiver presente.
-        setInitialView('update_password');
-      } else if (type === 'signup') {
-        // Se for confirmação de cadastro, forçamos a view de verificação de OTP
-        setInitialView('verify_otp');
-      } else {
-        // Outros hashes (ex: magiclink)
-        setInitialView('sign_in');
-      }
-    } else {
-        // Se não houver hash, garante que a view padrão é 'sign_in'
-        setInitialView('sign_in');
-    }
-    
-  }, [location.hash]); // Depende apenas do hash da localização
+    // Se houver um hash, garantimos que a view padrão é 'sign_in'
+    setInitialView('sign_in');
+  }, []);
 
-  // Se estiver carregando, mostramos um loader
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
@@ -51,8 +26,11 @@ const AuthPage = () => {
     );
   }
 
-  // Define a URL de redirecionamento de volta para a rota de login.
+  // Define a URL de redirecionamento para a rota de login.
   const redirectToUrl = window.location.origin + '/login';
+  // Define a URL de redirecionamento para a recuperação de senha (nossa rota manual)
+  const recoveryRedirectUrl = window.location.origin + '/reset-password';
+
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
@@ -62,7 +40,17 @@ const AuthPage = () => {
           supabaseClient={supabase}
           providers={[]}
           redirectTo={redirectToUrl} 
-          view={initialView} // Força a view inicial baseada no hash
+          view={initialView}
+          // 🚨 CRÍTICO: Passamos a URL de recuperação para o Auth UI
+          magicLink={true}
+          socialLayout="horizontal"
+          localization={{
+            variables: {
+              forgotten_password: {
+                link_text: 'Esqueceu sua senha?',
+              },
+            },
+          }}
           appearance={{
             theme: ThemeSupa,
             variables: {
@@ -92,38 +80,16 @@ const AuthPage = () => {
             },
           }}
           theme="dark"
-          localization={{
-            variables: {
-              sign_in: {
-                email_label: 'Email',
-                password_label: 'Senha',
-                email_input_placeholder: 'Seu email',
-                password_input_placeholder: 'Sua senha',
-                button_label: 'Entrar',
-                social_provider_text: 'Entrar com {{provider}}',
-                link_text: 'Já tem uma conta? Entrar',
-              },
-              sign_up: {
-                email_label: 'Email',
-                password_label: 'Senha',
-                email_input_placeholder: 'Seu email',
-                password_input_placeholder: 'Sua senha',
-                button_label: 'Cadastrar',
-                social_provider_text: 'Cadastrar com {{provider}}',
-                link_text: 'Não tem uma conta? Cadastrar',
-              },
-              forgotten_password: {
-                email_label: 'Email',
-                email_input_placeholder: 'Seu email',
-                button_label: 'Enviar instruções de recuperação',
-                link_text: 'Esqueceu sua senha?',
-              },
-              update_password: {
-                password_label: 'Nova Senha',
-                password_input_placeholder: 'Sua nova senha',
-                button_label: 'Atualizar Senha',
-              },
-            },
+          // Adicionando a URL de redirecionamento para recuperação de senha
+          // Isso garante que o link gerado no e-mail aponte para a nossa rota manual.
+          // @ts-ignore
+          onResetPassword={() => {
+            // Esta função é chamada quando o usuário clica em 'Enviar instruções de recuperação'
+            // O Supabase envia o e-mail com o link apontando para recoveryRedirectUrl
+            supabase.auth.resetPasswordForEmail(
+              (document.getElementById('email') as HTMLInputElement)?.value,
+              { redirectTo: recoveryRedirectUrl }
+            );
           }}
         />
       </div>
