@@ -77,12 +77,12 @@ const AuthPage = () => {
         <h2 className="text-3xl font-bold text-center text-orange-500">Bem-vindo!</h2>
         <Auth
           supabaseClient={supabase}
-          // 1. Deixar somente Magic Link
+          // Reativando o fluxo de e-mail/senha (providers vazio)
           providers={[]}
           onlyThirdPartyProviders={false}
           redirectTo={redirectToUrl} 
           view={initialView}
-          magicLink={true}
+          magicLink={false} // Desativando Magic Link
           socialLayout="horizontal"
           // 2. Tradução completa para PT-BR
           localization={{
@@ -125,7 +125,7 @@ const AuthPage = () => {
                 email_input_placeholder: 'Digite seu e-mail para o link mágico',
                 button_label: 'Enviar Link Mágico',
                 loading_button_label: 'Enviando Link...',
-                link_text: 'Entrar com Link Mágico',
+                link_text: '', // Mantido vazio para não mostrar o link de Magic Link
               },
               verify_otp: {
                 email_input_label: 'Seu e-mail',
