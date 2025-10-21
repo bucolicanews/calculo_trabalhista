@@ -3,48 +3,26 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { useAuth } from '@/context/AuthContext';
-import { useState, useEffect } from 'react';
-
-// Define os tipos de view que o componente Auth pode ter
-type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password' | 'magic_link' | 'verify_otp';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 const AuthPage = () => {
-  const { loading } = useAuth();
-  const [initialView, setInitialView] = useState<AuthView>('sign_in');
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const hash = window.location.hash;
-    
-    // 1. Se houver um hash, tentamos determinar a view correta
-    if (hash) {
-      const params = new URLSearchParams(hash.substring(1));
-      const type = params.get('type');
-      
-      if (type === 'recovery') {
-        // Se for recuperação de senha, forçamos a view de atualização de senha
-        setInitialView('update_password');
-      } else if (type === 'signup') {
-        // Se for confirmação de cadastro, forçamos a view de verificação de OTP
-        setInitialView('verify_otp');
-      } else {
-        // Se for qualquer outro hash (ex: magiclink), deixamos o componente Auth lidar com ele,
-        // mas garantimos que a view inicial não seja 'sign_in' para evitar o redirecionamento.
-        setInitialView('sign_in');
-      }
+    if (!loading && user) {
+      navigate('/dashboard');
     }
-    
-  }, []);
+  }, [user, loading, navigate]);
 
-  if (loading) {
+  if (loading || user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
         <p className="text-orange-500">Carregando...</p>
       </div>
     );
   }
-
-  // Define a URL de redirecionamento de volta para a rota de login.
-  const redirectToUrl = window.location.origin + '/login';
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-4">
@@ -53,8 +31,6 @@ const AuthPage = () => {
         <Auth
           supabaseClient={supabase}
           providers={[]}
-          redirectTo={redirectToUrl} 
-          view={initialView} // Força a view inicial baseada no hash
           appearance={{
             theme: ThemeSupa,
             variables: {

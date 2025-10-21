@@ -31,11 +31,14 @@ const App: React.FC = () => {
     <Router>
       <AuthProvider>
         <Routes>
+
           {/* Public Routes */}
-          {/* Rota de login/cadastro/recuperação */}
           <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><AuthPage /></PublicRoute>} />
           <Route path="/" element={<PublicRoute><AuthPage /></PublicRoute>} /> {/* Default public route */}
+          
+          {/* ROTA DE CORREÇÃO: Captura o redirecionamento de recuperação de senha do Supabase */}
+          <Route path="/reset-password" element={<PublicRoute><AuthPage /></PublicRoute>} />
 
           {/* Private Routes */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />

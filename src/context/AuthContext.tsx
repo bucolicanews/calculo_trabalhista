@@ -6,10 +6,9 @@ import { showError } from '@/utils/toast';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isAuthFlow: boolean; // NOVO: Indica se estamos em um fluxo de autenticação (ex: recovery)
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<void>; // Adicionado
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,25 +16,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthFlow, setIsAuthFlow] = useState(false); // Inicializa como falso
 
   useEffect(() => {
-    const hash = window.location.hash;
-    // Verifica se há um token de acesso ou tipo de recuperação no hash
-    const isAuthEventPending = hash.includes('access_token=') || hash.includes('type=recovery');
-    
-    console.log(`[AuthContext Init] Hash: ${hash}`);
-    console.log(`[AuthContext Init] isAuthEventPending: ${isAuthEventPending}`);
-
-    if (isAuthEventPending) {
-        setIsAuthFlow(true);
-        console.log("[AuthContext Init] Setting isAuthFlow = TRUE due to hash.");
-    }
-
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log(`[AuthContext Event] Event: ${event}, Session exists: ${!!session}`);
+        // Adicionado para depuração
+        console.log(`Auth event: ${event}`, session);
 
+        // Se o token foi atualizado mas a sessão é nula, significa que o refresh token era inválido.
         if (event === 'TOKEN_REFRESHED' && !session) {
           showError('Sua sessão expirou. Por favor, faça login novamente.');
           setUser(null);
@@ -44,19 +32,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         setLoading(false);
-        
-        // 🚨 CORREÇÃO CRÍTICA: Se for PASSWORD_RECOVERY, forçamos isAuthFlow para TRUE.
-        // Isso garante que o PublicRoute não redirecione, mesmo que o usuário esteja 'logado' temporariamente.
-        if (event === 'PASSWORD_RECOVERY') {
-            setIsAuthFlow(true);
-            console.log(`[AuthContext Event] PASSWORD_RECOVERY detected. Forcing isAuthFlow = TRUE.`);
-        } else if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
-            // Se for um login/logout normal, o fluxo termina.
-            setIsAuthFlow(false);
-            console.log(`[AuthContext Event] Auth flow finished. Setting isAuthFlow = FALSE.`);
-        }
-        
-        console.log(`[AuthContext State] User is now: ${session?.user ? 'LOGGED IN' : 'NULL'}, Loading: FALSE, isAuthFlow: ${isAuthFlow}`);
       }
     );
 
@@ -64,18 +39,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
       setLoading(false);
-      
-      // Se a sessão inicial for carregada E não houver hash, o fluxo não está ativo.
-      if (!isAuthEventPending) {
-          setIsAuthFlow(false);
-      }
-      console.log(`[AuthContext Initial Session] User is: ${session?.user ? 'LOGGED IN' : 'NULL'}, isAuthFlow: ${isAuthFlow}`);
-      
-    }).catch((e) => {
-      console.error("[AuthContext Initial Session] Error fetching session:", e);
+    }).catch(() => {
+      // Em caso de erro ao buscar a sessão inicial, garante que o usuário seja nulo.
       setUser(null);
       setLoading(false);
-      setIsAuthFlow(false);
     });
 
     return () => {
@@ -108,7 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthFlow, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInWithEmail, signUpWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );
