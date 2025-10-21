@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -119,6 +120,7 @@ const initialCalculationState = {
 type Calculation = typeof initialCalculationState;
 
 const CalculationFormPage: React.FC = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
@@ -130,7 +132,6 @@ const CalculationFormPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchInitialData = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     try {
@@ -222,7 +223,7 @@ const CalculationFormPage: React.FC = () => {
 
   useEffect(() => {
     fetchInitialData();
-  }, [id, isEditing]);
+  }, [user, id, isEditing]);
 
   // Generic handler for text, number, and textarea inputs
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -247,8 +248,6 @@ const CalculationFormPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return showError('Usuário não autenticado.');
 
     // --- Basic Validation ---
@@ -286,6 +285,9 @@ const CalculationFormPage: React.FC = () => {
     // Clean up the temporary fields before sending to DB
     // @ts-ignore
     delete calculationData.decimo_terceiro_retroativo;
+    // O campo info_descontos agora é um campo do DB, então não deve ser deletado.
+    // @ts-ignore
+    // delete calculationData.info_descontos; // REMOVIDO
     
     let response;
     if (isEditing) {

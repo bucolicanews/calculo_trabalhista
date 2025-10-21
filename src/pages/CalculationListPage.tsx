@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, Edit, Trash2, Send, RefreshCw, Eye, CheckCircle2 } from 'lucide-react';
@@ -47,6 +48,7 @@ const formatCountdown = (seconds: number): string => {
 };
 
 const CalculationListPage = () => {
+  const { user } = useAuth();
   const [calculations, setCalculations] = useState<Calculation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSendingWebhook, setIsSendingWebhook] = useState<string | null>(null);
@@ -80,7 +82,9 @@ const CalculationListPage = () => {
   };
 
   useEffect(() => {
-    fetchCalculations();
+    if (user) {
+      fetchCalculations();
+    }
 
     return () => {
       timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
@@ -88,17 +92,10 @@ const CalculationListPage = () => {
       intervalsRef.current.forEach(interval => clearInterval(interval));
       intervalsRef.current.clear();
     };
-  }, []);
+  }, [user]);
 
   const fetchCalculations = async () => {
     setLoading(true);
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        setLoading(false);
-        return;
-    }
-
     const { data, error } = await supabase
       .from('tbl_calculos')
       .select(`
@@ -174,8 +171,6 @@ const CalculationListPage = () => {
 
   const handleSendToWebhook = async (calculationId: string, webhookConfigIds: string[]) => {
     console.log(`[CalculationListPage] handleSendToWebhook called for calculationId: ${calculationId}, webhookConfigIds:`, webhookConfigIds);
-    
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       showError('Usuário não autenticado.');
       return;

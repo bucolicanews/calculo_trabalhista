@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, User, Briefcase, Calculator, Landmark } from 'lucide-react';
@@ -8,29 +9,25 @@ import { Link } from 'react-router-dom';
 import { showError } from '@/utils/toast';
 
 const DashboardPage = () => {
+  const { user } = useAuth();
   const [totalClients, setTotalClients] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTotalClients();
-  }, []);
+    if (user) {
+      fetchTotalClients();
+    }
+  }, [user]);
 
   const fetchTotalClients = async () => {
     setLoading(true);
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        setLoading(false);
-        return;
-    }
-
     const { count, error } = await supabase
       .from('tbl_clientes')
       .select('id', { count: 'exact' })
-      .eq('user_id', user.id);
+      .eq('user_id', user?.id);
 
     if (error) {
-      showError('Erro ao carregar total de Empregadores: ' + error.message);
+      showError('Erro ao carregar total de Empregador: ' + error.message);
       console.error('Error fetching total clients:', error);
     } else {
       setTotalClients(count || 0);

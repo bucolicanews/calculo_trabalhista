@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { showError } from '@/utils/toast';
 import { WebhookConfig } from '@/hooks/useWebhookManagement';
 import { RefreshCw } from 'lucide-react';
@@ -23,11 +24,15 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
     onSend,
     isSending,
 }) => {
+    // Removendo a declaração de 'user' não utilizada.
+    useAuth(); 
     const [availableWebhooks, setAvailableWebhooks] = useState<WebhookConfig[]>([]);
     const [selectedWebhookIds, setSelectedWebhookIds] = useState<Set<string>>(new Set());
     const [loadingWebhooks, setLoadingWebhooks] = useState(true);
 
     useEffect(() => {
+        // ✅ CORREÇÃO: Removemos a dependência do 'user' na condição. 
+        // A busca ocorre se o diálogo estiver aberto, dependendo apenas do RLS para permissão.
         if (isOpen) {
             console.log('[CalculationWebhookSender] Iniciando fetchAvailableWebhooks...');
             fetchAvailableWebhooks();
@@ -39,7 +44,8 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
     const fetchAvailableWebhooks = async () => {
         setLoadingWebhooks(true);
         
-        // A busca ocorre se o diálogo estiver aberto, dependendo apenas do RLS para permissão.
+        // ✅ CORREÇÃO: REMOVEMOS A CLÁUSULA .eq('user_id', user?.id)
+        // Agora, o filtro é APENAS o tipo de tabela, tornando a busca global.
         const { data, error } = await supabase
             .from('tbl_webhook_configs')
             .select('*')
@@ -77,6 +83,9 @@ const CalculationWebhookSender: React.FC<CalculationWebhookSenderProps> = ({
             return;
         }
         
+        // ⚠️ Nota: A função 'onSend' (no componente pai) deve ser responsável por
+        // verificar se o 'user' está autorizado a *enviar* o cálculo.
+
         console.log('[CalculationWebhookSender] Chamando onSend com IDs:', Array.from(selectedWebhookIds));
         await onSend(calculationId, Array.from(selectedWebhookIds));
         onOpenChange(false); // Close dialog after sending

@@ -4,9 +4,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import { Loader2, Lock } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/input'; // Usando Input padrão por enquanto
 
 const UpdatePasswordPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,24 +16,24 @@ const UpdatePasswordPage: React.FC = () => {
   const [sessionValid, setSessionValid] = useState(false);
 
   useEffect(() => {
-    // Usar onAuthStateChange é a maneira mais confiável de lidar com eventos de autenticação como a recuperação de senha
+    // O onAuthStateChange é a maneira mais confiável de detectar o evento de recuperação
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(`[UpdatePasswordPage] Auth Event: ${event}, Session exists: ${!!session}`);
+      console.log(`[UpdatePasswordPage] Auth Event: ${event}, Session: ${!!session}`);
       
-      // O evento 'PASSWORD_RECOVERY' é emitido quando o usuário clica no link de redefinição
       if (event === 'PASSWORD_RECOVERY') {
+        // Se o evento for de recuperação, a sessão está temporariamente válida para atualização
         setSessionValid(true);
       } else if (session) {
-        // Se a sessão é válida mas o evento não é de recuperação, redireciona para o dashboard
+        // Se o usuário já estiver logado (e não for um evento de recuperação), redireciona
+        // Isso pode acontecer se o usuário já atualizou a senha e o token ainda está na URL
         navigate('/dashboard', { replace: true });
       } else {
-        // Se a sessão não for válida de forma alguma, setamos a permissão como falsa
+        // Se não houver sessão e não for um evento de recuperação, a sessão é inválida
         setSessionValid(false);
       }
       setLoading(false);
     });
 
-    // Limpa o 'ouvinte' quando o componente é desmontado para evitar vazamentos de memória
     return () => {
       authListener.subscription.unsubscribe();
     };
@@ -58,10 +58,11 @@ const UpdatePasswordPage: React.FC = () => {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      showError('Não foi possível atualizar sua senha. Por favor, tente novamente.');
+      showError('Não foi possível atualizar sua senha. O link pode ter expirado. Tente novamente.');
       console.error('Password update error:', error);
     } else {
       showSuccess('Senha atualizada com sucesso! Redirecionando para o login...');
+      // Limpa o hash e redireciona
       setTimeout(() => {
         navigate('/login', { replace: true });
       }, 2000);
@@ -78,7 +79,6 @@ const UpdatePasswordPage: React.FC = () => {
   }
 
   if (!sessionValid) {
-    // Se a sessão não for válida, mostra a mensagem de erro
     return (
       <div className="min-h-screen flex items-center justify-center bg-black text-white p-4 text-center">
         <Card className="w-full max-w-md bg-gray-900 border-orange-500 text-white">
@@ -108,7 +108,7 @@ const UpdatePasswordPage: React.FC = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="new-password" className="text-gray-300">Nova Senha</Label>
+              <Label htmlFor="new-password">Nova Senha</Label>
               <Input
                 id="new-password"
                 type="password"
@@ -121,7 +121,7 @@ const UpdatePasswordPage: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password" className="text-gray-300">Confirmar Nova Senha</Label>
+              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
               <Input
                 id="confirm-password"
                 type="password"
